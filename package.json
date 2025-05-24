@@ -5,7 +5,7 @@
     "description": "Launcher Minecraft pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
-        "name": "Resylok, Inc.",
+        "name": "Suly, Inc.",
         "email": "m.schnidersylv@gmail.com",
         "url": "https://github.com/ResyYT"
     },
