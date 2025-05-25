@@ -9,7 +9,7 @@
         "email": "m.schnidersylv@gmail.com",
         "url": "https://github.com/ResyYT"
     },
-    "url": "https://patateland.strator.gg",
+    "url": "https://patateland.strator.gg/fileLauncher/",
     "scripts": {
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
