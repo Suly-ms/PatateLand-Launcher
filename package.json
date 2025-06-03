@@ -1,7 +1,7 @@
 {
     "name": "PatateLand-Launcher",
     "preductname": "PatateLand Launcher",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "description": "Launcher Minecraft pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
@@ -9,12 +9,12 @@
         "email": "m.schnidersylv@gmail.com",
         "url": "https://github.com/ResyYT"
     },
-    "url": "https://patateland.strator.gg/fileLauncher/",
+    "url": "https://filelauncher.patateland.wstr.fr",
     "scripts": {
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
         "build": "node build.js --obf=true --build=platform",
-        "icon": "node build.js --icon=https://patateland.strator.gg/logo.png"
+        "icon": "node build.js --icon=https://filelauncher.patateland.wstr.fr/logo.png"
     },
     "license": "CCANC",
     "nodemonConfig": {
@@ -23,7 +23,7 @@
     },
     "dependencies": {
         "electron-updater": "^6.1.8",
-        "minecraft-java-core": "3.6",
+        "minecraft-java-core": "^4.1.1",
         "node-bdd": "^2.0.4",
         "node-fetch": "^2.7.0",
         "xml-js": "^1.6.11"
