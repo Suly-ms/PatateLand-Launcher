@@ -1,7 +1,7 @@
 {
     "name": "PatateLand-Launcher",
     "preductname": "PatateLand Launcher",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Launcher Minecraft pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
