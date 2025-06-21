@@ -376,3 +376,61 @@
 .active-instance {
     background: var(--element-color);
 }
+
+/*******************************************************************************
+ *                                                                             *
+ * sponsors panel                                                              *
+ *                                                                             *
+ ******************************************************************************/
+
+.sponsors-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--background-transparent, rgba(0,0,0,0.7));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.sponsor-list {
+    margin: 2rem 0;
+}
+
+.sponsor-item {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    background: var(--background-element);
+    padding: 1rem 2rem;
+    border-radius: 15px;
+}
+
+.sponsor-item img {
+    border-radius: 10px;
+    background: #fff;
+}
+
+.close-sponsors-btn {
+    margin-top: 2rem;
+    padding: 0.5rem 2rem;
+    border-radius: 10px;
+    border: none;
+    background: var(--element-color);
+    color: var(--color);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.icon-sponsor {
+    width: 32px;
+    height: 32px;
+    background-image: url('https://styles.redditmedia.com/t5_dw31yn/styles/communityIcon_oh1iv8v1zfoe1.png');
+    background-size: cover;
+    background-position: center;
+    border-radius: 8px;
+}
+.sponsors-block {
+    cursor: pointer;
+}

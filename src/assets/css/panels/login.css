@@ -48,3 +48,13 @@
     padding: 0.4rem 1rem;
     margin-top: 10px;
 }
+
+.remember-password-box {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Ajoute cette ligne pour centrer */
+    gap: 0.5em;
+    margin: 10px 0 0 0;
+    font-size: 1rem;
+    color: var(--color);
+}

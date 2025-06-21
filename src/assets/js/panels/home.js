@@ -12,10 +12,37 @@ class Home {
     async init(config) {
         this.config = config;
         this.db = new database();
-        this.news()
-        this.socialLick()
-        this.instancesSelect()
-        document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
+        this.news();
+        this.socialLick();
+        this.instancesSelect();
+        document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'));
+
+        // Sponsors button logic
+        const sponsorsBtn = document.querySelector('.sponsors-btn');
+        if (sponsorsBtn) {
+            sponsorsBtn.addEventListener('click', () => {
+                // Masquer le contenu principal
+                document.querySelectorAll('.home-content').forEach(el => el.style.display = 'none');
+                // Afficher le panel sponsors (chargement dynamique si besoin)
+                let sponsorsPanel = document.querySelector('.sponsors-panel');
+                if (!sponsorsPanel) {
+                    fetch('panels/sponsors.html')
+                        .then(res => res.text())
+                        .then(html => {
+                            let div = document.createElement('div');
+                            div.innerHTML = html;
+                            document.querySelector('.container').appendChild(div.firstElementChild);
+                            document.querySelector('.close-sponsors-btn').addEventListener('click', () => {
+                                document.querySelector('.sponsors-panel').remove();
+                                // Réafficher le contenu principal
+                                document.querySelectorAll('.home-content').forEach(el => el.style.display = '');
+                            });
+                        });
+                } else {
+                    sponsorsPanel.style.display = 'flex';
+                }
+            });
+        }
     }
 
     async news() {

@@ -116,8 +116,41 @@ class Login {
         let connectAZauthA2F = document.querySelector('.connect-AZauth-A2F');
         let AZauthConnectBTN = document.querySelector('.connect-AZauth');
         let AZauthCancelA2F = document.querySelector('.cancel-AZauth-A2F');
+        let rememberPassword = document.getElementById('rememberPassword');
 
         loginAZauth.style.display = 'block';
+
+        // Pré-remplir le mot de passe si déjà enregistré
+        const savedAZauthEmail = localStorage.getItem('AZauthEmail');
+        const savedAZauthPassword = localStorage.getItem('AZauthPassword');
+        if (savedAZauthEmail) AZauthEmail.value = savedAZauthEmail;
+        if (savedAZauthPassword) {
+            AZauthPassword.value = savedAZauthPassword;
+            rememberPassword.checked = true;
+        }
+
+        // Sauvegarde ou suppression du mot de passe selon la case cochée
+        rememberPassword.addEventListener('change', () => {
+            if (rememberPassword.checked) {
+                localStorage.setItem('AZauthEmail', AZauthEmail.value);
+                localStorage.setItem('AZauthPassword', AZauthPassword.value);
+            } else {
+                localStorage.removeItem('AZauthEmail');
+                localStorage.removeItem('AZauthPassword');
+            }
+        });
+
+        // Mettre à jour le mot de passe sauvegardé si l'utilisateur le modifie
+        AZauthPassword.addEventListener('input', () => {
+            if (rememberPassword.checked) {
+                localStorage.setItem('AZauthPassword', AZauthPassword.value);
+            }
+        });
+        AZauthEmail.addEventListener('input', () => {
+            if (rememberPassword.checked) {
+                localStorage.setItem('AZauthEmail', AZauthEmail.value);
+            }
+        });
 
         AZauthConnectBTN.addEventListener('click', async () => {
             PopupLogin.openPopup({
