@@ -37,7 +37,7 @@
 
 .server-status-text {
     font-size: 0.6rem;
-    color: #1AC707;
+    color: #FFBF66;
 }
 
 .server-status-infos .red {
@@ -65,7 +65,7 @@
     right: 10px;
     border-radius: 15px;
     border: solid 5px var(--background);
-    background: #1AC707;
+    background: #FFBF66;
 }
 
 .red:after {

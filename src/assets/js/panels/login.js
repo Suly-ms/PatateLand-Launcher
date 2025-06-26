@@ -222,6 +222,16 @@ class Login {
                 PopupLogin.closePopup();
             }
         });
+        
+        document.addEventListener('keydown', (e) => {
+            // Vérifie que le panel AZauth est visible
+            const panel = document.querySelector('.login-AZauth');
+            if (panel && panel.style.display !== 'none' && panel.classList.contains('login-tabs')) {
+                if (e.key === 'Enter') {
+                    AZauthConnectBTN.click();
+                }
+            }
+        });
     }
 
     async saveData(connectionData) {
