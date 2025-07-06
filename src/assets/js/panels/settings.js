@@ -6,6 +6,8 @@
 import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
 const { ipcRenderer } = require('electron');
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 
 class Settings {
     static id = "settings";
@@ -18,6 +20,7 @@ class Settings {
         this.javaPath()
         this.resolution()
         this.launcher()
+        this.bugTools()
     }
 
     navBTN() {
@@ -322,6 +325,58 @@ class Settings {
                 }
             }
         })
+    }
+
+    bugTools() {
+        const btn = document.querySelector('.delete-instances-btn');
+        if (!btn) return;
+        btn.addEventListener('click', async () => {
+            const confirmPopup = new popup();
+            confirmPopup.openPopup({
+                title: 'Confirmation',
+                content: 'Voulez-vous vraiment supprimer <b>toutes les instances</b> ? Cette action est <b>irréversible</b> !',
+                color: 'red',
+                options: true
+            });
+            // Attendre la réponse utilisateur (OK/Annuler)
+            const interval = setInterval(() => {
+                const okBtn = document.querySelector('.popup .ok');
+                const cancelBtn = document.querySelector('.popup .cancel');
+                if (okBtn && cancelBtn) {
+                    okBtn.onclick = async () => {
+                        clearInterval(interval);
+                        confirmPopup.closePopup();
+                        try {
+                            const appDataPath = await appdata();
+                            const basePath = path.join(appDataPath, '.patateland', 'instances');
+                            if (fs.existsSync(basePath)) {
+                                for (const dir of fs.readdirSync(basePath)) {
+                                    const dirPath = path.join(basePath, dir);
+                                    fs.rmSync(dirPath, { recursive: true, force: true });
+                                }
+                            }
+                            new popup().openPopup({
+                                title: 'Succès',
+                                content: 'Toutes les instances ont été supprimées.',
+                                color: 'green',
+                                options: false
+                            });
+                        } catch (err) {
+                            new popup().openPopup({
+                                title: 'Erreur',
+                                content: 'Erreur lors de la suppression : ' + err,
+                                color: 'red',
+                                options: true
+                            });
+                        }
+                    };
+                    cancelBtn.onclick = () => {
+                        clearInterval(interval);
+                        confirmPopup.closePopup();
+                    };
+                }
+            }, 100);
+        });
     }
 }
 export default Settings;
