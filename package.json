@@ -1,13 +1,13 @@
 {
     "name": "PatateLand-Launcher",
     "preductname": "PatateLand Launcher",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "description": "Launcher Minecraft pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
         "name": "Suly, Inc.",
         "email": "m.schnidersylv@gmail.com",
-        "url": "https://github.com/ResyYT"
+        "url": "https://github.com/Suly-ms"
     },
     "url": "https://filelauncher.patateland.wstr.fr",
     "scripts": {
@@ -23,7 +23,7 @@
     },
     "dependencies": {
         "electron-updater": "^6.1.8",
-        "minecraft-java-core": "^4.2.1",
+        "minecraft-java-core": "^4.2.3",
         "node-bdd": "^2.0.4",
         "node-fetch": "^2.7.0",
         "xml-js": "^1.6.11"
