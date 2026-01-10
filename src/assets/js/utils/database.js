@@ -4,25 +4,34 @@
  */
 
 const { NodeBDD, DataType } = require('node-bdd');
-const fs = require('fs');
-const nodedatabase = new NodeBDD()
-const { ipcRenderer } = require('electron')
+const nodedatabase = new NodeBDD();
+const { ipcRenderer } = require('electron');
+const fs = require('fs'); // <--- AJOUT IMPORTANT
 
 let dev = process.env.NODE_ENV === 'dev';
 
 class database {
     async creatDatabase(tableName, tableConfig) {
-        let dbPath = `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`;
+        // --- CORRECTION : Calcul du chemin et création du dossier ---
+        let dataPath = await ipcRenderer.invoke('path-user-data');
+        let dbFolder = dev ? '../..' : '/databases';
+        let fullPath = `${dataPath}${dbFolder}`;
 
-        if (!fs.existsSync(dbPath)) {
-            fs.mkdirSync(dbPath, { recursive: true });
+        // Si on est en prod et que le dossier n'existe pas, on le crée
+        if (!dev && !fs.existsSync(fullPath)) {
+            try {
+                fs.mkdirSync(fullPath, { recursive: true });
+            } catch (err) {
+                console.error("Impossible de créer le dossier database:", err);
+            }
         }
+        // -----------------------------------------------------------
 
         return await nodedatabase.intilize({
             databaseName: 'Databases',
             fileType: dev ? 'sqlite' : 'db',
             tableName: tableName,
-            path: dbPath,
+            path: fullPath,
             tableColumns: tableConfig,
         });
     }

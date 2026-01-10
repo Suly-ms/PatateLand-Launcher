@@ -45,15 +45,18 @@ class Index {
                 if (this.obf) {
                     await new Promise((resolve) => {
                         console.log(`Obfuscate ${path}`);
-                        let obf = JavaScriptObfuscator.obfuscate(code, { optionsPreset: 'medium-obfuscation', disableConsoleOutput: false });
+                        // CORRECTION ICI : Ajout de renameProperties: false
+                        let obf = JavaScriptObfuscator.obfuscate(code, { 
+                            optionsPreset: 'medium-obfuscation', 
+                            disableConsoleOutput: false,
+                            renameProperties: false, // <--- INDISPENSABLE
+                            identifierNamesGenerator: 'mangled' // Garde le code un peu plus sûr sans tout casser
+                        });
                         resolve(fs.writeFileSync(`${folder}/${fileName}`, obf.getObfuscatedCode(), { encoding: "utf-8" }));
                     })
                 } else {
-                    console.log(`Copy ${path}`);
-                    fs.writeFileSync(`${folder}/${fileName}`, code, { encoding: "utf-8" });
-                }
-            } else {
                 fs.copyFileSync(path, `${folder}/${fileName}`);
+                }
             }
         }
     }
