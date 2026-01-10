@@ -55,8 +55,11 @@ class Index {
                         resolve(fs.writeFileSync(`${folder}/${fileName}`, obf.getObfuscatedCode(), { encoding: "utf-8" }));
                     })
                 } else {
-                fs.copyFileSync(path, `${folder}/${fileName}`);
+                    console.log(`Copy ${path}`);
+                    fs.writeFileSync(`${folder}/${fileName}`, code, { encoding: "utf-8" });
                 }
+            } else {
+                fs.copyFileSync(path, `${folder}/${fileName}`);
             }
         }
     }
