@@ -7,9 +7,6 @@
 
 export default class Slider {
     constructor(id, minValue, maxValue) {
-        this.startX = 0;
-        this.x = 0;
-
         this.slider = document.querySelector(id);
         this.touchLeft = this.slider.querySelector('.slider-touch-left');
         this.touchRight = this.slider.querySelector('.slider-touch-right');
@@ -17,6 +14,7 @@ export default class Slider {
 
         this.min = parseFloat(this.slider.getAttribute('min'));
         this.max = parseFloat(this.slider.getAttribute('max'));
+        this.step = parseFloat(this.slider.getAttribute('step')) || 0.1;
 
         if (!minValue) minValue = this.min;
         if (!maxValue) maxValue = this.max;
@@ -24,62 +22,61 @@ export default class Slider {
         this.minValue = minValue;
         this.maxValue = maxValue;
 
-        this.step = parseFloat(this.slider.getAttribute('step'));
-
-        this.normalizeFact = 18;
-
-        this.reset();
-
-        this.maxX = this.slider.offsetWidth - this.touchRight.offsetWidth;
-        this.selectedTouch = null;
-        this.initialValue = this.lineSpan.offsetWidth - this.normalizeFact;
-
-        this.setMinValue(this.minValue);
-        this.setMaxValue(this.maxValue);
-
-        this.touchLeft.addEventListener('mousedown', (event) => this.onStart(document.querySelector('.slider-touch-left'), event));
-        this.touchRight.addEventListener('mousedown', (event) => this.onStart(document.querySelector('.slider-touch-right'), event));
-        this.touchLeft.addEventListener('touchstart', (event) => this.onStart(document.querySelector('.slider-touch-left'), event));
-        this.touchRight.addEventListener('touchstart', (event) => this.onStart(document.querySelector('.slider-touch-right'), event));
-    }
-
-    reset() {
-        this.touchLeft.style.left = '0px';
-        this.touchRight.style.left = (this.slider.offsetWidth - this.touchLeft.offsetWidth) + 'px';
-        this.lineSpan.style.marginLeft = '0px';
-        this.lineSpan.style.width = (this.slider.offsetWidth - this.touchLeft.offsetWidth) + 'px';
         this.startX = 0;
         this.x = 0;
+        this.selectedTouch = null;
+        
+        // On initialise visuellement les positions
+        // Note: On attend un petit délai ou un premier clic pour recalculer si l'onglet est caché
+        this.updateUIFromValues();
+
+        // Events
+        const startHandler = (elem, event) => this.onStart(elem, event);
+        
+        this.touchLeft.addEventListener('mousedown', (e) => startHandler(this.touchLeft, e));
+        this.touchRight.addEventListener('mousedown', (e) => startHandler(this.touchRight, e));
+        this.touchLeft.addEventListener('touchstart', (e) => startHandler(this.touchLeft, e));
+        this.touchRight.addEventListener('touchstart', (e) => startHandler(this.touchRight, e));
     }
 
-    setMinValue(minValue) {
-        let ratio = (minValue - this.min) / (this.max - this.min);
-        this.touchLeft.style.left = Math.ceil(ratio * (this.slider.offsetWidth - (this.touchLeft.offsetWidth + this.normalizeFact))) + 'px';
-        this.lineSpan.style.marginLeft = this.touchLeft.offsetLeft + 'px';
-        this.lineSpan.style.width = (this.touchRight.offsetLeft - this.touchLeft.offsetLeft) + 'px';
-    }
+    // Met à jour les positions des curseurs en fonction des valeurs min/max
+    updateUIFromValues() {
+        // Recalcul des dimensions (important si l'onglet était caché)
+        const rangeWidth = this.slider.offsetWidth - this.touchLeft.offsetWidth;
+        if(rangeWidth <= 0) return; // Sécurité si caché
 
-    setMaxValue(maxValue) {
-        var ratio = (maxValue - this.min) / (this.max - this.min);
-        this.touchRight.style.left = Math.ceil(ratio * (this.slider.offsetWidth - (this.touchLeft.offsetWidth + this.normalizeFact)) + this.normalizeFact) + 'px';
-        this.lineSpan.style.marginLeft = this.touchLeft.offsetLeft + 'px';
-        this.lineSpan.style.width = (this.touchRight.offsetLeft - this.touchLeft.offsetLeft) + 'px';
+        const totalValue = this.max - this.min;
+        
+        // Ratio (0 à 1)
+        const ratioMin = (this.minValue - this.min) / totalValue;
+        const ratioMax = (this.maxValue - this.min) / totalValue;
+
+        // Position en pixels
+        const leftPos = Math.round(ratioMin * rangeWidth);
+        const rightPos = Math.round(ratioMax * rangeWidth);
+
+        this.touchLeft.style.left = leftPos + 'px';
+        this.touchRight.style.left = rightPos + 'px';
+        
+        this.updateLine();
     }
 
     onStart(elem, event) {
         event.preventDefault();
-
-        if (elem === this.touchLeft)
-            this.x = this.touchLeft.offsetLeft;
-        else
-            this.x = this.touchRight.offsetLeft;
-
-        this.startX = event.pageX - this.x;
+        
+        // CORRECTION MAJEURE : On recalcule les limites au début du mouvement
+        // Cela règle le problème des sliders inversés ou bloqués si initialisés cachés
+        this.maxX = this.slider.offsetWidth - this.touchLeft.offsetWidth;
+        
         this.selectedTouch = elem;
+        this.x = this.selectedTouch.offsetLeft;
+        
+        // Support Tactile et Souris
+        const pageX = event.type.includes('touch') ? event.touches[0].pageX : event.pageX;
+        this.startX = pageX - this.x;
 
-        let self = this;
-        this.func1 = (event) => { this.onMove(event) };
-        this.func2 = (event) => { this.onStop(event) };
+        this.func1 = (e) => this.onMove(e);
+        this.func2 = (e) => this.onStop(e);
 
         document.addEventListener('mousemove', this.func1);
         document.addEventListener('mouseup', this.func2);
@@ -88,66 +85,78 @@ export default class Slider {
     }
 
     onMove(event) {
-        this.x = event.pageX - this.startX;
+        const pageX = event.type.includes('touch') ? event.touches[0].pageX : event.pageX;
+        this.x = pageX - this.startX;
 
+        // Limites et Collisions
         if (this.selectedTouch === this.touchLeft) {
-            if (this.x > this.touchRight.offsetLeft - this.selectedTouch.offsetWidth - 24)
-                this.x = this.touchRight.offsetLeft - this.selectedTouch.offsetWidth - 24;
-            else if (this.x < 0)
-                this.x = 0;
+            // Ne pas dépasser à gauche (0)
+            if (this.x < 0) this.x = 0;
+            // Ne pas dépasser le curseur de droite (moins une marge de 20px)
+            const limitRight = this.touchRight.offsetLeft - this.touchLeft.offsetWidth; 
+            if (this.x > limitRight) this.x = limitRight;
 
-            this.selectedTouch.style.left = this.x + 'px';
+            this.touchLeft.style.left = this.x + 'px';
+            
         } else if (this.selectedTouch === this.touchRight) {
-            if (this.x < this.touchLeft.offsetLeft + this.touchLeft.offsetWidth + 24) {
-                this.x = this.touchLeft.offsetLeft + this.touchLeft.offsetWidth + 24;
-            } else if (this.x > this.maxX)
-                this.x = this.maxX;
+            // Ne pas dépasser le curseur de gauche
+            const limitLeft = this.touchLeft.offsetLeft + this.touchLeft.offsetWidth;
+            if (this.x < limitLeft) this.x = limitLeft;
+            // Ne pas dépasser à droite (maxX)
+            if (this.x > this.maxX) this.x = this.maxX;
 
-            this.selectedTouch.style.left = this.x + 'px';
+            this.touchRight.style.left = this.x + 'px';
         }
 
-        this.lineSpan.style.marginLeft = this.touchLeft.offsetLeft + 'px';
-        this.lineSpan.style.width = this.touchRight.offsetLeft - this.touchLeft.offsetLeft + 'px';
-
+        this.updateLine();
         this.calculateValue();
     }
 
-    onStop(self, event) {
-        document.removeEventListener('mousemove', this.func1);
-        document.removeEventListener('mouseup', this.func2);
-        document.removeEventListener('touchmove', this.func1);
-        document.removeEventListener('touchend', this.func2);
-
-        this.selectedTouch = null;
-
-        this.calculateValue();
+    updateLine() {
+        // La ligne bleue commence au milieu du curseur gauche et finit au milieu du droit
+        // Pour faire simple : de leftEdgeGauche à leftEdgeDroit
+        const left = this.touchLeft.offsetLeft;
+        const right = this.touchRight.offsetLeft;
+        
+        this.lineSpan.style.marginLeft = left + 'px';
+        this.lineSpan.style.width = (right - left) + 'px';
     }
 
     calculateValue() {
-        let newValue = (this.lineSpan.offsetWidth - this.normalizeFact) / this.initialValue;
-        let minValue = this.lineSpan.offsetLeft / this.initialValue;
-        let maxValue = minValue + newValue;
+        const rangeWidth = this.slider.offsetWidth - this.touchLeft.offsetWidth;
+        if (rangeWidth <= 0) return;
 
-        minValue = minValue * (this.max - this.min) + this.min;
-        maxValue = maxValue * (this.max - this.min) + this.min;
+        // Calcul direct basé sur la position (plus fiable que la largeur de la ligne)
+        const leftRatio = this.touchLeft.offsetLeft / rangeWidth;
+        const rightRatio = this.touchRight.offsetLeft / rangeWidth;
 
-        if (this.step != 0.0) {
-            let multi = Math.floor(minValue / this.step);
-            this.minValue = this.step * multi;
+        // Conversion en valeur
+        let rawMin = leftRatio * (this.max - this.min) + this.min;
+        let rawMax = rightRatio * (this.max - this.min) + this.min;
 
-            multi = Math.floor(maxValue / this.step);
-            this.maxValue = this.step * multi;
-        }
+        // Arrondi au step près
+        this.minValue = Math.round(rawMin / this.step) * this.step;
+        this.maxValue = Math.round(rawMax / this.step) * this.step;
+        
+        // Petit nettoyage pour éviter les 3.000000004
+        this.minValue = parseFloat(this.minValue.toFixed(1));
+        this.maxValue = parseFloat(this.maxValue.toFixed(1));
 
         this.emit('change', this.minValue, this.maxValue);
     }
 
-    func = [];
+    onStop() {
+        document.removeEventListener('mousemove', this.func1);
+        document.removeEventListener('mouseup', this.func2);
+        document.removeEventListener('touchmove', this.func1);
+        document.removeEventListener('touchend', this.func2);
+        this.selectedTouch = null;
+    }
 
+    func = [];
     on(name, func) {
         this.func[name] = func;
     }
-
     emit(name, ...args) {
         if (this.func[name]) this.func[name](...args);
     }

@@ -10,7 +10,21 @@ body {
     user-select: none;
     color: var(--color);
     font-family: 'Poppins';
-    font-weight: bolder;
+    font-weight: 500;
+    overflow: hidden;
+    /* Assure que l'image de fond couvre tout */
+    background-size: cover;
+    background-position: center;
+    transition: background-image 0.5s ease;
+}
+
+/* Classe utilitaire pour l'effet verre */
+.glass-effect {
+    background: var(--background-element);
+    backdrop-filter: blur(var(--blur-strength));
+    -webkit-backdrop-filter: blur(var(--blur-strength));
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 32px 0 var(--shadow);
 }
 
 img {
@@ -22,163 +36,66 @@ img {
     outline: none;
 }
 
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.content-scroll {
-    overflow: auto;
-}
-
+/* Scrollbar fine et discrète */
 .content-scroll::-webkit-scrollbar {
-    width: 0;
+    width: 6px;
+}
+.content-scroll::-webkit-scrollbar-thumb {
+    background: var(--element-color);
+    border-radius: 10px;
+}
+.content-scroll::-webkit-scrollbar-track {
+    background: transparent;
 }
 
 .dragbar {
     position: fixed;
-    top: 0px;
-    left: 0px;
+    top: 0;
+    left: 0;
     width: 100%;
-    height: 26px;
+    height: 30px;
     -webkit-app-region: drag;
-    z-index: 11;
+    z-index: 50;
 }
 
-.darwin .frame {
-    background: transparent;
-    position: fixed;
-    top: 0px;
-    z-index: 11;
-    -webkit-app-region: no-drag;
-    display: none;
-}
-
+/* Boutons de fenêtre (fermer/réduire) */
 .other .frame {
     background: transparent;
     position: fixed;
-    top: 0px;
-    right: 0px;
-    z-index: 11;
-    -webkit-app-region: no-drag;
+    top: 0;
+    right: 0;
+    z-index: 51;
     display: none;
+    /* INDISPENSABLE : Rend les boutons cliquables au lieu de déplacer la fenêtre */
+    -webkit-app-region: no-drag; 
 }
 
 .frame.hide {
     display: block;
 }
 
-.darwin .button-frame {
-    position: relative;
-    display: table-cell;
-    width: 20px;
-    height: 26px;
-    transition: color .2s, background-color .2s;
-}
-
 .other .button-frame {
-    position: relative;
-    display: table-cell;
-    width: 30px;
-    height: 26px;
-    transition: color .2s, background-color .2s;
-    color: black;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 30px;
+    color: var(--color);
     cursor: pointer;
+    transition: background 0.2s;
+    /* Sécurité supplémentaire */
+    -webkit-app-region: no-drag; 
 }
 
-.button-frame:before {
-    position: absolute;
-    top: 6px;
-    left: 8px;
-    width: 14px;
-    height: 14px;
-    font-size: 14px;
-    color: #f8f9f9;
-}
-
-.darwin-icon-minimize,
-.darwin-icon-maximize,
-.darwin-icon-close {
-    position: relative;
-}
-
-.darwin-icon-minimize:before,
-.darwin-icon-maximize:before,
-.darwin-icon-close:before {
-    content: '';
-    position: absolute;
-    border-radius: 50%;
-    width: 12px;
-    height: 12px;
-    cursor: pointer;
-}
-
-.darwin-icon-maximize:before {
-    background: #07d014;
-}
-
-.darwin-icon-minimize:before {
-    background: #ffbd2e;
-}
-
-.darwin-icon-close:before {
-    background: #ff6047;
+.other .button-frame:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .icon-close:hover {
-    background: #e21212;
+    background: #ff4757 !important;
 }
 
-.icon-minimize:hover,
-.icon-restore-down:hover,
-.icon-maximize:hover {
-    background-color: #0000009d;
-}
-
-.popup {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    z-index: 10;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-
-.popup-tab {
-    width: 40%;
-    padding: 15px;
-    background: var(--background);
-    border-radius: 15px;
-    z-index: 10;
-}
-
-.popup-title {
-    text-align: center;
-    font-size: 2rem;
-    border-bottom: solid 4px var(--color);
-    margin-bottom: 1rem;
-}
-
-.popup-options {
-    display: none;
-    align-items: end;
-    flex-direction: column;
-}
-
-.popup-button {
-    background: none;
-    color: var(--color);
-    border: solid 4px var(--element-color);
-    border-radius: 10px;
-    padding: 0.3rem 4rem;
-    font-size: inherit;
-    font-weight: bold;
-    margin: 15px 10px;
-}
-
+/* Gestion des panneaux */
 .panel {
     position: absolute;
     width: 100%;
@@ -186,10 +103,59 @@ input::-webkit-inner-spin-button {
     opacity: 0;
     z-index: 0;
     pointer-events: none;
+    transition: opacity 0.4s ease;
 }
 
 .active {
     opacity: 1;
     z-index: 1;
     pointer-events: all;
+}
+
+/* Design des popups en verre */
+.popup {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    display: none;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(5px);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.popup-tab {
+    width: 450px;
+    padding: 25px;
+    border-radius: 20px;
+    background: var(--background-element);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    text-align: center;
+}
+
+.popup-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.popup-button {
+    background: var(--element-color);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 30px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: transform 0.1s;
+}
+
+.popup-button:active {
+    transform: scale(0.95);
 }

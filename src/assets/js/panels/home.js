@@ -15,7 +15,10 @@ class Home {
         this.news()
         this.socialLick()
         this.instancesSelect()
-        document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
+        document.querySelector('.settings-btn').addEventListener('click', e => {
+             if (this.statusInterval) clearInterval(this.statusInterval);
+             changePanel('settings')
+        })
     }
 
     async news() {
@@ -100,6 +103,15 @@ class Home {
         });
     }
 
+    // Méthode de boucle pour le statut
+    startStatusLoop(statusData) {
+        if (this.statusInterval) clearInterval(this.statusInterval);
+        setStatus(statusData);
+        this.statusInterval = setInterval(() => {
+            setStatus(statusData);
+        }, 5000);
+    }
+
     async instancesSelect() {
         let configClient = await this.db.readData('configClient')
         let auth = await this.db.readData('accounts', configClient.account_selected)
@@ -109,11 +121,13 @@ class Home {
         let instanceBTN = document.querySelector('.play-instance')
         let instancePopup = document.querySelector('.instance-popup')
         let instancesListPopup = document.querySelector('.instances-List')
-        let instanceCloseBTN = document.querySelector('.close-popup')
+        
+        // Element visuel du bouton sélecteur
+        let selectorBtnElement = document.querySelector('.instance-select');
 
         if (instancesList.length === 1) {
-            document.querySelector('.instance-select').style.display = 'none'
-            instanceBTN.style.paddingRight = '0'
+            if(selectorBtnElement) selectorBtnElement.style.display = 'none';
+            instanceBTN.style.justifyContent = 'center'; 
         }
 
         if (!instanceSelect) {
@@ -123,6 +137,8 @@ class Home {
             instanceSelect = newInstanceSelect.name
             await this.db.updateData('configClient', configClient)
         }
+        
+        if(selectorBtnElement) selectorBtnElement.textContent = instanceSelect;
 
         for (let instance of instancesList) {
             if (instance.whitelistActive) {
@@ -133,12 +149,13 @@ class Home {
                         let configClient = await this.db.readData('configClient')
                         configClient.instance_select = newInstanceSelect.name
                         instanceSelect = newInstanceSelect.name
-                        setStatus(newInstanceSelect.status)
+                        this.startStatusLoop(newInstanceSelect.status)
                         await this.db.updateData('configClient', configClient)
                     }
                 }
             } else console.log(`Initializing instance ${instance.name}...`)
-            if (instance.name == instanceSelect) setStatus(instance.status)
+            
+            if (instance.name == instanceSelect) this.startStatusLoop(instance.status)
         }
 
         instancePopup.addEventListener('click', async e => {
@@ -155,9 +172,12 @@ class Home {
                 await this.db.updateData('configClient', configClient)
                 instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
                 instancePopup.style.display = 'none'
+                
+                if(selectorBtnElement) selectorBtnElement.textContent = newInstanceSelect;
+
                 let instance = await config.getInstanceList()
                 let options = instance.find(i => i.name == configClient.instance_select)
-                await setStatus(options.status)
+                this.startStatusLoop(options.status)
             }
         })
 
@@ -166,7 +186,7 @@ class Home {
             let instanceSelect = configClient.instance_select
             let auth = await this.db.readData('accounts', configClient.account_selected)
 
-            if (e.target.classList.contains('instance-select')) {
+            if (e.target.closest('.instance-select')) {
                 instancesListPopup.innerHTML = ''
                 for (let instance of instancesList) {
                     if (instance.whitelistActive) {
@@ -187,14 +207,14 @@ class Home {
                         }
                     }
                 }
-
                 instancePopup.style.display = 'flex'
+            
+            } else if (e.target.closest('.play-btn')) {
+                this.startGame()
             }
-
-            if (!e.target.classList.contains('instance-select')) this.startGame()
         })
-
-        instanceCloseBTN.addEventListener('click', () => instancePopup.style.display = 'none')
+        
+        // SUPPRESSION DE L'EVENT LISTENER DU BOUTON CLOSE
     }
 
     async startGame() {
@@ -205,6 +225,7 @@ class Home {
         let options = instance.find(i => i.name == configClient.instance_select)
 
         let playInstanceBTN = document.querySelector('.play-instance')
+        let playBtnOnly = document.querySelector('.play-btn') // Le bouton seul
         let infoStartingBOX = document.querySelector('.info-starting-game')
         let infoStarting = document.querySelector(".info-starting-game-text")
         let progressBar = document.querySelector('.progress-bar')
@@ -250,7 +271,13 @@ class Home {
 
         launch.Launch(opt);
 
-        playInstanceBTN.style.display = "none"
+        // On grise le bouton jouer au lieu de tout cacher
+        if(playBtnOnly) {
+            playBtnOnly.style.opacity = '0.5';
+            playBtnOnly.style.pointerEvents = 'none';
+            playBtnOnly.textContent = '...';
+        }
+        
         infoStartingBOX.style.display = "block"
         progressBar.style.display = "";
         ipcRenderer.send('main-window-progress-load')
@@ -308,7 +335,14 @@ class Home {
             };
             ipcRenderer.send('main-window-progress-reset')
             infoStartingBOX.style.display = "none"
-            playInstanceBTN.style.display = "flex"
+            
+            // Réactiver le bouton
+            if(playBtnOnly) {
+                playBtnOnly.style.opacity = '1';
+                playBtnOnly.style.pointerEvents = 'auto';
+                playBtnOnly.textContent = 'Jouer';
+            }
+            
             infoStarting.innerHTML = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log('Close');
@@ -329,7 +363,14 @@ class Home {
             };
             ipcRenderer.send('main-window-progress-reset')
             infoStartingBOX.style.display = "none"
-            playInstanceBTN.style.display = "flex"
+            
+            // Réactiver le bouton en cas d'erreur
+            if(playBtnOnly) {
+                playBtnOnly.style.opacity = '1';
+                playBtnOnly.style.pointerEvents = 'auto';
+                playBtnOnly.textContent = 'Jouer';
+            }
+            
             infoStarting.innerHTML = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log(err);

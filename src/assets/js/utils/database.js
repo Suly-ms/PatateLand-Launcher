@@ -4,6 +4,7 @@
  */
 
 const { NodeBDD, DataType } = require('node-bdd');
+const fs = require('fs');
 const nodedatabase = new NodeBDD()
 const { ipcRenderer } = require('electron')
 
@@ -11,11 +12,17 @@ let dev = process.env.NODE_ENV === 'dev';
 
 class database {
     async creatDatabase(tableName, tableConfig) {
+        let dbPath = `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`;
+
+        if (!fs.existsSync(dbPath)) {
+            fs.mkdirSync(dbPath, { recursive: true });
+        }
+
         return await nodedatabase.intilize({
             databaseName: 'Databases',
             fileType: dev ? 'sqlite' : 'db',
             tableName: tableName,
-            path: `${await ipcRenderer.invoke('path-user-data')}${dev ? '../..' : '/databases'}`,
+            path: dbPath,
             tableColumns: tableConfig,
         });
     }
