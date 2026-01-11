@@ -7,46 +7,45 @@ const { NodeBDD, DataType } = require('node-bdd');
 const nodedatabase = new NodeBDD();
 const { ipcRenderer } = require('electron');
 const fs = require('fs');
+const path = require('path');
 
 let dev = process.env.NODE_ENV === 'dev';
-
-// Cache pour éviter de ré-initialiser la DB 50 fois par seconde
-const activeConnections = {};
+let dbInstance = null; // Variable pour garder la connexion ouverte
 
 class database {
     async creatDatabase(tableName, tableConfig) {
-        // Si la connexion existe déjà, on la retourne directement
-        if (activeConnections[tableName]) {
-            return activeConnections[tableName];
-        }
+        // 1. Si la connexion est déjà active, on ne touche à rien (évite de ré-ouvrir)
+        if (dbInstance) return dbInstance;
 
-        // --- CONFIGURATION DU CHEMIN ---
+        // --- CALCUL DU CHEMIN ---
         let dataPath = await ipcRenderer.invoke('path-user-data');
-        // En prod, on s'assure que le dossier databases est bien dans le userData
-        let dbFolder = dev ? '../..' : '/databases';
-        let fullPath = `${dataPath}${dbFolder}`;
+        let dbFolder = dev ? '../..' : 'databases';
+        // Utilisation de path.join pour un chemin correct sous Windows
+        let fullPath = dev ? path.resolve(dataPath, dbFolder) : path.join(dataPath, dbFolder);
 
-        if (!dev && !fs.existsSync(fullPath)) {
+        // 2. On s'assure que le DOSSIER existe
+        if (!fs.existsSync(fullPath)) {
             try {
                 fs.mkdirSync(fullPath, { recursive: true });
             } catch (err) {
-                console.error("Impossible de créer le dossier database:", err);
+                console.error("Erreur création dossier:", err);
             }
         }
-        // -------------------------------
 
-        // --- FIX CRITIQUE : Toujours utiliser 'sqlite' ---
-        let table = await nodedatabase.intilize({
+        // 3. INITIALISATION SÉCURISÉE
+        // Le mode 'sqlite' vérifie automatiquement si le fichier existe.
+        // - S'il existe : il se connecte sans rien effacer.
+        // - S'il n'existe pas : il le crée.
+        // C'est le mode 'db' (JSON) qui causait l'effacement.
+        dbInstance = await nodedatabase.intilize({
             databaseName: 'Databases',
-            fileType: 'sqlite', // <--- FORCEZ CECI MÊME EN PROD (ne mettez pas 'db')
+            fileType: 'sqlite', // <--- FORCEZ CECI (C'est la clé pour ne pas écraser)
             tableName: tableName,
             path: fullPath,
             tableColumns: tableConfig,
         });
 
-        // On sauvegarde la connexion pour la réutiliser
-        activeConnections[tableName] = table;
-        return table;
+        return dbInstance;
     }
 
     async getDatabase(tableName) {
@@ -78,6 +77,7 @@ class database {
     async readAllData(tableName) {
         let table = await this.getDatabase(tableName);
         let data = await nodedatabase.getAllData(table)
+        if (!data) return [];
         return data.map(info => {
             let id = info.id
             info = JSON.parse(info.json_data)

@@ -42,7 +42,7 @@ async function changePanel(id) {
     let panel = document.querySelector(`.${id}`);
     let active = document.querySelector(`.active`)
     if (active) active.classList.toggle("active");
-    panel.classList.add("active");
+    if (panel) panel.classList.add("active");
 }
 
 async function appdata() {
@@ -65,27 +65,47 @@ async function addAccount(data) {
             <div class="icon-account-delete delete-profile-icon"></div>
         </div>
     `
-    return document.querySelector('.accounts-list').appendChild(div);
+    // Sécurité si .accounts-list n'existe pas encore
+    let list = document.querySelector('.accounts-list');
+    if (list) return list.appendChild(div);
 }
 
+// --- CORRECTION MAJEURE ICI ---
 async function accountSelect(data) {
-    let account = document.getElementById(`${data.ID}`);
+    if (!data) return;
+
+    // Gestion flexible : accepte soit un objet {ID: '...'}, soit l'ID directement
+    let id = (data.ID !== undefined) ? data.ID : data;
+    
+    let account = document.getElementById(`${id}`);
     let activeAccount = document.querySelector('.account-select')
 
-    if (activeAccount) activeAccount.classList.toggle('account-select');
-    account.classList.add('account-select');
-    if (data?.profile?.skins[0]?.base64) headplayer(data.profile.skins[0].base64);
+    if (activeAccount) activeAccount.classList.remove('account-select');
+    
+    // Vérification que l'élément existe avant d'accéder à classList
+    if (account) {
+        account.classList.add('account-select');
+        // On ne met l'image que si 'data' est un objet complet avec profil
+        if (data?.profile?.skins?.[0]?.base64) {
+            headplayer(data.profile.skins[0].base64);
+        }
+    } else {
+        console.warn(`[accountSelect] Impossible de sélectionner le compte ${id} : élément introuvable.`);
+    }
 }
 
 async function headplayer(skinBase64) {
     let skin = await new skin2D().creatHeadTexture(skinBase64);
-    document.querySelector(".player-head").style.backgroundImage = `url(${skin})`;
+    let headElement = document.querySelector(".player-head");
+    if(headElement) headElement.style.backgroundImage = `url(${skin})`;
 }
 
 async function setStatus(opt) {
     let nameServerElement = document.querySelector('.server-status-name')
     let statusServerElement = document.querySelector('.server-status-text')
     let playersOnline = document.querySelector('.status-player-count .player-count')
+
+    if (!nameServerElement || !statusServerElement) return;
 
     if (!opt) {
         statusServerElement.classList.add('red')

@@ -137,11 +137,23 @@ class Launcher {
         if (accounts?.length) {
             for (let account of accounts) {
                 let account_ID = account.ID
+
+                // --- SECURITE ANTI-CORRUPTION ---
+                if (!account.meta) {
+                    console.error(`[Account] Compte corrompu détecté (ID: ${account_ID}), suppression...`);
+                    await this.db.deleteData('accounts', account_ID);
+                    continue;
+                }
+                // -------------------------------
+
                 if (account.error) {
                     await this.db.deleteData('accounts', account_ID)
                     continue
                 }
+                
+                // Vérification des types de compte
                 if (account.meta.type === 'Xbox') {
+                    // ... (Code existant pour Xbox)
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
                         title: 'Connexion',
@@ -166,7 +178,9 @@ class Launcher {
                     await this.db.updateData('accounts', refresh_accounts, account_ID)
                     await addAccount(refresh_accounts)
                     if (account_ID == account_selected) accountSelect(refresh_accounts)
+
                 } else if (account.meta.type == 'AZauth') {
+                    // ... (Code existant pour AZauth)
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
                         title: 'Connexion',
@@ -190,7 +204,9 @@ class Launcher {
                     this.db.updateData('accounts', refresh_accounts, account_ID)
                     await addAccount(refresh_accounts)
                     if (account_ID == account_selected) accountSelect(refresh_accounts)
+
                 } else if (account.meta.type == 'Mojang') {
+                    // ... (Code existant pour Mojang/Crack)
                     console.log(`Account Type: ${account.meta.type} | Username: ${account.name}`);
                     popupRefresh.openPopup({
                         title: 'Connexion',
@@ -233,33 +249,39 @@ class Launcher {
                     }
                 }
             }
-
-            accounts = await this.db.readAllData('accounts')
-            configClient = await this.db.readData('configClient')
-            account_selected = configClient ? configClient.account_selected : null
-
-            if (!account_selected) {
-                let uuid = accounts[0].ID
-                if (uuid) {
-                    configClient.account_selected = uuid
-                    await this.db.updateData('configClient', configClient)
-                    accountSelect(uuid)
-                }
-            }
-
-            if (!accounts.length) {
-                config.account_selected = null
-                await this.db.updateData('configClient', config);
-                popupRefresh.closePopup()
-                return changePanel("login");
-            }
-
-            popupRefresh.closePopup()
-            changePanel("home");
-        } else {
-            popupRefresh.closePopup()
-            changePanel('login');
         }
+
+        // --- CORRECTION DU PLANTAGE ---
+        
+        // 1. On recharge les données
+        accounts = await this.db.readAllData('accounts')
+        configClient = await this.db.readData('configClient')
+
+        // 2. On vérifie D'ABORD si la liste est vide
+        if (!accounts || accounts.length === 0) {
+            if(configClient) {
+                configClient.account_selected = null
+                await this.db.updateData('configClient', configClient);
+            }
+            popupRefresh.closePopup()
+            return changePanel("login"); // Retour direct au login sans erreur
+        }
+
+        // 3. Si la liste n'est pas vide, on peut sélectionner un compte par défaut
+        account_selected = configClient ? configClient.account_selected : null
+
+        if (!account_selected) {
+            // accounts[0] existe forcément ici car on a vérifié accounts.length juste avant
+            let uuid = accounts[0].ID 
+            if (uuid) {
+                configClient.account_selected = uuid
+                await this.db.updateData('configClient', configClient)
+                accountSelect(uuid)
+            }
+        }
+
+        popupRefresh.closePopup()
+        changePanel("home");
     }
 }
 
