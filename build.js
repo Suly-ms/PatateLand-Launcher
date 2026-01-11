@@ -94,7 +94,12 @@ class Index {
                     target: [{
                         target: "nsis",
                         arch: "x64"
-                    }]
+                    }],
+                    asarUnpack: [
+                        "**/node_modules/sqlite3/**/*",
+                        "**/node_modules/better-sqlite3/**/*", 
+                        "**/node_modules/node-bdd/**/*"
+                    ]
                 },
                 nsis: {
                     oneClick: true,

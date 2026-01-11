@@ -29,7 +29,7 @@ class database {
 
         return await nodedatabase.intilize({
             databaseName: 'Databases',
-            fileType: dev ? 'sqlite' : 'db',
+            fileType: 'sqlite',
             tableName: tableName,
             path: fullPath,
             tableColumns: tableConfig,
