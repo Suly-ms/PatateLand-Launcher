@@ -2,7 +2,7 @@
     "name": "PatateLand-Launcher",
     "preductname": "PatateLand Launcher",
     "version": "1.1.8",
-    "description": "Launcher Minecraft pour le serveur PatateLand",
+    "description": "Launcher Minecraft pour le serveur PatateLand.",
     "main": "src/app.js",
     "author": {
         "name": "Suly, Inc.",
