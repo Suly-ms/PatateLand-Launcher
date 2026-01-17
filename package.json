@@ -9,7 +9,7 @@
         "email": "contact@luuxis.fr",
         "url": "https://github.com/luuxis"
     },
-    "url": "http://luuxcraft.fr/api/user/bb8f5247-1d38-41bb-ab6d-3200471a06b2",
+    "url": "https://filelauncher.patateland.wstr.fr",
     "scripts": {
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
