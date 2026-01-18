@@ -9,7 +9,7 @@
         "email": "/",
         "url": "https://github.com/Suly-ms"
     },
-    "url": "https://filelauncher.patateland.wstr.fr/",
+    "url": "https://filelauncher.patateland.wstr.fr/dev",
     "scripts": {
         "start": "cross-env-shell NODE_ENV=dev electron .",
         "dev": "cross-env-shell DEV_TOOL=open nodemon --exec npm start",
