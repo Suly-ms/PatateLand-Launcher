@@ -2,7 +2,7 @@
     "name": "PatateLand",
     "preductname": "PatateLand Launcher",
     "version": "1.1.14",
-    "description": "Launcher Minecraft moddé personnalisé pour le serveur PatateLand",
+    "description": "Launcher Minecraft moddé pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
         "name": "Suly-ms, Inc.",
