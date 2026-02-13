@@ -20,7 +20,7 @@ class Login {
                 this.getAZauth();
             }
         }
-        
+
         document.querySelector('.cancel-home').addEventListener('click', () => {
             document.querySelector('.cancel-home').style.display = 'none'
             changePanel('settings')
@@ -118,6 +118,10 @@ class Login {
         let AZauthCancelA2F = document.querySelector('.cancel-AZauth-A2F');
 
         loginAZauth.style.display = 'block';
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") AZauthConnectBTN.click();
+        });
 
         AZauthConnectBTN.addEventListener('click', async () => {
             PopupLogin.openPopup({
@@ -218,29 +222,3 @@ class Login {
     }
 }
 export default Login;
-const AZauthInputs = () => {
-    const emailInput = document.querySelector(".email-AZauth");
-    const passwordInput = document.querySelector(".password-AZauth");
-    const connectButton = document.querySelector(".connect-AZauth");
-
-    if (!emailInput || !passwordInput || !connectButton) return;
-
-    const triggerConnect = (event) => {
-        if (event.key === "Enter") {
-            connectButton.click();
-        }
-    };
-
-    emailInput.addEventListener("keydown", triggerConnect);
-    passwordInput.addEventListener("keydown", triggerConnect);
-};
-
-// Vérifier toutes les 100ms si le formulaire AZauth est présent
-const interval = setInterval(() => {
-    const loginForm = document.querySelector(".login-AZauth");
-    if (loginForm) {
-        AZauthInputs();
-        clearInterval(interval);
-    }
-}, 100);
-
