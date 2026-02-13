@@ -218,3 +218,29 @@ class Login {
     }
 }
 export default Login;
+const AZauthInputs = () => {
+    const emailInput = document.querySelector(".email-AZauth");
+    const passwordInput = document.querySelector(".password-AZauth");
+    const connectButton = document.querySelector(".connect-AZauth");
+
+    if (!emailInput || !passwordInput || !connectButton) return;
+
+    const triggerConnect = (event) => {
+        if (event.key === "Enter") {
+            connectButton.click();
+        }
+    };
+
+    emailInput.addEventListener("keydown", triggerConnect);
+    passwordInput.addEventListener("keydown", triggerConnect);
+};
+
+// Vérifier toutes les 100ms si le formulaire AZauth est présent
+const interval = setInterval(() => {
+    const loginForm = document.querySelector(".login-AZauth");
+    if (loginForm) {
+        AZauthInputs();
+        clearInterval(interval);
+    }
+}, 100);
+
