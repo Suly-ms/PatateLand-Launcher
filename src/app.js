@@ -7,10 +7,9 @@ const { app, ipcMain, nativeTheme } = require('electron');
 const { Microsoft } = require('minecraft-java-core');
 const { autoUpdater } = require('electron-updater')
 
-let store = null;
-
 const path = require('path');
 const fs = require('fs');
+const Store = require('electron-store');
 
 const UpdateWindow = require("./assets/js/windows/updateWindow.js");
 const MainWindow = require("./assets/js/windows/mainWindow.js");
@@ -26,19 +25,10 @@ if (dev) {
     app.setPath('appData', appdata)
 }
 
+Store.initRenderer();
+
 if (!app.requestSingleInstanceLock()) app.quit();
-else app.whenReady().then(async () => {
-    const { default: Store } = await import('electron-store');
-    const userDataPath = app.getPath('userData');
-
-    store = new Store({
-        name: 'launcher-data',
-        cwd: `${userDataPath}${dev ? '/..' : '/databases'}`,
-        encryptionKey: dev ? undefined : 'selvania-launcher-key',
-    });
-
-    ipcMain.handle('store:get', (_, key) => store.get(key));
-    ipcMain.handle('store:set', (_, key, value) => store.set(key, value));
+else app.whenReady().then(() => {
     if (dev) return MainWindow.createWindow()
     UpdateWindow.createWindow()
 });
