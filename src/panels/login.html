@@ -1,50 +1,72 @@
 <div class="container">
-    <div class="login-home login-tabs">
-        <div class="login-text">Veuillez vous identifier afin de jouer.</div>
-
-        <div class="login-options">
-            <button class="connect connect-home">Connexion</button>
-            <button class="cancel cancel-home"  style="display: none;">annuler</button>
-        </div>
-    </div>
-
-    <div class="login-offline login-tabs">
-        <div class="login-text">Veuillez entrer votre pseudo</div>
-
-        <div class="input-login">
-            <input type="text" class="email email-offline" placeholder="Pseudo" />
-        </div>
-
-        <div class="login-options">
-            <button class="connect connect-offline">Connexion</button>
-            <button class="cancel cancel-offline" style="display: none;">annuler</button>
-        </div>
-    </div>
-
-    <div class="login-AZauth login-tabs">
-        <div class="login-text">Veuillez vous connecter afin de jouer.</div>
-
-        <div class="input-login">
-            <input type="text" class="email email-AZauth" placeholder="E-mail" />
-            <input type="password" class="password password-AZauth" placeholder="Password" />
+    <div class="login-card glass-effect">
+        
+        <div class="login-content login-home" style="display: none;">
+            <div class="login-icon icon-microsoft"></div>
+            <div class="login-title">Connexion</div>
+            <div class="login-subtitle">Veuillez vous identifier pour jouer.</div>
+            
+            <button class="login-btn connect connect-home">
+                <span>Connexion Microsoft</span>
+            </button>
+            
+            <button class="login-btn cancel cancel-home" style="display: none;">
+                <span>Annuler</span>
+            </button>
         </div>
 
-        <div class="login-options">
-            <button class="connect connect-AZauth">Connexion</button>
-            <button class="cancel cancel-AZauth" style="display: none;">annuler</button>
-        </div>
-    </div>
+        <div class="login-content login-offline" style="display: none;">
+            <div class="login-icon icon-user"></div>
+            <div class="login-title">Mode Hors-ligne</div>
+            <div class="login-subtitle">Entrez un pseudo pour commencer.</div>
+            
+            <div class="input-group">
+                <input type="text" class="input-field email email-offline" placeholder="Pseudo" />
+            </div>
 
-    <div class="login-AZauth-A2F login-tabs">
-        <div class="login-text">Veuillez entrer le code de sécurité.</div>
-
-        <div class="input-login">
-            <input type="text" class="A2F A2F-AZauth" placeholder="Code" />
+            <button class="login-btn connect connect-offline">
+                <span>Connexion</span>
+            </button>
+            
+            <button class="login-btn cancel cancel-offline" style="display: none;">
+                <span>Annuler</span>
+            </button>
         </div>
 
-        <div class="login-options">
-            <button class="connect connect-AZauth-A2F">Valider</button>
-            <button class="cancel cancel-AZauth-A2F">annuler</button>
+        <div class="login-content login-AZauth" style="display: none;">
+            <div class="login-title">Authentification</div>
+            <div class="login-subtitle">Entrez vos identifiants.</div>
+
+            <div class="input-group">
+                <input type="text" class="input-field email email-AZauth" placeholder="Email" />
+                <input type="password" class="input-field password password-AZauth" placeholder="Mot de passe" />
+            </div>
+
+            <button class="login-btn connect connect-AZauth">
+                <span>Connexion</span>
+            </button>
+            
+            <button class="login-btn cancel cancel-AZauth" style="display: none;">
+                <span>Annuler</span>
+            </button>
         </div>
+
+        <div class="login-content login-AZauth-A2F" style="display: none;">
+            <div class="login-icon icon-shield"></div>
+            <div class="login-title">Sécurité</div>
+            <div class="login-subtitle">Code de vérification requis.</div>
+
+            <div class="input-group">
+                <input type="text" class="input-field A2F A2F-AZauth" placeholder="Code A2F" />
+            </div>
+
+            <button class="login-btn connect connect-AZauth-A2F">
+                <span>Valider</span>
+            </button>
+            <button class="login-btn cancel cancel-AZauth-A2F">
+                <span>Retour</span>
+            </button>
+        </div>
+
     </div>
 </div>

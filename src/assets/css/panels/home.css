@@ -3,309 +3,407 @@
     height: 100%;
     flex-direction: column;
     align-items: center;
+    justify-content: space-between;
 }
 
-/*******************************************************************************
- *                                                                             *
- * Status server                                                               *
- *                                                                             *
- ******************************************************************************/
-
+/* --- Status Server --- */
 .status-server {
-    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: var(--background);
-    width: 25rem;
-    height: 3rem;
-    color: var(--color);
-    border-radius: 10px;
-    margin-top: 3rem;
-    padding: 1rem;
-    text-align: center;
+    background: var(--background-element);
+    backdrop-filter: blur(var(--blur-strength));
+    border: 1px solid var(--border-color);
+    width: 60%;
+    height: 60px;
+    border-radius: 50px;
+    margin-top: 50px;
+    padding: 0 20px;
+    box-shadow: 0 10px 20px var(--shadow);
 }
 
 .server-status-icon {
-    height: 3.3rem;
+    height: 40px;
+    filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));
 }
 
 .server-status-name {
-    font-size: 1.5rem;
-    color: var(--color);
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .server-status-text {
-    font-size: 0.6rem;
-    color: #1AC707;
+    font-size: 0.8rem;
+    color: #2ecc71;
+    font-weight: 600;
 }
 
-.server-status-infos .red {
-    color: #FF0409;
-}
+.server-status-infos .red { color: #ff4757; }
 
 .status-player-count {
-    background: var(--shadow);
-    min-width: 3rem;
-    height: 3rem;
-    border-radius: 10px;
+    background: rgba(0,0,0,0.2);
+    padding: 5px 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
 }
 
 .player-count {
-    font-size: 1.5rem;
-    margin: 0.4rem 0.5rem;
+    font-size: 1.1rem;
+    margin-right: 10px;
 }
 
 .status-player-count:after {
-    position: absolute;
     content: '';
     width: 10px;
     height: 10px;
-    top: 10px;
-    right: 10px;
-    border-radius: 15px;
-    border: solid 5px var(--background);
-    background: #1AC707;
+    border-radius: 50%;
+    background: #2ecc71;
+    box-shadow: 0 0 10px #2ecc71;
 }
+.red:after { background: #ff4757; box-shadow: 0 0 10px #ff4757; }
 
-.red:after {
-    background: #FF0409;
-}
-
+/* --- News --- */
 .home-bottom {
-    position: relative;
     width: 100%;
-    height: calc(100% - 80px - 8rem);
+    height: calc(100% - 180px);
     display: flex;
+    justify-content: center;
 }
-
-/*******************************************************************************
- *                                                                             *
- * news server                                                                 *
- *                                                                             *
- ******************************************************************************/
 
 .new-tab {
+    width: 80%;
+    height: 95%;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    width: 85%;
-    height: 100%;
-}
-
-.titre-tab-new {
-    margin-top: 1rem;
-    font-size: 2rem;
-    padding: 0.5rem 1rem;
-    border-radius: 2rem;
-    background: var(--background-transparent);
-    color: var(--color);
 }
 
 .news-list {
-    width: 90%;
-    height: 100%;
-    border-radius: 10px;
-    margin: 1rem 0;
+    overflow-y: auto;
+    padding-right: 10px;
 }
 
 .news-block {
-    width: 100%;
-    margin: 0 0 1rem 0;
-    border-radius: 10px;
-    background: var(--background-transparent);
+    background: var(--background-element);
+    backdrop-filter: blur(var(--blur-strength));
+    border: 1px solid var(--border-color);
+    margin-bottom: 20px;
+    border-radius: 15px;
+    transition: transform 0.2s;
+}
+
+.news-block:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.15);
 }
 
 .news-header {
     display: flex;
     justify-content: space-between;
-    padding: 1rem 1.5rem;
     align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(0,0,0,0.1);
+    border-radius: 15px 15px 0 0;
 }
 
 .header-text .title {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    font-size: 1.2rem;
-    text-align: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-left: 15px;
 }
 
 .news-header .date {
     display: flex;
     flex-direction: column;
     align-items: center;
-}
-
-.news-content .bbWrapper {
-    padding: 0 1.5rem;
-    padding-bottom: 1rem;
-    font-size: 1.2rem;
-
-}
-
-.news-content .bbWrapper p {
-    font-weight: 100;
-    margin: 0;
-
-}
-
-.news-content .bbWrapper .news-author {
-    margin-top: 1rem;
-    text-align: end;
-    font-size: 0.8rem;
-}
-
-.news-content .bbWrapper .news-author span {
-    font-weight: 700;
-}
-
-/*******************************************************************************
- *                                                                             *
- * social server                                                               *
- *                                                                             *
- ******************************************************************************/
-
-.social-tab {
-    position: absolute;
-    display: flex;
-    bottom: 0;
-    right: 0;
-    width: 15%;
-    height: calc(80% - 1rem);
     justify-content: center;
-    margin-bottom: 1rem;
+    min-width: 60px;
 }
 
-.social-list {
-    border-radius: 10px;
-    height: 100%;
+.news-content {
+    padding: 20px;
+    font-weight: 300;
+    line-height: 1.5;
 }
 
-.social-block {
-    display: flex;
-    background: var(--background-transparent);
-    width: 90px;
-    height: 90px;
-    margin-bottom: 1rem;
-    border-radius: 10px;
-    font-size: 2rem;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-}
-
-.social-block .icon-social {
-    pointer-events: none;
-    background-repeat: no-repeat;
-    height: 55%;
-    width: 55%;
-    filter: var(--svg-color);
-}
-
-/*******************************************************************************
- *                                                                             *
- * sidebar                                                                     *
- *                                                                             *
- ******************************************************************************/
-
+/* --- Barre du bas (Sidebar) --- */
 .sidebar {
+    width: 90%;
+    height: 100px;
+    margin-bottom: 20px;
+    border-radius: 20px;
+    background: var(--background-element);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 -10px 30px var(--shadow);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
-    height: 90px;
-    background: var(--background-transparent);
-}
-
-.player-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-radius: 15px;
-    height: 3rem;
-    margin: 0 1.5rem;
+    padding: 0 30px;
+    position: relative;
 }
 
 .player-head {
-    background: url('../../images/default/setve.png'), no-repeat;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
     background-size: cover;
+    box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    border: 2px solid var(--element-color);
     image-rendering: pixelated;
-    transition: var(--transition);
-    height: 3rem;
-    width: 3rem;
-    pointer-events: none;
-    border-radius: 15px;
+    background-color: #000;
 }
 
-.player-menu {
-    color: var(--element-color);
-    transform: rotate(270deg);
-    pointer-events: none;
+/* --- NOUVEAU : Zone centrale verticale --- */
+.play-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
+/* --- NOUVEAU : Titre "Choisissez votre instance" --- */
+.play-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+/* Conteneur des boutons (Jouer + Instance) */
 .play-elements {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    gap: 15px;
 }
 
+/* Wrapper principal : Jouer à gauche, Selecteur à droite */
 .play-instance {
     display: flex;
-    justify-content: space-between;
+    flex-direction: row; 
     align-items: center;
-    position: relative;
-    border: solid 3px var(--element-color);
-    border-radius: 15px;
-    height: 3.2rem;
-    padding-right: 1.9rem;
-}
-
-.play-btn {
-    border: none;
-    border-radius: 10px;
+    gap: 15px;
     background: none;
-    color: var(--color);
-    font-size: 2rem;
-    font-weight: bolder;
-    padding: 0 1.5rem;
-    pointer-events: none;
+    border: none;
+    box-shadow: none;
 }
 
+/* Bouton JOUER (Vert) */
+.play-btn {
+    background: linear-gradient(90deg, var(--element-color), #009e66);
+    height: 50px;
+    padding: 0 30px;
+    border-radius: 15px;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 189, 122, 0.4);
+    transition: transform 0.2s;
+    pointer-events: auto;
+    text-transform: uppercase;
+}
+.play-btn:hover { transform: scale(1.05); }
+
+/* Bouton SELECTEUR D'INSTANCE (Rouge) */
 .instance-select {
     display: flex;
     align-items: center;
-    position: absolute;
-    right: -3;
-    top: -2;
-    color: var(--element-color);
-    font-size: 1rem;
-    height: calc(100% - 1px);
-    border: solid 3px var(--element-color);
-    text-align: center;
+    justify-content: center;
+    
+    background: linear-gradient(90deg, #e74c3c, #c0392b); 
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4); 
+    
+    height: 50px;
+    min-width: 180px; 
+    padding: 0 20px;
     border-radius: 15px;
-    padding: 0 0.5rem;
+    
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    
     cursor: pointer;
+    pointer-events: auto;
+    transition: transform 0.2s;
 }
 
-.instance-select:before {
-    transform: rotate(270deg);
-    pointer-events: none;
+.instance-select:hover { 
+    transform: scale(1.05);
+    background: linear-gradient(90deg, #c0392b, #e74c3c);
 }
 
+.instance-select:before { display: none !important; }
+.instance-select:after { display: none !important; }
+
+.instance-popup {
+    position: absolute;
+    display: none; /* Géré par le JS */
+    width: 100%;
+    height: 100%;
+    top: 0; left: 0;
+    z-index: 100;
+    
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+/* Animation d'apparition */
+@keyframes fadeIn {
+    to { opacity: 1; }
+}
+
+/* La fenêtre elle-même */
+.instances-tab {
+    position: relative;
+    width: 450px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    
+    background: var(--background-element); /* Utilise la couleur du thème */
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    
+    border-radius: 25px;
+    padding: 30px;
+    text-align: center;
+    transform: scale(0.9);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+    to { transform: scale(1); }
+}
+
+/* Titre de la fenêtre */
+.instances-tab p {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color);
+    margin: 0 0 25px 0;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--element-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Liste des instances (zone défilable) */
+.instances-List {
+    width: 100%;
+    overflow-y: auto;
+    max-height: 400px;
+    padding-right: 5px; /* Espace pour la scrollbar */
+}
+
+/* Scrollbar personnalisée pour la liste */
+.instances-List::-webkit-scrollbar {
+    width: 6px;
+}
+.instances-List::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 10px;
+}
+.instances-List::-webkit-scrollbar-thumb {
+    background: var(--element-color);
+    border-radius: 10px;
+}
+
+/* Chaque bouton d'instance */
+.instance-elements {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--color);
+    
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    border-radius: 15px;
+    
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Effet au survol */
+.instance-elements:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    border-color: var(--element-color);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Instance sélectionnée (Active) */
+.active-instance {
+    background: linear-gradient(135deg, var(--element-color), #009e66) !important;
+    color: white !important;
+    border: none !important;
+    box-shadow: 0 8px 20px rgba(0, 189, 122, 0.4) !important;
+    transform: scale(1.02);
+}
+
+/* Petit indicateur visuel (point) pour l'instance active */
+.active-instance:before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 0 10px white;
+}
+
+/* MASQUER LE BOUTON CROIX ROUGE DE LA POPUP */
+.close-popup {
+    display: none !important;
+}
+
+/* Barre de chargement */
 .info-starting-game {
     display: none;
-    text-align: center;
+    margin-left: 20px;
+    text-align: left;
+    min-width: 200px;
+}
+
+.info-starting-game-text {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
 }
 
 .progress-bar {
     appearance: none;
-    height: 10px;
-    margin: 0.5rem 0;
+    height: 8px;
+    width: 100%;
 }
 
 .progress-bar::-webkit-progress-bar {
-    background-color: var(--background);
-    border: solid 1px var(--element-color);
+    background-color: rgba(0,0,0,0.3);
     border-radius: 10px;
 }
 
@@ -315,64 +413,12 @@
 }
 
 .settings-btn {
-    width: 3rem;
-    height: 3rem;
-    font-size: 3rem;
-    color: var(--element-color);
-    margin: 0 1.5rem;
-}
-
-.instance-popup {
-    position: absolute;
-    display: none;
-    width: 100%;
-    height: 100%;
-    background: #000000b3;
-    z-index: 10;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-
-.instances-tab {
-    position: relative;
-    background: var(--background);
-    border-radius: 10px;
-    padding: 1rem 3rem;
-}
-
-.close-popup {
-    position: absolute;
-    display: flex;
-    top: 10px;
-    right: 10px;
-    background: var(--shadow);
-    height: 30px;
-    width: 30px;
-    border-radius: 10px;
-    align-items: center;
-    justify-content: center;
-}
-
-.instances-tab p {
-    margin-top: 1.5rem;
+    color: var(--color);
     font-size: 2rem;
-}
-
-.instance-elements {
-    background: var(--background-element);
-    text-align: center;
-    border-radius: 10px;
-    margin: 0.5rem 0;
-    font-size: 1.5rem;
+    opacity: 0.7;
+    transition: 0.3s;
     cursor: pointer;
 }
+.settings-btn:hover { opacity: 1; transform: rotate(90deg); }
 
-.instance-elements:hover {
-    background: var(--element-color);
-}
-
-.active-instance {
-    background: var(--element-color);
-}
+.social-tab { display: none; }
