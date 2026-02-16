@@ -130,7 +130,7 @@ class Home {
             if (instance.whitelistActive) {
                 let whitelist = instance.whitelist.find(whitelist => whitelist == auth?.name)
                 if (whitelist !== auth?.name) {
-                    if (instance.name == instanceSelect) {
+                    if (instance.name == newInstanceSelect) {
                         let newInstanceSelect = instancesList.find(i => i.whitelistActive == false)
                         let configClient = await this.db.readData('configClient')
                         configClient.instance_select = newInstanceSelect.name
@@ -140,7 +140,11 @@ class Home {
                     }
                 }
             } else console.log(`Initializing instance ${instance.name}...`)
-            if (instance.name == instanceSelect) setStatus(instance.status)
+                if (instance.name == instanceSelect) {
+                    setStatus(instance.status)
+                    document.querySelector('.instance-select').textContent = instance.name
+                }
+
         }
 
         instancePopup.addEventListener('click', async e => {
@@ -155,7 +159,8 @@ class Home {
 
                 configClient.instance_select = newInstanceSelect
                 await this.db.updateData('configClient', configClient)
-                instanceSelect = instancesList.filter(i => i.name == newInstanceSelect)
+                instanceSelect = newInstanceSelect
+                document.querySelector('.instance-select').textContent = newInstanceSelect
                 instancePopup.style.display = 'none'
                 let instance = await config.getInstanceList()
                 let options = instance.find(i => i.name == configClient.instance_select)
