@@ -155,35 +155,49 @@ img {
 /* ============================================
    SPLASH SCREEN
    ============================================ */
-
 #splash {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
+    inset: 0;
+    width: 100vw;
     height: 100vh;
-    display: flex;                /* centrage horizontal */
-    align-items: center;          /* centrage vertical */
-    justify-content: center;      /* centrage horizontal */
-    background: rgba(15, 15, 15, 0.95);
+    background: rgba(26, 26, 29, 0.95); /* gris foncé premium */
+    backdrop-filter: blur(20px);
     z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+
 .splash-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
 
-    padding: 50px;
-    min-width: 450px;
+    background-image: url("assets/images/background/splash-bg.jpg");
+    background-size: cover;
+    background-position: center;
 
-    background: rgba(30, 30, 30, 0.7);
-    backdrop-filter: blur(20px);
-    border-radius: 25px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+}
+
+.splash-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    z-index: 0;
+}
+/* --- Le contenu doit passer au-dessus --- */
+.splash-container > * {
+    position: relative;
+    z-index: 1;
 }
 
 .splash {
@@ -197,21 +211,10 @@ img {
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
+
 .splash.opacity {
     opacity: 1;
 }
-
-.splash.translate {
-    transform: scale(1);
-}
-
-.splash-message,
-.splash-author,
-.message {
-    text-align: center;
-    max-width: 450px;
-}
-
 
 .splash.translate {
     transform: scale(1);
