@@ -3,6 +3,9 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
+const fs = require("fs");
+const path = require("path");
+
 const { ipcRenderer, shell } = require('electron');
 const pkg = require('../package.json');
 const os = require('os');
@@ -17,28 +20,92 @@ class Splash {
         this.splashAuthor = document.querySelector(".splash-author");
         this.message = document.querySelector(".message");
         this.progress = document.querySelector(".progress");
+
         document.addEventListener('DOMContentLoaded', async () => {
             let databaseLauncher = new database();
             let configClient = await databaseLauncher.readData('configClient');
             let theme = configClient?.launcher_config?.theme || "auto"
             let isDarkTheme = await ipcRenderer.invoke('is-dark-theme', theme).then(res => res)
             document.body.className = isDarkTheme ? 'dark global' : 'light global';
+
             if (process.platform == 'win32') ipcRenderer.send('update-window-progress-load')
-            this.startAnimation()
+
+            // --- AJOUT : fond aléatoire ---
+            this.setRandomBackground();
+
+            this.startAnimation();
         });
     }
 
+    // --- AJOUT : sélection automatique d'une image aléatoire ---
+    setRandomBackground() {
+        try {
+            // Détecte si on est en dev ou en build
+            const isDev = process.env.NODE_ENV === "development" || process.defaultApp;
+
+            // Chemin du dossier background selon le mode
+            const baseFolder = isDev
+                ? path.join(__dirname, "../images/background")
+                : path.join(process.resourcesPath, "assets/images/background");
+
+            console.log("Chemin utilisé :", baseFolder);
+
+            // Sous-dossiers
+            const subfolders = fs.readdirSync(baseFolder).filter(folder =>
+                fs.statSync(path.join(baseFolder, folder)).isDirectory()
+            );
+
+            let images = [];
+
+            for (const folder of subfolders) {
+                const folderPath = path.join(baseFolder, folder);
+                const files = fs.readdirSync(folderPath);
+
+                const imgs = files.filter(file =>
+                    file.endsWith(".jpg") ||
+                    file.endsWith(".jpeg") ||
+                    file.endsWith(".png") ||
+                    file.endsWith(".webp")
+                ).map(file =>
+                    isDev
+                        ? `assets/images/background/${folder}/${file}`
+                        : path.join(process.resourcesPath, `assets/images/background/${folder}/${file}`)
+                );
+
+                images.push(...imgs);
+            }
+
+            if (images.length === 0) {
+                console.warn("Aucune image trouvée.");
+                return;
+            }
+
+            const random = images[Math.floor(Math.random() * images.length)];
+
+            const container = document.querySelector(".splash-container");
+            container.style.backgroundImage = `url("${random}")`;
+
+        } catch (err) {
+            console.error("Erreur lors du chargement du fond aléatoire :", err);
+        }
+    }
+
+
+
     async startAnimation() {
         let splashes = [
-            { "message": "Je... vie...", "author": "Luuxis" },
-            { "message": "Salut je suis du code.", "author": "Luuxis" },
-            { "message": "Linux n'est pas un os, mais un kernel.", "author": "Luuxis" }
+            { "message": "Bienvenue sur PatateLand.", "author": "" },
+            { "message": "Rien n’est figé ici.", "author": "" },
+            { "message": "Patate un jour, patate toujours.", "author": "" },
+            { "message": "Observe bien. Tout a un sens.", "author": "" }
         ];
+
         let splash = splashes[Math.floor(Math.random() * splashes.length)];
         this.splashMessage.textContent = splash.message;
-        this.splashAuthor.children[0].textContent = "@" + splash.author;
+        this.splashAuthor.children[0].textContent = splash.author;
+
         await sleep(100);
-        document.querySelector("#splash").style.display = "block";
+        document.querySelector("#splash").classList.remove("hidden");
         await sleep(500);
         this.splash.classList.add("opacity");
         await sleep(500);
@@ -47,6 +114,7 @@ class Splash {
         this.splashAuthor.classList.add("opacity");
         this.message.classList.add("opacity");
         await sleep(1000);
+
         this.checkUpdate();
     }
 
@@ -104,14 +172,12 @@ class Splash {
         if (os.platform() == 'darwin') latest = this.getLatestReleaseForOS('mac', '.dmg', latestRelease);
         else if (os == 'linux') latest = this.getLatestReleaseForOS('linux', '.appimage', latestRelease);
 
-
         this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
         document.querySelector(".download-update").addEventListener("click", () => {
             shell.openExternal(latest.browser_download_url);
             return this.shutdown("Téléchargement en cours...");
         });
     }
-
 
     async maintenanceCheck() {
         config.GetConfig().then(res => {
@@ -161,4 +227,5 @@ document.addEventListener("keydown", (e) => {
         ipcRenderer.send("update-window-dev-tools");
     }
 })
+
 new Splash();

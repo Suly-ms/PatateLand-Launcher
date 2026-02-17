@@ -12,13 +12,11 @@ body {
     font-family: 'Poppins';
     font-weight: 500;
     overflow: hidden;
-    /* Assure que l'image de fond couvre tout */
     background-size: cover;
     background-position: center;
     transition: background-image 0.5s ease;
 }
 
-/* Classe utilitaire pour l'effet verre */
 .glass-effect {
     background: var(--background-element);
     backdrop-filter: blur(var(--blur-strength));
@@ -36,7 +34,6 @@ img {
     outline: none;
 }
 
-/* Scrollbar fine et discrète */
 .content-scroll::-webkit-scrollbar {
     width: 6px;
 }
@@ -58,7 +55,6 @@ img {
     z-index: 50;
 }
 
-/* Boutons de fenêtre (fermer/réduire) */
 .other .frame {
     background: transparent;
     position: fixed;
@@ -66,7 +62,6 @@ img {
     right: 0;
     z-index: 51;
     display: none;
-    /* INDISPENSABLE : Rend les boutons cliquables au lieu de déplacer la fenêtre */
     -webkit-app-region: no-drag; 
 }
 
@@ -83,7 +78,6 @@ img {
     color: var(--color);
     cursor: pointer;
     transition: background 0.2s;
-    /* Sécurité supplémentaire */
     -webkit-app-region: no-drag; 
 }
 
@@ -95,7 +89,6 @@ img {
     background: var(--close-button-hover) !important;
 }
 
-/* Gestion des panneaux */
 .panel {
     position: absolute;
     width: 100%;
@@ -112,7 +105,6 @@ img {
     pointer-events: all;
 }
 
-/* Design des popups en verre */
 .popup {
     position: absolute;
     width: 100%;
@@ -159,28 +151,81 @@ img {
 .popup-button:active {
     transform: scale(0.95);
 }
-/* === SPLASH SCREEN === */
+
+/* ============================================
+   SPLASH SCREEN
+   ============================================ */
 #splash {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 15, 15, 0.95);
+    z-index: 9999;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.splash-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: var(--background);
-    z-index: 9999;
+    text-align: center;
+
+    width: 450px;
+    height: 100%;
+    max-height: 90vh;
+    padding: 40px;
+
+    position: relative;
+    overflow: hidden;
+
+    border-radius: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+
+    /* --- Image de fond --- */
+    background-image: url("assets/images/background/splash-bg.jpg");
+    background-size: cover;
+    background-position: center;
+
+    /* --- Flou sur le fond --- */
+    backdrop-filter: blur(20px);
 }
 
+/* --- Overlay sombre pour lisibilité --- */
+.splash-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45); /* léger assombrissement */
+    backdrop-filter: blur(8px);      /* flou supplémentaire */
+    z-index: 0;
+}
+
+/* --- Le contenu doit passer au-dessus --- */
+.splash-container > * {
+    position: relative;
+    z-index: 1;
+}
 .splash {
-    width: 150px;
-    height: 150px;
-    margin-bottom: 30px;
+    width: 70px;
+    height: 70px;
+    margin-bottom: 25px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px var(--element-color));
     opacity: 0;
     transform: scale(0.8);
     transition: opacity 0.5s ease, transform 0.5s ease;
-    filter: drop-shadow(0 0 20px var(--element-color));
 }
+
 
 .splash.opacity {
     opacity: 1;
@@ -191,13 +236,15 @@ img {
 }
 
 .splash-message {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: var(--color);
-    margin-bottom: 10px;
     opacity: 0;
     transition: opacity 0.5s ease 0.3s;
     text-align: center;
+    max-width: 500px;
+    width: 100%;
+    margin-bottom: 15px;
 }
 
 .splash-message.opacity {
@@ -205,11 +252,13 @@ img {
 }
 
 .splash-author {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--color);
     opacity: 0;
     transition: opacity 0.5s ease 0.4s;
-    margin-bottom: 40px;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 25px;
 }
 
 .splash-author .author {
@@ -218,45 +267,49 @@ img {
 }
 
 .splash-author.opacity {
-    opacity: 0.7;
+    opacity: 0.6;
 }
 
 .message {
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: var(--color);
-    margin-top: 20px;
     opacity: 0;
     transition: opacity 0.5s ease 0.5s;
     text-align: center;
-    min-height: 60px;
+    min-height: 40px;
+    max-width: 450px;
+    line-height: 1.5;
+    width: 100%;
+    margin-top: 25px;
 }
 
 .message.opacity {
-    opacity: 1;
+    opacity: 0.9;
 }
 
 .download-update {
     display: inline-block;
-    margin-top: 15px;
     padding: 10px 30px;
-    background: var(--element-color);
+    background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
     color: white;
-    border-radius: 10px;
+    border-radius: 12px;
     cursor: pointer;
-    font-weight: 600;
-    transition: transform 0.2s;
+    font-weight: 700;
+    font-size: 0.95rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 5px 20px var(--button-play-shadow);
 }
 
 .download-update:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px var(--button-play-shadow);
 }
 
 .progress {
-    width: 400px;
+    width: 350px;
     height: 6px;
     appearance: none;
     border-radius: 10px;
-    margin-top: 20px;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -266,17 +319,22 @@ img {
 }
 
 .progress::-webkit-progress-bar {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .progress::-webkit-progress-value {
     background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
     border-radius: 10px;
-    box-shadow: 0 0 10px var(--element-color);
+    box-shadow: 0 0 15px var(--element-color);
 }
 
-/* Animation d'apparition */
+.progress::-moz-progress-bar {
+    background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
+    border-radius: 10px;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

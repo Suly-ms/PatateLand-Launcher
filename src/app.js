@@ -29,7 +29,7 @@ Store.initRenderer();
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else app.whenReady().then(() => {
-    if (dev) return MainWindow.createWindow()
+    //if (dev) return MainWindow.createWindow()
     UpdateWindow.createWindow()
 });
 
