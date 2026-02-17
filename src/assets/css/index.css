@@ -155,21 +155,18 @@ img {
 /* ============================================
    SPLASH SCREEN
    ============================================ */
+
 #splash {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: flex;                /* centrage horizontal */
+    align-items: center;          /* centrage vertical */
+    justify-content: center;      /* centrage horizontal */
     background: rgba(15, 15, 15, 0.95);
     z-index: 9999;
-}
-
-.hidden {
-    display: none !important;
 }
 
 .splash-container {
@@ -179,42 +176,16 @@ img {
     justify-content: center;
     text-align: center;
 
-    width: 450px;
-    height: 100%;
-    max-height: 90vh;
-    padding: 40px;
+    padding: 50px;
+    min-width: 450px;
 
-    position: relative;
-    overflow: hidden;
-
+    background: rgba(30, 30, 30, 0.7);
+    backdrop-filter: blur(20px);
     border-radius: 25px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-
-    /* --- Image de fond --- */
-    background-image: url("assets/images/background/splash-bg.jpg");
-    background-size: cover;
-    background-position: center;
-
-    /* --- Flou sur le fond --- */
-    backdrop-filter: blur(20px);
 }
 
-/* --- Overlay sombre pour lisibilité --- */
-.splash-container::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.45); /* léger assombrissement */
-    backdrop-filter: blur(8px);      /* flou supplémentaire */
-    z-index: 0;
-}
-
-/* --- Le contenu doit passer au-dessus --- */
-.splash-container > * {
-    position: relative;
-    z-index: 1;
-}
 .splash {
     width: 70px;
     height: 70px;
@@ -226,10 +197,21 @@ img {
     transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
-
 .splash.opacity {
     opacity: 1;
 }
+
+.splash.translate {
+    transform: scale(1);
+}
+
+.splash-message,
+.splash-author,
+.message {
+    text-align: center;
+    max-width: 450px;
+}
+
 
 .splash.translate {
     transform: scale(1);

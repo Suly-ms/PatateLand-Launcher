@@ -29,7 +29,12 @@ class Home {
         }, 5000)
 
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
+
+        document.querySelector('.player-head').addEventListener('click', () => { 
+            changePanel('settings'); 
+        });
     }
+
 
     async news() {
         let newsElement = document.querySelector('.news-list');

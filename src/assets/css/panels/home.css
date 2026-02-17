@@ -173,6 +173,19 @@
     border: 2px solid var(--element-color);
     image-rendering: pixelated;
     background-color: #000;
+
+    /* 🔥 Ajouts */
+    cursor: pointer;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.player-head:hover {
+    transform: scale(1.12);
+    box-shadow: 0 0 18px var(--element-color);
+}
+
+.player-head:active {
+    transform: scale(0.95);
 }
 
 /* --- NOUVEAU : Zone centrale verticale --- */

@@ -40,23 +40,16 @@ class Splash {
     // --- AJOUT : sélection automatique d'une image aléatoire ---
     setRandomBackground() {
         try {
-            // Détecte si on est en dev ou en build
-            const isDev = process.env.NODE_ENV === "development" || process.defaultApp;
+            const baseFolder = path.join(__dirname, "../images/background");
 
-            // Chemin du dossier background selon le mode
-            const baseFolder = isDev
-                ? path.join(__dirname, "../images/background")
-                : path.join(process.resourcesPath, "assets/images/background");
-
-            console.log("Chemin utilisé :", baseFolder);
-
-            // Sous-dossiers
-            const subfolders = fs.readdirSync(baseFolder).filter(folder =>
-                fs.statSync(path.join(baseFolder, folder)).isDirectory()
+            // Récupère les sous-dossiers (dark, light, easterEgg…)
+            const subfolders = fs.readdirSync(baseFolder).filter(name =>
+                fs.statSync(path.join(baseFolder, name)).isDirectory()
             );
 
             let images = [];
 
+            // Parcourt chaque sous-dossier et récupère les images
             for (const folder of subfolders) {
                 const folderPath = path.join(baseFolder, folder);
                 const files = fs.readdirSync(folderPath);
@@ -66,22 +59,20 @@ class Splash {
                     file.endsWith(".jpeg") ||
                     file.endsWith(".png") ||
                     file.endsWith(".webp")
-                ).map(file =>
-                    isDev
-                        ? `assets/images/background/${folder}/${file}`
-                        : path.join(process.resourcesPath, `assets/images/background/${folder}/${file}`)
-                );
+                ).map(file => `assets/images/background/${folder}/${file}`);
 
                 images.push(...imgs);
             }
 
             if (images.length === 0) {
-                console.warn("Aucune image trouvée.");
+                console.warn("Aucune image trouvée dans background/");
                 return;
             }
 
+            // Choisit une image au hasard
             const random = images[Math.floor(Math.random() * images.length)];
 
+            // Applique l'image comme fond
             const container = document.querySelector(".splash-container");
             container.style.backgroundImage = `url("${random}")`;
 
@@ -89,7 +80,6 @@ class Splash {
             console.error("Erreur lors du chargement du fond aléatoire :", err);
         }
     }
-
 
 
     async startAnimation() {
