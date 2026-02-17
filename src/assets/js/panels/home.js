@@ -18,7 +18,6 @@ class Home {
         this.socialLick()
         this.instancesSelect()
 
-        // 🔥 RAFRAÎCHISSEMENT AUTOMATIQUE DU STATUT SERVEUR 🔥
         setInterval(async () => {
             let configClient = await this.db.readData('configClient')
             let instanceList = await config.getInstanceList()
@@ -44,7 +43,7 @@ class Home {
                     <div class="news-header">
                         <img class="server-status-icon" src="assets/images/icon/icon.png">
                         <div class="header-text">
-                            <div class="title">Aucun news n'ai actuellement disponible.</div>
+                            <div class="title">Aucune news n'est actuellement disponible.</div>
                         </div>
                         <div class="date">
                             <div class="day">${date.day}</div>
@@ -53,7 +52,7 @@ class Home {
                     </div>
                     <div class="news-content">
                         <div class="bbWrapper">
-                            <p>Vous pourrez suivre ici toutes les news relative au serveur.</p>
+                            <p>Vous pourrez suivre ici toutes les news relatives au serveur.</p>
                         </div>
                     </div>`
                 newsElement.appendChild(blockNews);
@@ -165,39 +164,74 @@ class Home {
             let instanceSelect = configClient.instance_select
             let auth = await this.db.readData('accounts', configClient.account_selected)
 
-            if (e.target.classList.contains('instance-select')) {
-                instancesListPopup.innerHTML = ''
-                for (let instance of instancesList) {
-                    if (instance.whitelistActive) {
-                        instance.whitelist.map(whitelist => {
-                            if (whitelist == auth?.name) {
-                                if (instance.name == instanceSelect) {
-                                    instancesListPopup.innerHTML += `
-                                        <div class="glow-container">
-                                            <div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>
-                                        </div>`
-                                } else {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
-                                }
-                            }
-                        })
-                    } else {
+            // ✅ Utilise closest pour être sûr du clic
+            if (e.target.closest('.instance-select')) {
+
+        instancesListPopup.innerHTML = ''
+
+        for (let instance of instancesList) {
+            if (instance.whitelistActive) {
+                instance.whitelist.map(whitelist => {
+                    if (whitelist == auth?.name) {
                         if (instance.name == instanceSelect) {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
+                            instancesListPopup.innerHTML += `
+                                <div class="glow-container">
+                                    <div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>
+                                </div>`
                         } else {
-                            instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
+                            instancesListPopup.innerHTML += `
+                                <div id="${instance.name}" class="instance-elements">${instance.name}</div>`
                         }
                     }
+                })
+            } else {
+                if (instance.name == instanceSelect) {
+                    instancesListPopup.innerHTML += `
+                        <div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
+                } else {
+                    instancesListPopup.innerHTML += `
+                        <div id="${instance.name}" class="instance-elements">${instance.name}</div>`
                 }
-
-                instancePopup.style.display = 'flex'
             }
+        }
 
-            if (!e.target.classList.contains('instance-select')) this.startGame()
+        // 🔥 DÉLÉGATION D'ÉVÉNEMENT (fix release)
+        instancesListPopup.onclick = async (e) => {
+            const el = e.target.closest('.instance-elements')
+            if (!el) return
+
+            let selected = el.id
+            console.log("INSTANCE CLICKED:", selected)
+
+            let configClient = await this.db.readData('configClient')
+            configClient.instance_select = selected
+            await this.db.updateData('configClient', configClient)
+
+            // Update UI
+            document.querySelector('.instance-select').textContent = selected
+
+            // Update status serveur
+            let instance = instancesList.find(i => i.name == selected)
+            if (instance?.status) setStatus(instance.status)
+
+            // Ferme popup
+            instancePopup.style.display = 'none'
+        }
+
+        instancePopup.style.display = 'flex'
+        }
+
+        // ▶️ Sinon ça lance le jeu
+        if (!e.target.closest('.instance-select')) {
+            this.startGame()
+        }
         })
 
-        instanceCloseBTN.addEventListener('click', () => instancePopup.style.display = 'none')
-    }
+        // ❌ bouton fermer popup
+        instanceCloseBTN.addEventListener('click', () => {
+            instancePopup.style.display = 'none'
+        })
+            }
 
     async startGame() {
         let launch = new Launch()

@@ -159,3 +159,131 @@ img {
 .popup-button:active {
     transform: scale(0.95);
 }
+/* === SPLASH SCREEN === */
+#splash {
+    position: fixed;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--background);
+    z-index: 9999;
+}
+
+.splash {
+    width: 150px;
+    height: 150px;
+    margin-bottom: 30px;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    filter: drop-shadow(0 0 20px var(--element-color));
+}
+
+.splash.opacity {
+    opacity: 1;
+}
+
+.splash.translate {
+    transform: scale(1);
+}
+
+.splash-message {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color);
+    margin-bottom: 10px;
+    opacity: 0;
+    transition: opacity 0.5s ease 0.3s;
+    text-align: center;
+}
+
+.splash-message.opacity {
+    opacity: 1;
+}
+
+.splash-author {
+    font-size: 0.9rem;
+    color: var(--color);
+    opacity: 0;
+    transition: opacity 0.5s ease 0.4s;
+    margin-bottom: 40px;
+}
+
+.splash-author .author {
+    color: var(--element-color);
+    font-weight: 600;
+}
+
+.splash-author.opacity {
+    opacity: 0.7;
+}
+
+.message {
+    font-size: 1rem;
+    color: var(--color);
+    margin-top: 20px;
+    opacity: 0;
+    transition: opacity 0.5s ease 0.5s;
+    text-align: center;
+    min-height: 60px;
+}
+
+.message.opacity {
+    opacity: 1;
+}
+
+.download-update {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 30px;
+    background: var(--element-color);
+    color: white;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.2s;
+}
+
+.download-update:hover {
+    transform: scale(1.05);
+}
+
+.progress {
+    width: 400px;
+    height: 6px;
+    appearance: none;
+    border-radius: 10px;
+    margin-top: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.progress.show {
+    opacity: 1;
+}
+
+.progress::-webkit-progress-bar {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.progress::-webkit-progress-value {
+    background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
+    border-radius: 10px;
+    box-shadow: 0 0 10px var(--element-color);
+}
+
+/* Animation d'apparition */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
