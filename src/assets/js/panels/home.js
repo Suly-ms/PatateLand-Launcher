@@ -9,12 +9,26 @@ const { shell, ipcRenderer } = require('electron')
 
 class Home {
     static id = "home";
+
     async init(config) {
         this.config = config;
         this.db = new database();
+
         this.news()
         this.socialLick()
         this.instancesSelect()
+
+        // 🔥 RAFRAÎCHISSEMENT AUTOMATIQUE DU STATUT SERVEUR 🔥
+        setInterval(async () => {
+            let configClient = await this.db.readData('configClient')
+            let instanceList = await config.getInstanceList()
+            let options = instanceList.find(i => i.name == configClient.instance_select)
+
+            if (options?.status) {
+                await setStatus(options.status)
+            }
+        }, 5000)
+
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
     }
 
@@ -144,29 +158,7 @@ class Home {
                     setStatus(instance.status)
                     document.querySelector('.instance-select').textContent = instance.name
                 }
-
         }
-
-        instancePopup.addEventListener('click', async e => {
-            let configClient = await this.db.readData('configClient')
-
-            if (e.target.classList.contains('instance-elements')) {
-                let newInstanceSelect = e.target.id
-                let activeInstanceSelect = document.querySelector('.active-instance')
-
-                if (activeInstanceSelect) activeInstanceSelect.classList.toggle('active-instance');
-                e.target.classList.add('active-instance');
-
-                configClient.instance_select = newInstanceSelect
-                await this.db.updateData('configClient', configClient)
-                instanceSelect = newInstanceSelect
-                document.querySelector('.instance-select').textContent = newInstanceSelect
-                instancePopup.style.display = 'none'
-                let instance = await config.getInstanceList()
-                let options = instance.find(i => i.name == configClient.instance_select)
-                await setStatus(options.status)
-            }
-        })
 
         instanceBTN.addEventListener('click', async e => {
             let configClient = await this.db.readData('configClient')
@@ -180,7 +172,10 @@ class Home {
                         instance.whitelist.map(whitelist => {
                             if (whitelist == auth?.name) {
                                 if (instance.name == instanceSelect) {
-                                    instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
+                                    instancesListPopup.innerHTML += `
+                                        <div class="glow-container">
+                                            <div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>
+                                        </div>`
                                 } else {
                                     instancesListPopup.innerHTML += `<div id="${instance.name}" class="instance-elements">${instance.name}</div>`
                                 }
@@ -215,6 +210,7 @@ class Home {
         let infoStartingBOX = document.querySelector('.info-starting-game')
         let infoStarting = document.querySelector(".info-starting-game-text")
         let progressBar = document.querySelector('.progress-bar')
+        let playTitle = document.querySelector('.play-title')
 
         let opt = {
             url: options.url,
@@ -316,6 +312,7 @@ class Home {
             ipcRenderer.send('main-window-progress-reset')
             infoStartingBOX.style.display = "none"
             playInstanceBTN.style.display = "flex"
+            playTitle.style.display = "block"
             infoStarting.innerHTML = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log('Close');
@@ -337,6 +334,7 @@ class Home {
             ipcRenderer.send('main-window-progress-reset')
             infoStartingBOX.style.display = "none"
             playInstanceBTN.style.display = "flex"
+            playTitle.style.display = "block"
             infoStarting.innerHTML = `Vérification`
             new logger(pkg.name, '#7289da');
             console.log(err);
@@ -352,4 +350,5 @@ class Home {
         return { year: year, month: allMonth[month - 1], day: day }
     }
 }
+
 export default Home;

@@ -51,20 +51,36 @@ async function appdata() {
 
 async function addAccount(data) {
     let skin = false
-    if (data?.profile?.skins[0]?.base64) skin = await new skin2D().creatHeadTexture(data.profile.skins[0].base64);
+    if (data?.profile?.skins[0]?.base64) {
+        skin = await new skin2D().creatHeadTexture(data.profile.skins[0].base64);
+    } else {
+        let cleanUuid = data.uuid.replace(/-/g, '');
+        skin = `https://crafatar.com/avatars/${cleanUuid}?size=128&overlay`;
+    }
+    
     let div = document.createElement("div");
     div.classList.add("account");
     div.id = data.ID;
     div.innerHTML = `
-        <div class="profile-image" ${skin ? 'style="background-image: url(' + skin + ');"' : ''}></div>
-        <div class="profile-infos">
-            <div class="profile-pseudo">${data.name}</div>
-            <div class="profile-uuid">${data.uuid}</div>
-        </div>
+        <img class="profile-image" src="${skin}" alt="${data.name}" onerror="this.src='https://crafatar.com/avatars/steve?size=128&overlay'">
+        <div class="profile-name">${data.name}</div>
         <div class="delete-profile" id="${data.ID}">
             <div class="icon-account-delete delete-profile-icon"></div>
         </div>
     `
+    
+    // ⭐ AJOUTE CE CODE ICI ⭐
+    div.addEventListener('click', async (e) => {
+        // Empêcher le clic si on clique sur le bouton supprimer
+        if (e.target.closest('.delete-profile')) return;
+        
+        let db = new database();
+        let configClient = await db.readData('configClient');
+        configClient.account_selected = data.ID;
+        await db.updateData('configClient', configClient);
+        await accountSelect(data);
+    });
+    
     return document.querySelector('.accounts-list').appendChild(div);
 }
 
@@ -97,14 +113,29 @@ async function setStatus(opt) {
 
     let { ip, port, nameServer } = opt
     nameServerElement.innerHTML = nameServer
-    let status = new Status(ip, port);
-    let statusServer = await status.getStatus().then(res => res).catch(err => err);
+
+    // IMPORTANT : recréer une instance propre à chaque appel
+    let status = new Status(ip, port, {
+        enableSRV: true,
+        cache: false,
+        timeout: 3000
+    });
+
+    let statusServer = await status.getStatus().catch(err => ({ error: true }));
+    console.log("STATUS SERVER RAW:", statusServer);
 
     if (!statusServer.error) {
         statusServerElement.classList.remove('red')
         document.querySelector('.status-player-count').classList.remove('red')
         statusServerElement.innerHTML = `En ligne - ${statusServer.ms ? statusServer.ms : 0} ms`
-        playersOnline.innerHTML = statusServer.playersConnect ? statusServer.playersConnect : '0'
+
+        // On essaie d'abord playersConnect, puis players.online, sinon 0
+        let players =
+            statusServer.playersConnect ??
+            statusServer.players?.online ??
+            0
+
+        playersOnline.innerHTML = players
     } else {
         statusServerElement.classList.add('red')
         statusServerElement.innerHTML = `Ferme - 0 ms`
@@ -112,7 +143,6 @@ async function setStatus(opt) {
         playersOnline.innerHTML = '0'
     }
 }
-
 
 export {
     appdata as appdata,

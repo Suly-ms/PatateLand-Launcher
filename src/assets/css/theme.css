@@ -1,5 +1,5 @@
 .global {
-    --element-color: #00bd7a;
+    --element-color: #f27312;
     --transition: all 0.3s ease-in-out;
     --blur-strength: 15px; /* Intensité du flou derrière les fenêtres */
 }
@@ -27,4 +27,77 @@
     --shadow: rgba(0, 0, 0, 0.2);
     --svg-color: brightness(0) saturate(100%) invert(0%);
     --glass-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+}
+/* ============================================
+   VARIABLES À AJOUTER DANS VOTRE theme.css
+   ============================================ */
+
+:root {
+    /* === COULEURS PRINCIPALES === */
+    --primary-color: #your-main-color;           /* Couleur principale de votre launcher */
+    --element-color: #your-accent-color;         /* Couleur d'accentuation (remplace déjà existante si besoin) */
+    
+    /* === STATUTS SERVER === */
+    --online-color: #f27312;                     /* Couleur "En ligne" (actuellement orange) */
+    --offline-color: #ff4757;                    /* Couleur "Hors ligne" (rouge) */
+    --status-dot-online: #2ecc71;                /* Couleur du point vert "connecté" */
+    
+    /* === BOUTONS === */
+    --button-gradient-end: #f27312;              /* Fin du dégradé bouton JOUER (orange) */
+    --button-play-shadow: rgba(0, 189, 122, 0.4); /* Ombre du bouton JOUER */
+    
+    --button-instance-start: #e74c3c;            /* Début dégradé bouton INSTANCE (rouge) */
+    --button-instance-end: #c0392b;              /* Fin dégradé bouton INSTANCE (rouge foncé) */
+    --button-instance-shadow: rgba(231, 76, 60, 0.4); /* Ombre du bouton INSTANCE */
+    
+    /* === POPUP === */
+    --close-popup-hover-bg: rgba(255, 0, 0, 0.25);   /* Background bouton fermer au hover */
+    --close-popup-hover-glow: rgba(255, 0, 0, 0.9);  /* Glow bouton fermer au hover */
+    
+    /* === LOGIN === */
+    --connect-button-shadow: rgba(0, 189, 122, 0.3);      /* Ombre bouton connexion */
+    --connect-button-shadow-hover: rgba(0, 189, 122, 0.5); /* Ombre bouton connexion au hover */
+    
+    /* === SETTINGS === */
+    --settings-active-shadow: rgba(0, 189, 122, 0.3);     /* Ombre des boutons actifs dans les paramètres */
+    --account-selected-bg: rgba(0, 189, 122, 0.1);        /* Background du compte sélectionné */
+    --delete-button-bg: rgba(255, 59, 48, 0.2);           /* Background bouton supprimer */
+    --delete-button-hover-bg: rgba(255, 59, 48, 0.3);     /* Background bouton supprimer au hover */
+    --delete-button-border: rgba(255, 59, 48, 0.5);       /* Bordure bouton supprimer */
+    --delete-button-color: #ff3b30;                       /* Couleur texte bouton supprimer */
+    
+    /* === AUTRES (si non définies) === */
+    --color: #ffffff;                            /* Couleur texte principale */
+    --background-element: rgba(0, 0, 0, 0.4);   /* Background des éléments */
+    --border-color: rgba(255, 255, 255, 0.1);   /* Couleur bordures */
+    --shadow: rgba(0, 0, 0, 0.3);               /* Ombre générale */
+    --blur-strength: 10px;                       /* Force du blur */
+}
+
+/* ============================================
+   CONFIGURATION COMPLÈTE
+   ============================================ */
+:root {
+    --element-color: #fd8e39;
+    --button-gradient-end: #f27312;
+    --online-color: #2ecc71;
+    --offline-color: #ff4757;
+    --status-dot-online: #2ecc71;
+    --button-play-shadow: rgba(253, 142, 57, 0.4);
+    --button-instance-start: #e74c3c;
+    --button-instance-end: #c0392b;
+    --button-instance-shadow: rgba(231, 76, 60, 0.4);
+    --close-popup-hover-bg: rgba(255, 0, 0, 0.25);
+    --close-popup-hover-glow: rgba(255, 0, 0, 0.9);
+    --connect-button-shadow: rgba(253, 142, 57, 0.3);  
+    --connect-button-shadow-hover: rgba(253, 142, 57, 0.5);  
+    --settings-active-shadow: rgba(253, 142, 57, 0.3);  
+    --account-selected-bg: rgba(253, 142, 57, 0.1);  
+    --delete-button-bg: rgba(255, 59, 48, 0.2);
+    --delete-button-hover-bg: rgba(255, 59, 48, 0.3);
+    --delete-button-border: rgba(255, 59, 48, 0.5);
+    --delete-button-color: #ff3b30;
+    --close-button-hover: #ff4757;
+    --popup-overlay-bg: rgba(0, 0, 0, 0.6);
+    --popup-shadow: rgba(0, 0, 0, 0.5);
 }

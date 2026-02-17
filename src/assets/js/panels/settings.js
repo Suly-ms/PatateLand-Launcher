@@ -133,32 +133,65 @@ class Settings {
         let sliderDiv = document.querySelector(".memory-slider");
         sliderDiv.setAttribute("max", Math.trunc((80 * totalMem) / 100));
 
+        // Initialiser java_config s'il n'existe pas
+        if (!config.java_config) {
+            config.java_config = {};
+        }
+
+        // Valeurs par défaut : min 2 Go, max 8 Go
         let ram = config?.java_config?.java_memory ? {
             ramMin: config.java_config.java_memory.min,
             ramMax: config.java_config.java_memory.max
-        } : { ramMin: "1", ramMax: "2" };
+        } : { ramMin: 2, ramMax: 8 };
 
+        // Vérifier que les valeurs sont cohérentes avec la mémoire disponible
         if (totalMem < ram.ramMin) {
-            config.java_config.java_memory = { min: 1, max: 2 };
-            this.db.updateData('configClient', config);
-            ram = { ramMin: "1", ramMax: "2" }
-        };
+            config.java_config.java_memory = { min: 2, max: 8 };
+            await this.db.updateData('configClient', config);
+            ram = { ramMin: 2, ramMax: 8 }
+        }
 
-        let slider = new Slider(".memory-slider", parseFloat(ram.ramMin), parseFloat(ram.ramMax));
+        // S'assurer que ramMax ne dépasse pas 80% de la RAM totale
+        let maxAllowed = Math.trunc((80 * totalMem) / 100);
+        if (ram.ramMax > maxAllowed) {
+            ram.ramMax = maxAllowed;
+            config.java_config.java_memory = { min: ram.ramMin, max: ram.ramMax };
+            await this.db.updateData('configClient', config);
+        }
 
-        let minSpan = document.querySelector(".slider-touch-left span");
-        let maxSpan = document.querySelector(".slider-touch-right span");
+        // Sauvegarder les valeurs de RAM
+        this.ramConfig = ram;
+        this.sliderInitialized = false;
+        
+        // Initialiser le slider IMMÉDIATEMENT
+        this.initRamSlider();
+    }
 
-        minSpan.setAttribute("value", `${ram.ramMin} Go`);
-        maxSpan.setAttribute("value", `${ram.ramMax} Go`);
+    // Nouvelle méthode pour initialiser le slider (appelée quand l'onglet JAVA devient visible)
+    initRamSlider() {
+        if (this.sliderInitialized) {
+            return;
+        }
 
+        
+        let slider = new Slider(".memory-slider", parseFloat(this.ramConfig.ramMin), parseFloat(this.ramConfig.ramMax));
+
+        // Event listener pour sauvegarder les changements
         slider.on("change", async (min, max) => {
             let config = await this.db.readData('configClient');
-            minSpan.setAttribute("value", `${min} Go`);
-            maxSpan.setAttribute("value", `${max} Go`);
+            
+            // Initialiser java_config s'il n'existe pas
+            if (!config.java_config) {
+                config.java_config = {};
+            }
+            
+            // Sauvegarder les nouvelles valeurs
             config.java_config.java_memory = { min: min, max: max };
-            this.db.updateData('configClient', config);
+            await this.db.updateData('configClient', config);
+            
         });
+
+        this.sliderInitialized = true;
     }
 
     async javaPath() {

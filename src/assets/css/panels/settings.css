@@ -61,24 +61,22 @@
 .active-settings-BTN {
     background: var(--element-color) !important;
     color: white !important;
-    box-shadow: 0 5px 15px rgba(0, 189, 122, 0.3);
+    box-shadow: 0 5px 15px var(--settings-active-shadow);
 }
 
 #save {
-    margin-top: auto; /* Pousse le bouton Accueil en bas */
+    margin-top: auto;
     border: 1px solid var(--border-color);
 }
 
 /* --- Contenu (Droite) --- */
 .container-settings {
     flex: 1;
-    display: none; /* Masqué par défaut */
+    display: none;
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
     padding-right: 10px;
-    
-    /* Animation d'apparition */
     animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -88,7 +86,7 @@
 }
 
 .active-container-settings {
-    display: flex; /* Affiché si actif */
+    display: flex;
 }
 
 /* Scrollbar */
@@ -132,6 +130,11 @@
     flex-wrap: wrap;
     gap: 15px;
 }
+.account.account-select {
+    outline: 2px solid var(--color);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+    transform: translateY(-2px);
+}
 
 .account {
     background: rgba(0,0,0,0.3);
@@ -146,6 +149,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 10px;
 }
 
 .account:hover {
@@ -155,17 +159,62 @@
 
 .account-selected {
     border: 2px solid var(--element-color);
-    background: rgba(0, 189, 122, 0.1);
+    background: var(--account-selected-bg);
 }
 
+/* Image de profil du joueur */
+.profile-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    image-rendering: pixelated;
+    background: rgba(0,0,0,0.3);
+    object-fit: cover;
+    display: block;
+}
+
+.profile-name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color);
+    word-break: break-word;
+    max-width: 100%;
+}
+
+/* UUID (caché par défaut, optionnel) */
+.profile-uuid {
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    font-family: monospace;
+    display: none; /* Caché par défaut */
+}
+
+/* Bouton de suppression */
+.delete-profile {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background: var(--delete-button-bg);
+    border: 1px solid var(--delete-button-border);
+    border-radius: 5px;
+    color: var(--delete-button-color);
+    font-size: 12px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.delete-profile:hover {
+    background: var(--delete-button-hover-bg);
+    border-color: var(--delete-button-color);
+}
+
+/* Icône d'ajout */
 .add-profile .icon-account-add {
-    width: 40px; height: 40px;
+    width: 40px; 
+    height: 40px;
     background: transparent;
     position: relative;
-    /* On retire les propriétés mask qui utilisaient l'image manquante */
 }
 
-/* On dessine le + avec deux barres en pseudo-éléments */
 .add-profile .icon-account-add::before,
 .add-profile .icon-account-add::after {
     content: '';
@@ -174,60 +223,121 @@
     border-radius: 2px;
 }
 
-/* Barre verticale */
 .add-profile .icon-account-add::before {
-    width: 4px; height: 24px;
-    top: 8px; left: 18px;
+    width: 4px; 
+    height: 24px;
+    top: 8px; 
+    left: 18px;
 }
 
-/* Barre horizontale */
 .add-profile .icon-account-add::after {
-    width: 24px; height: 4px;
-    top: 18px; left: 8px;
+    width: 24px; 
+    height: 4px;
+    top: 18px; 
+    left: 8px;
 }
 
-/* Slider RAM */
-.memory-slider {
-    width: 100%;
-    height: 10px;
-    background: rgba(0,0,0,0.5);
-    border-radius: 5px;
+.add-text-profile {
+    color: var(--color);
+    font-size: 14px;
+}
+
+/* ========== SLIDER RAM - VERSION PROPRE ========== */
+
+.settings-elements {
     position: relative;
-    margin: 30px 0;
+}
+
+.memory-slider {
+    width: 100% !important;
+    height: 10px !important;
+    background: rgba(0,0,0,0.5) !important;
+    border-radius: 5px !important;
+    position: relative !important;
+    margin: 50px 0 40px 0 !important;
 }
 
 .slider-line {
-    height: 100%;
-    background: var(--element-color);
-    border-radius: 5px;
-    position: absolute;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    pointer-events: none !important;
 }
 
-.slider-touch-left, .slider-touch-right {
-    width: 20px; height: 20px;
-    background: white;
-    border-radius: 50%;
-    position: absolute;
-    top: -5px;
-    cursor: pointer;
-    box-shadow: 0 0 10px rgba(0,0,0,0.5);
-    z-index: 2;
+.slider-line span {
+    display: block !important;
+    height: 100% !important;
+    background: var(--element-color) !important;
+    border-radius: 5px !important;
 }
 
-.slider-touch-left span, .slider-touch-right span {
-    position: absolute;
-    top: -30px; /* Place le texte au dessus du rond */
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--element-color);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    white-space: nowrap;
-    font-weight: bold;
-    pointer-events: none; /* Important : permet de cliquer au travers */
+/* CURSEURS - AUCUNE POSITION PAR DÉFAUT */
+.slider-touch-left, 
+.slider-touch-right {
+    width: 20px !important; 
+    height: 20px !important;
+    background: white !important;
+    border-radius: 50% !important;
+    position: absolute !important;
+    top: -5px !important;
+    left: 0 !important;
+    right: auto !important;
+    cursor: grab !important;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
+    z-index: 100 !important;
+    transition: transform 0.1s, box-shadow 0.1s !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: block !important;
 }
+
+.slider-touch-left:hover, 
+.slider-touch-right:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 15px rgba(0,0,0,0.7) !important;
+}
+
+.slider-touch-left.dragging, 
+.slider-touch-right.dragging {
+    transform: scale(1.2) !important;
+    box-shadow: 0 0 20px var(--element-color) !important;
+    cursor: grabbing !important;
+}
+
+.slider-touch-left span, 
+.slider-touch-right span {
+    position: absolute !important;
+    top: -35px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: var(--element-color) !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    font-weight: bold !important;
+    pointer-events: none !important;
+}
+
+.slider-touch-left span::before {
+    content: attr(value) !important;
+}
+
+.slider-touch-right span::before {
+    content: attr(value) !important;
+}
+
+.ram-info-block {
+    margin-top: 20px;
+    text-align: center;
+    color: var(--color);
+    font-size: 0.95rem;
+}
+
+/* ========== FIN SLIDER ========== */
+
 /* Inputs & Boutons */
 input {
     background: rgba(0,0,0,0.3);
@@ -253,14 +363,29 @@ input {
     background: rgba(255,255,255,0.2);
 }
 
-/* Etats actifs des boutons options */
 .active-theme, .active-close {
     background: var(--element-color) !important;
     color: white;
-    box-shadow: 0 5px 15px rgba(0, 189, 122, 0.3);
+    box-shadow: 0 5px 15px var(--settings-active-shadow);
 }
 
-/* Layout flex pour les lignes d'options */
-.content-evenly { display: flex; justify-content: space-evenly; align-items: center; flex-wrap: wrap; }
-.content-center { display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; }
-.input-size-element { display: flex; align-items: center; gap: 10px; }
+.content-evenly { 
+    display: flex; 
+    justify-content: space-evenly; 
+    align-items: center; 
+    flex-wrap: wrap; 
+}
+
+.content-center { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    gap: 15px; 
+    flex-wrap: wrap; 
+}
+
+.input-size-element { 
+    display: flex; 
+    align-items: center; 
+    gap: 10px; 
+}

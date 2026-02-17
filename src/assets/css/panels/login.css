@@ -106,14 +106,14 @@
 }
 
 .connect {
-    background: linear-gradient(90deg, var(--element-color), #009e66);
+    background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
     color: white;
-    box-shadow: 0 5px 15px rgba(0, 189, 122, 0.3);
+    box-shadow: 0 5px 15px var(--connect-button-shadow);
 }
 
 .connect:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 189, 122, 0.5);
+    box-shadow: 0 8px 20px var(--connect-button-shadow-hover);
 }
 
 .cancel {
