@@ -4,7 +4,7 @@
  */
 
 const { ipcRenderer } = require('electron')
-const { Status } = require('minecraft-java-core')
+const { StatusServer } = require('minecraft-java-core')
 const fs = require('fs');
 const pkg = require('../package.json');
 
@@ -115,11 +115,7 @@ async function setStatus(opt) {
     nameServerElement.innerHTML = nameServer
 
     // IMPORTANT : recréer une instance propre à chaque appel
-    let status = new Status(ip, port, {
-        enableSRV: true,
-        cache: false,
-        timeout: 3000
-    });
+    let status = new StatusServer(ip, port);
 
     let statusServer = await status.getStatus().catch(err => ({ error: true }));
     console.log("STATUS SERVER RAW:", statusServer);

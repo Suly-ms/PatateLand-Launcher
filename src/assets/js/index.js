@@ -40,7 +40,7 @@ class Splash {
     // --- AJOUT : sélection automatique d'une image aléatoire ---
     setRandomBackground() {
         try {
-            const baseFolder = path.join(__dirname, "../images/background");
+            const baseFolder = path.join(__dirname, "assets", "images", "background");
 
             // Récupère les sous-dossiers (dark, light, easterEgg…)
             const subfolders = fs.readdirSync(baseFolder).filter(name =>

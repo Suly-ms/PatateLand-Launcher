@@ -24,7 +24,7 @@ class Config {
     }
 
     async getInstanceList() {
-        let urlInstance = `${url}/instances`
+        let urlInstance = `${url}/files`
         let instances = await nodeFetch(urlInstance).then(res => res.json()).catch(err => err)
         let instancesList = []
         instances = Object.entries(instances)
