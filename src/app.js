@@ -224,11 +224,17 @@ app.on('window-all-closed', () => {
 
 autoUpdater.autoDownload = false;
 
-// Vérification automatique toutes les 30 minutes pour les utilisateurs qui laissent le launcher ouvert
+// Vérification automatique toutes les 10 minutes
+let isFirstUpdateCheck = true;
+
 function scheduleUpdateCheck() {
+    // Premier check silencieux au démarrage (pas de notif)
+    autoUpdater.checkForUpdates().catch(() => {});
+
     setInterval(() => {
+        isFirstUpdateCheck = false;
         autoUpdater.checkForUpdates().catch(() => {});
-    }, 30 * 60 * 1000); // 30 minutes
+    }, 10 * 60 * 1000); // 10 minutes
 }
 
 ipcMain.handle('update-app', async () => {
@@ -248,16 +254,17 @@ autoUpdater.on('update-available', (info) => {
     const updateWindow = UpdateWindow.getWindow();
     if (updateWindow) updateWindow.webContents.send('updateAvailable');
 
+    // Pas de notif au premier check (démarrage du launcher = mise à jour en cours)
+    if (isFirstUpdateCheck) return;
+
     sendNotification({
         title: 'PatateLand - Mise a jour disponible !',
-        body: 'Une nouvelle version est disponible. Le launcher va se mettre a jour automatiquement.',
+        body: 'Une nouvelle version est disponible. Double-cliquez pour relancer et mettre à jour.',
         silent: false,
         onClick: () => {
-            const updateWindow = UpdateWindow.getWindow();
-            if (updateWindow) {
-                updateWindow.show();
-                updateWindow.focus();
-            }
+            // Relance le launcher pour déclencher la mise à jour
+            app.relaunch();
+            app.exit(0);
         }
     });
 });

@@ -18,14 +18,15 @@ class Home {
         this.socialLick()
         this.instancesSelect()
 
+        const cfg = this.config;
+        const db = this.db;
         setInterval(async () => {
-            let configClient = await this.db.readData('configClient')
-            let instanceList = await config.getInstanceList()
-            let options = instanceList.find(i => i.name == configClient.instance_select)
-
-            if (options?.status) {
-                await setStatus(options.status)
-            }
+            try {
+                let configClient = await db.readData('configClient')
+                let instanceList = await cfg.getInstanceList()
+                let options = instanceList.find(i => i.name == configClient.instance_select)
+                if (options?.status) await setStatus(options.status)
+            } catch(e) {}
         }, 5000)
 
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
