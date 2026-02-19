@@ -26,13 +26,7 @@
         "productName": "PatateLand",
         "win": {
             "icon": "src/assets/images/icon/icon.ico",
-            "target": "nsis",
-            "appUserModelId": "fr.patateland.launcher"
-        },
-        "nsis": {
-            "createDesktopShortcut": true,
-            "createStartMenuShortcut": true,
-            "shortcutName": "PatateLand"
+            "target": "nsis"
         },
         "mac": {
             "icon": "src/assets/images/icon/icon.icns"
