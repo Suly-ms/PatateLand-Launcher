@@ -3,7 +3,7 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
-const { app, ipcMain, nativeTheme, dialog, shell, Tray, Menu, nativeImage } = require('electron');
+const { app, ipcMain, nativeTheme, dialog, shell, Tray, Menu, nativeImage, Notification } = require('electron');
 const { Microsoft } = require('minecraft-java-core');
 const { autoUpdater } = require('electron-updater')
 const notifier = require('node-notifier');
@@ -32,17 +32,26 @@ Store.initRenderer();
 app.setName('PatateLand');
 app.setAppUserModelId('fr.patateland.launcher');
 
-// Helper notification via node-notifier (petit icone style Lunar Client)
-function sendNotification({ title, body, silent = true, onClick = null }) {
-    notifier.notify({
-        title,
-        message: body,
-        icon: path.join(__dirname, 'assets/images/icon/icon.png'),
-        appID: 'fr.patateland.launcher',
-        sound: !silent
-    }, (err, response) => {
-        if (onClick && response === 'activate') onClick();
+// Démarrage automatique avec Windows
+function setAutoLaunch(enabled) {
+    app.setLoginItemSettings({
+        openAtLogin: enabled,
+        name: 'PatateLand',
+        path: process.execPath
     });
+}
+
+// Helper notification Electron natif (son Windows fiable)
+function sendNotification({ title, body, silent = false, onClick = null }) {
+    if (!Notification.isSupported()) return;
+    const notif = new Notification({
+        title,
+        body,
+        icon: path.join(__dirname, 'assets/images/icon/icon.png'),
+        silent
+    });
+    if (onClick) notif.on('click', onClick);
+    notif.show();
 }
 
 // ===== SYSTEM TRAY =====
@@ -84,6 +93,7 @@ else app.whenReady().then(() => {
     if (dev) {
         MainWindow.createWindow();
         createTray();
+        scheduleUpdateCheck();
         return;
     }
     UpdateWindow.createWindow();
@@ -92,6 +102,7 @@ else app.whenReady().then(() => {
 ipcMain.on('main-window-open', () => {
     MainWindow.createWindow();
     if (!tray) createTray();
+    scheduleUpdateCheck();
 })
 ipcMain.on('main-window-dev-tools', () => MainWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
 ipcMain.on('main-window-dev-tools-close', () => MainWindow.getWindow().webContents.closeDevTools())
@@ -111,7 +122,7 @@ ipcMain.on('main-window-minimize', () => {
         sendNotification({
             title: 'PatateLand Launcher',
             body: 'Le launcher tourne en arriere-plan. Cliquez ici ou double-cliquez sur l\'icone pour le rouvrir.',
-            silent: true,
+            silent: false,
             onClick: () => {
                 MainWindow.getWindow().show();
                 MainWindow.getWindow().focus();
@@ -139,6 +150,16 @@ ipcMain.on('main-window-maximize', () => {
 
 ipcMain.on('main-window-hide', () => MainWindow.getWindow().hide())
 ipcMain.on('main-window-show', () => MainWindow.getWindow().show())
+
+// ===== AUTO LAUNCH =====
+ipcMain.handle('get-auto-launch', () => {
+    return app.getLoginItemSettings().openAtLogin;
+});
+
+ipcMain.on('set-auto-launch', (_, enabled) => {
+    setAutoLaunch(enabled);
+});
+// ===== FIN AUTO LAUNCH =====
 
 // ===== LOG WINDOW =====
 ipcMain.on('log-window-open', () => LogWindow.createWindow())
@@ -202,6 +223,13 @@ app.on('window-all-closed', () => {
 });
 
 autoUpdater.autoDownload = false;
+
+// Vérification automatique toutes les 30 minutes pour les utilisateurs qui laissent le launcher ouvert
+function scheduleUpdateCheck() {
+    setInterval(() => {
+        autoUpdater.checkForUpdates().catch(() => {});
+    }, 30 * 60 * 1000); // 30 minutes
+}
 
 ipcMain.handle('update-app', async () => {
     return await new Promise(async (resolve, reject) => {

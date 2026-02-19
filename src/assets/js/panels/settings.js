@@ -345,36 +345,50 @@ class Settings {
         let closeLauncher = configClient?.launcher_config?.closeLauncher || "close-launcher";
 
         if (closeLauncher == "close-launcher") {
-            document.querySelector('.close-launcher').classList.add('active-close');
-        } else if (closeLauncher == "close-all") {
-            document.querySelector('.close-all').classList.add('active-close');
+            document.querySelector('.close-launcher')?.classList.add('active-close');
+
+        } else if (closeLauncher == "close-window") {
+            document.querySelector('.close-window')?.classList.add('active-close');
         } else if (closeLauncher == "close-none") {
-            document.querySelector('.close-none').classList.add('active-close');
+            document.querySelector('.close-none')?.classList.add('active-close');
         }
 
         closeBox.addEventListener("click", async e => {
-            if (e.target.classList.contains('close-btn')) {
+            if (e.target.closest('.close-btn')) {
+                const btn = e.target.closest('.close-btn');
                 let activeClose = document.querySelector('.active-close');
-                if (e.target.classList.contains('active-close')) return
-                activeClose?.classList.toggle('active-close');
+                if (btn.classList.contains('active-close')) return;
+                activeClose?.classList.remove('active-close');
 
-                let configClient = await this.db.readData('configClient')
+                let configClient = await this.db.readData('configClient');
 
-                if (e.target.classList.contains('close-launcher')) {
-                    e.target.classList.toggle('active-close');
-                    configClient.launcher_config.closeLauncher = "close-launcher";
-                    await this.db.updateData('configClient', configClient);
-                } else if (e.target.classList.contains('close-all')) {
-                    e.target.classList.toggle('active-close');
-                    configClient.launcher_config.closeLauncher = "close-all";
-                    await this.db.updateData('configClient', configClient);
-                } else if (e.target.classList.contains('close-none')) {
-                    e.target.classList.toggle('active-close');
+                if (btn.classList.contains('close-none')) {
+                    btn.classList.add('active-close');
                     configClient.launcher_config.closeLauncher = "close-none";
-                    await this.db.updateData('configClient', configClient);
-                }
+                } else if (btn.classList.contains('close-launcher')) {
+                    // Réduire dans le tray
+                    btn.classList.add('active-close');
+                    configClient.launcher_config.closeLauncher = "close-launcher";
+                    configClient.game_config.tray_on_launch = true;
+                } else if (btn.classList.contains('close-window')) {
+                    btn.classList.add('active-close');
+                    configClient.launcher_config.closeLauncher = "close-window";
+                    configClient.game_config.tray_on_launch = false;
+}
+                await this.db.updateData('configClient', configClient);
             }
         })
+
+        // ===== AUTO LAUNCH =====
+        let autoLaunchToggle = document.getElementById('autolaunch-toggle');
+        // Récupère l'état actuel depuis le système
+        let currentAutoLaunch = await ipcRenderer.invoke('get-auto-launch');
+        autoLaunchToggle.checked = currentAutoLaunch;
+
+        autoLaunchToggle.addEventListener('change', () => {
+            ipcRenderer.send('set-auto-launch', autoLaunchToggle.checked);
+        });
+        // ===== FIN AUTO LAUNCH =====
     }
     // ===== RESOURCE PACKS =====
     async resourcePacks() {

@@ -38,77 +38,90 @@ class Home {
 
 
     async news() {
-        let newsElement = document.querySelector('.news-list');
+        let newsContainer = document.querySelector('.news-list');
         let news = await config.getNews(this.config).then(res => res).catch(err => false);
-        if (news) {
-            if (!news.length) {
-                let blockNews = document.createElement('div');
-                const date = this.getdate(new Date())
-                blockNews.classList.add('news-block');
-                blockNews.innerHTML = `
-                    <div class="news-header">
-                        <img class="server-status-icon" src="assets/images/icon/icon.png">
-                        <div class="header-text">
-                            <div class="title">Aucune news n'est actuellement disponible.</div>
-                        </div>
-                        <div class="date">
-                            <div class="day">${date.day}</div>
-                            <div class="month">${date.month}</div>
-                        </div>
-                    </div>
-                    <div class="news-content">
-                        <div class="bbWrapper">
-                            <p>Vous pourrez suivre ici toutes les news relatives au serveur.</p>
-                        </div>
-                    </div>`
-                newsElement.appendChild(blockNews);
-            } else {
-                for (let News of news) {
-                    let date = this.getdate(News.publish_date)
-                    let blockNews = document.createElement('div');
-                    blockNews.classList.add('news-block');
-                    blockNews.innerHTML = `
+
+        let slides = [];
+
+        if (!news) {
+            slides.push({
+                title: 'Erreur',
+                content: 'Impossible de contacter le serveur des news.<br>Merci de vérifier votre configuration.',
+                author: null,
+                date: this.getdate(new Date())
+            });
+        } else if (!news.length) {
+            slides.push({
+                title: 'Aucune actualité disponible',
+                content: 'Vous pourrez suivre ici toutes les news relatives au serveur.',
+                author: null,
+                date: this.getdate(new Date())
+            });
+        } else {
+            slides = news.map(n => ({
+                title: n.title,
+                content: n.content.replace(/\n/g, '<br>'),
+                author: n.author,
+                date: this.getdate(n.publish_date)
+            }));
+        }
+
+        let current = 0;
+
+        const render = () => {
+            const s = slides[current];
+            newsContainer.innerHTML = `
+                <div class="news-slider">
+                    <div class="news-block news-slide">
                         <div class="news-header">
                             <img class="server-status-icon" src="assets/images/icon/icon.png">
                             <div class="header-text">
-                                <div class="title">${News.title}</div>
+                                <div class="title">${s.title}</div>
                             </div>
                             <div class="date">
-                                <div class="day">${date.day}</div>
-                                <div class="month">${date.month}</div>
+                                <div class="day">${s.date.day}</div>
+                                <div class="month">${s.date.month}</div>
                             </div>
                         </div>
                         <div class="news-content">
                             <div class="bbWrapper">
-                                <p>${News.content.replace(/\n/g, '</br>')}</p>
-                                <p class="news-author">Auteur - <span>${News.author}</span></p>
+                                <p>${s.content}</p>
+                                ${s.author ? `<p class="news-author">Auteur - <span>${s.author}</span></p>` : ''}
                             </div>
-                        </div>`
-                    newsElement.appendChild(blockNews);
-                }
-            }
-        } else {
-            let blockNews = document.createElement('div');
-            const date = this.getdate(new Date())
-            blockNews.classList.add('news-block');
-            blockNews.innerHTML = `
-                <div class="news-header">
-                        <img class="server-status-icon" src="assets/images/icon/icon.png">
-                        <div class="header-text">
-                            <div class="title">Error.</div>
-                        </div>
-                        <div class="date">
-                            <div class="day">${date.day}</div>
-                            <div class="month">${date.month}</div>
                         </div>
                     </div>
-                    <div class="news-content">
-                        <div class="bbWrapper">
-                            <p>Impossible de contacter le serveur des news.</br>Merci de vérifier votre configuration.</p>
+                    ${slides.length > 1 ? `
+                    <div class="news-slider-controls">
+                        <button class="news-arrow news-prev" ${current === 0 ? 'disabled' : ''}>&#8249;</button>
+                        <div class="news-dots">
+                            ${slides.map((_, i) => `<span class="news-dot ${i === current ? 'active' : ''}"></span>`).join('')}
                         </div>
-                    </div>`
-            newsElement.appendChild(blockNews);
-        }
+                        <button class="news-arrow news-next" ${current === slides.length - 1 ? 'disabled' : ''}>&#8250;</button>
+                    </div>` : ''}
+                </div>`;
+
+            if (slides.length > 1) {
+                newsContainer.querySelector('.news-prev')?.addEventListener('click', () => {
+                    if (current > 0) { current--; render(); }
+                });
+                newsContainer.querySelector('.news-next')?.addEventListener('click', () => {
+                    if (current < slides.length - 1) { current++; render(); }
+                });
+                newsContainer.querySelectorAll('.news-dot').forEach((dot, i) => {
+                    dot.addEventListener('click', () => { current = i; render(); });
+                });
+            }
+
+            // Navigation au scroll
+            newsContainer.onwheel = (e) => {
+                e.preventDefault();
+                if (slides.length <= 1) return;
+                if (e.deltaY > 0 && current < slides.length - 1) { current++; render(); }
+                else if (e.deltaY < 0 && current > 0) { current--; render(); }
+            };
+        };
+
+        render();
     }
 
     socialLick() {
@@ -334,9 +347,12 @@ class Home {
         let logWindowOpened = false;
         launch.on('data', (e) => {
             progressBar.style.display = "none"
-            if (configClient.launcher_config.closeLauncher == 'close-launcher') {
-                ipcRenderer.send("main-window-hide")
-            };
+            const closeMode = configClient.launcher_config.closeLauncher;
+            if (closeMode == 'close-launcher') {
+                ipcRenderer.send("main-window-minimize");
+            } else if (closeMode == 'close-window') {
+                ipcRenderer.send("main-window-hide");
+            }
             new logger('Minecraft', '#36b030');
             ipcRenderer.send('main-window-progress-load')
             infoStarting.innerHTML = `Demarrage en cours...`
@@ -352,7 +368,7 @@ class Home {
         })
 
         launch.on('close', code => {
-            if (configClient.launcher_config.closeLauncher == 'close-launcher') {
+            if (['close-launcher', 'close-window'].includes(configClient.launcher_config.closeLauncher)) {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
@@ -375,7 +391,7 @@ class Home {
                 options: true
             })
 
-            if (configClient.launcher_config.closeLauncher == 'close-launcher') {
+            if (['close-launcher', 'close-window'].includes(configClient.launcher_config.closeLauncher)) {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')

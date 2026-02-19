@@ -48,15 +48,7 @@
                     <span class="toggle-text">Lancer le jeu en plein écran</span>
                 </label>
             </div>
-            <div class="settings-elements content-center" style="margin-top: 12px;">
-                <label class="fullscreen-toggle-label">
-                    <div class="toggle-switch">
-                        <input type="checkbox" id="console-toggle" class="toggle-input">
-                        <span class="toggle-slider"></span>
-                    </div>
-                    <span class="toggle-text">Afficher la console de jeu au lancement</span>
-                </label>
-            </div>
+
         </div>
 
         <div class="titre-tab">Mémoire RAM</div>
@@ -104,6 +96,50 @@
     </div>
 
     <div id="launcher-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Démarrage automatique</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Lancer automatiquement le launcher au démarrage de Windows.
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="autolaunch-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Lancer au démarrage de Windows</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="titre-tab">Comportement au lancement du jeu</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Choisissez ce qui se passe avec le launcher quand vous lancez Minecraft.
+            </div>
+            <div class="settings-elements content-evenly close-box" style="margin-top: 10px;">
+                <div class="close-none close-btn" title="Le launcher reste visible à l'écran">
+                    <span class="close-btn-icon">👁</span> Garder ouvert
+                </div>
+                <div class="close-launcher close-btn" title="Le launcher se cache dans la barre des tâches">
+                    <span class="close-btn-icon">📥</span> Réduire dans le tray
+                </div>
+                <div class="close-window close-btn" title="La fenêtre du launcher se ferme, le jeu continue">
+                    <span class="close-btn-icon">✕</span> Fermer la fenêtre
+                </div>
+
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 15px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="console-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Afficher la console de jeu au lancement</span>
+                </label>
+            </div>
+        </div>
+
         <div class="titre-tab">Téléchargements</div>
         <div class="settings-elements-box">
             <div class="setting-text">
@@ -129,17 +165,7 @@
             </div>
         </div>
 
-        <div class="titre-tab">Fermeture du launcher</div>
-        <div class="settings-elements-box">
-            <div class="setting-text">
-                Action à effectuer une fois le jeu lancé.
-            </div>
-            <div class="settings-elements content-evenly close-box">
-                <div class="close-launcher close-btn">Fermer le launcher</div>
-                <div class="close-none close-btn">Garder ouvert</div>
-                <div class="close-all close-btn">Fermer tout</div>
-            </div>
-        </div>
+
     </div>
     <!-- ===== ONGLET RESOURCE PACKS ===== -->
     <div id="resourcepacks-tab" class="container-settings content-scroll">
