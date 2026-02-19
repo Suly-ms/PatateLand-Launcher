@@ -83,46 +83,33 @@
 .news-list :-webkit-scrollbar { 
     width: 6px;
     padding-right: 10px;
-
-    /* 🔥 Le scroll doit exister, mais NE DOIT PAS couper le zoom */
-    overflow-y: overlay; /* fonctionne comme auto mais ne pousse pas le contenu */
+    overflow-y: overlay;
     overflow-x: visible;
-
-    /* 🔥 Empêche le zoom de casser les arrondis */
-    padding-bottom: 20px; /* espace pour éviter que le zoom touche le bas */
+    padding-bottom: 20px;
 }
 
-
-/* 🔥 Bloc d'actualité propre, sans bordures nettes */
 .news-block {
     background: var(--background-element);
     border: none;
     border-radius: 15px;
-
-    /* Bordure interne douce (plus légère qu'avant) */
     outline: 1px solid rgba(255,255,255,0.04);
     outline-offset: -1px;
-
     transition: transform 0.25s ease, background 0.25s ease;
 }
 
-/* 🔥 Zoom léger, sans déplacement */
 .news-block:hover {
     transform: scale(1.02);
     background: rgba(255,255,255,0.12);
 }
 
-/* 🔥 Header sans bordure dure */
 .news-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-
     background: rgba(0,0,0,0.1);
     border-radius: 15px 15px 0 0;
-
-    border-bottom: none; /* Fix principal */
+    border-bottom: none;
 }
 
 .header-text .title {
@@ -139,13 +126,11 @@
     min-width: 60px;
 }
 
-/* 🔥 Contenu avec padding plus large pour éviter les "lignes" */
 .news-content {
     padding: 22px 24px;
     font-weight: 300;
     line-height: 1.5;
 }
-
 
 /* --- Barre du bas (Sidebar) --- */
 .sidebar {
@@ -173,8 +158,6 @@
     border: 2px solid var(--element-color);
     image-rendering: pixelated;
     background-color: #000;
-
-    /* 🔥 Ajouts */
     cursor: pointer;
     transition: transform 0.25s ease, box-shadow 0.25s ease;
 }
@@ -188,7 +171,6 @@
     transform: scale(0.95);
 }
 
-/* --- NOUVEAU : Zone centrale verticale --- */
 .play-container {
     display: flex;
     flex-direction: column;
@@ -201,7 +183,6 @@
     display: none;
 }
 
-/* --- NOUVEAU : Titre "Choisissez votre instance" --- */
 .play-title {
     font-size: 0.9rem;
     font-weight: 600;
@@ -212,7 +193,6 @@
     text-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
-/* Conteneur des boutons (Jouer + Instance) */
 .play-elements {
     display: flex;
     align-items: center;
@@ -220,7 +200,6 @@
     gap: 15px;
 }
 
-/* Wrapper principal : Jouer à gauche, Selecteur à droite */
 .play-instance {
     display: flex;
     flex-direction: row; 
@@ -231,7 +210,6 @@
     box-shadow: none;
 }
 
-/* Bouton JOUER (Vert) */
 .play-btn {
     background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
     height: 50px;
@@ -249,25 +227,20 @@
 }
 .play-btn:hover { transform: scale(1.05); }
 
-/* Bouton SELECTEUR D'INSTANCE (Rouge) */
 .instance-select {
     display: flex;
     align-items: center;
     justify-content: center;
-    
     background: linear-gradient(90deg, var(--button-instance-start), var(--button-instance-end)); 
     box-shadow: 0 5px 15px var(--button-instance-shadow); 
-    
     height: 50px;
     min-width: 180px; 
     padding: 0 20px;
     border-radius: 15px;
-    
     color: white;
     font-size: 1.2rem;
     font-weight: bold;
     text-transform: uppercase;
-    
     cursor: pointer;
     pointer-events: auto;
     transition: transform 0.2s;
@@ -283,29 +256,23 @@
 
 .instance-popup {
     position: absolute;
-    display: none; /* Géré par le JS */
+    display: none;
     width: 100%;
     height: 100%;
     top: 0; 
     left: 0;
     z-index: 100;
-
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-
     flex-direction: column;
     align-items: center;
     justify-content: center;
-
     opacity: 0;
     animation: fadeIn 0.3s forwards;
-
-    /* Important pour éviter que le blur casse les ombres internes */
     isolation: isolate;
 }
 
-/* Layer flou derrière la fenêtre */
 .popup-blur {
     position: absolute;
     inset: 0;
@@ -314,36 +281,25 @@
     z-index: 0;
 }
 
-/* La fenêtre elle-même */
 .instances-tab {
     position: relative;
-    z-index: 1; /* Passe au-dessus du blur */
-    
+    z-index: 1;
     width: 450px;
     max-height: 80%;
     display: flex;
     flex-direction: column;
-
-    /* ❌ IMPORTANT : blur retiré d'ici */
     background: var(--background-element);
     border: 1px solid var(--border-color);
     box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-
     border-radius: 25px;
     padding: 30px;
     text-align: center;
-
     transform: scale(0.9);
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-
-    /* Glow des boutons non coupé */
     overflow: visible;
-
-    /* Empêche le blur du parent d'écraser les ombres */
     isolation: isolate;
 }
 
-/* Titre de la fenêtre */
 .instances-tab p {
     font-size: 1.5rem;
     font-weight: 700;
@@ -355,57 +311,35 @@
     letter-spacing: 1px;
 }
 
-/* Liste des instances (zone défilable) */
 .instances-List {
     width: 100%;
     max-height: 400px;
-
-    /* 🔥 Le scroll vertical, mais SANS couper le glow */
     overflow-y: scroll;
     overflow-x: visible;
-
-    /* 🔥 Empêche le glow d'être aplati */
     overflow: visible !important;
     isolation: isolate !important;
     position: relative;
-
     padding-right: 5px;
 }
 
+.instances-List::-webkit-scrollbar { width: 6px; }
+.instances-List::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 10px; }
+.instances-List::-webkit-scrollbar-thumb { background: var(--element-color); border-radius: 10px; }
 
-/* Scrollbar personnalisée pour la liste */
-.instances-List::-webkit-scrollbar {
-    width: 6px;
-}
-.instances-List::-webkit-scrollbar-track {
-    background: rgba(0,0,0,0.1);
-    border-radius: 10px;
-}
-.instances-List::-webkit-scrollbar-thumb {
-    background: var(--element-color);
-    border-radius: 10px;
-}
-
-/* Chaque bouton d'instance */
 .instance-elements {
     background: rgba(255, 255, 255, 0.05);
     border: none;
     color: var(--color);
-
     padding: 15px 20px;
     margin-bottom: 12px;
     border-radius: 15px;
-
     font-size: 1.2rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
-    /* ❌ plus AUCUN glow par défaut */
     box-shadow: none;
 }
 
@@ -414,20 +348,15 @@
     transform: translateY(-1px);
 }
 
-/* Instance sélectionnée (Active) */
 .active-instance {
     background: linear-gradient(135deg, var(--element-color), var(--button-gradient-end)) !important;
     color: white !important;
     border: none !important;
-
-    /* Glow plus large et plus lumineux */
     box-shadow: 0 0 18px var(--button-gradient-end) !important;
-
     transform: none !important;
     position: relative;
     z-index: 1;
 }
-
 
 .active-instance:before {
     content: '';
@@ -444,26 +373,19 @@
     position: absolute;
     top: 15px;
     left: 15px;
-
-    width: 30px;   /* 🔥 plus petit */
-    height: 30px;  /* 🔥 plus petit */
-
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    font-size: 1.4rem;   /* 🔥 taille réduite */
-    font-weight: 900;    /* 🔥 toujours bien épaisse */
+    font-size: 1.4rem;
+    font-weight: 900;
     color: white;
-
     background: transparent; 
     border-radius: 8px;
-
     cursor: pointer;
     transition: 0.2s ease;
-
     box-shadow: none;
-
     z-index: 10;
 }
 
@@ -473,10 +395,6 @@
     transform: scale(1.12);
 }
 
-
-/* Barre de chargement */
-/* Barre de chargement */
-/* Barre de chargement */
 .info-starting-game {
     display: none;
     margin: 0 auto;
@@ -486,19 +404,19 @@
 }
 
 .info-starting-game-text {
-    font-size: 1.3rem;  /* ✅ Augmenté de 0.9rem à 1.3rem */
-    margin-bottom: 15px;  /* ✅ Plus d'espace */
+    font-size: 1.3rem;
+    margin-bottom: 15px;
     color: var(--color);
-    font-weight: 700;  /* ✅ Plus gras */
-    text-transform: uppercase;  /* ✅ Majuscules */
-    letter-spacing: 1px;  /* ✅ Espacement des lettres */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .progress-bar {
     appearance: none;
-    height: 12px;  /* ✅ Augmenté de 8px à 12px */
+    height: 12px;
     width: 100%;
-    border-radius: 6px;  /* ✅ Arrondi adapté */
+    border-radius: 6px;
 }
 
 .progress-bar::-webkit-progress-bar {
@@ -509,7 +427,7 @@
 .progress-bar::-webkit-progress-value {
     background-color: var(--element-color);
     border-radius: 6px;
-    box-shadow: 0 0 10px var(--element-color);  /* ✅ Petit glow pour la barre */
+    box-shadow: 0 0 10px var(--element-color);
 }
 
 .settings-btn {
@@ -522,3 +440,47 @@
 .settings-btn:hover { opacity: 1; transform: rotate(90deg); }
 
 .social-tab { display: none; }
+
+/* ===== SOCIAL SIDEBAR ===== */
+.sidebar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.social-sidebar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 6px 8px;
+}
+
+.social-sidebar-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: all 0.2s ease;
+}
+
+.social-sidebar-btn:hover {
+    opacity: 1;
+    background: rgba(255,255,255,0.1);
+    transform: scale(1.15);
+}
+
+.icon-social-sidebar {
+    width: 20px;
+    height: 20px;
+    filter: var(--svg-color);
+    flex-shrink: 0;
+    pointer-events: none;
+}
+/* ===== FIN SOCIAL SIDEBAR ===== */

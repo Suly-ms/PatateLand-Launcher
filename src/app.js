@@ -14,6 +14,7 @@ const Store = require('electron-store');
 
 const UpdateWindow = require("./assets/js/windows/updateWindow.js");
 const MainWindow = require("./assets/js/windows/mainWindow.js");
+const LogWindow = require("./assets/js/windows/logWindow.js");
 
 let dev = process.env.NODE_ENV === 'dev';
 
@@ -139,6 +140,22 @@ ipcMain.on('main-window-maximize', () => {
 ipcMain.on('main-window-hide', () => MainWindow.getWindow().hide())
 ipcMain.on('main-window-show', () => MainWindow.getWindow().show())
 
+// ===== LOG WINDOW =====
+ipcMain.on('log-window-open', () => LogWindow.createWindow())
+ipcMain.on('log-window-close', () => LogWindow.destroyWindow())
+ipcMain.on('log-window-minimize', () => LogWindow.getWindow()?.minimize())
+
+ipcMain.on('log-send', (_, data) => {
+    const win = LogWindow.getWindow();
+    if (win) win.webContents.send('log-data', data);
+})
+
+ipcMain.on('log-status', (_, status) => {
+    const win = LogWindow.getWindow();
+    if (win) win.webContents.send('log-status', status);
+})
+// ===== FIN LOG WINDOW =====
+
 ipcMain.handle('Microsoft-window', async (_, client_id) => {
     return await new Microsoft(client_id).getAuth();
 })
@@ -174,6 +191,9 @@ ipcMain.handle('dialog-open-shaderpack', async () => {
 ipcMain.handle('open-folder', (_, folderPath) => {
     shell.openPath(folderPath);
 });
+
+// ===== RCON =====
+// ===== FIN RCON =====
 
 // ===== FIN RESOURCE PACKS & SHADERS =====
 
