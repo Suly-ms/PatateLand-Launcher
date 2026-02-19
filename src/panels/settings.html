@@ -3,9 +3,10 @@
         <p>Paramètres</p>
         <div class="nav-box">
             <div id="account" class="nav-settings-btn active-settings-BTN">COMPTES</div>
-            <div id="java" class="nav-settings-btn">JAVA</div>
-            <div id="resolution" class="nav-settings-btn">RESOLUTION</div>
+            <div id="jeu" class="nav-settings-btn">JEU</div>
             <div id="launcher" class="nav-settings-btn">LAUNCHER</div>
+            <div id="resourcepacks" class="nav-settings-btn">RESOURCE PACKS</div>
+            <div id="shaderpacks" class="nav-settings-btn">SHADERS</div>
             <div id="save" class="nav-settings-btn">ACCUEIL</div>
         </div>
     </div>
@@ -22,8 +23,34 @@
         </div>
     </div>
 
-     <div id="java-tab" class="container-settings content-scroll">
-        <div class="titre-tab">Paramètre de votre RAM</div>
+    <div id="jeu-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Résolution du jeu</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Définissez la taille de la fenêtre de jeu.<br>
+                Par défaut : 854 x 480. Standard HD : 1280 x 720.<br>
+                En mode plein écran, la résolution ci-dessous est ignorée.
+            </div>
+            <div class="settings-elements content-center">
+                <div class="input-size-element">
+                    <input type="number" class="width-size input-resolution" placeholder="Largeur">
+                    <div class="size-cross">X</div>
+                    <input type="number" class="height-size input-resolution" placeholder="Hauteur">
+                </div>
+                <div class="size-reset size-btn">Par defaut</div>
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 20px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="fullscreen-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Lancer le jeu en plein écran</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="titre-tab">Mémoire RAM</div>
         <div class="settings-elements-box">
             <div class="setting-text">
                 Définition de la RAM allouée à votre jeu. Une quantité plus importante augmentera les performances.<br>
@@ -67,24 +94,6 @@
         </div>
     </div>
 
-    <div id="resolution-tab" class="container-settings">
-        <div class="titre-tab">Résolution du jeu</div>
-        <div class="settings-elements-box">
-            <div class="setting-text">
-                Définissez la taille de la fenêtre de jeu.<br>
-                Par défaut : 854 x 480. Standard HD : 1280 x 720.
-            </div>
-            <div class="settings-elements content-center">
-                <div class="input-size-element">
-                    <input type="number" class="width-size input-resolution" placeholder="Largeur">
-                    <div class="size-cross">X</div>
-                    <input type="number" class="height-size input-resolution" placeholder="Hauteur">
-                </div>
-                <div class="size-reset size-btn">Par defaut</div>
-            </div>
-        </div>
-    </div>
-
     <div id="launcher-tab" class="container-settings content-scroll">
         <div class="titre-tab">Téléchargements</div>
         <div class="settings-elements-box">
@@ -123,4 +132,52 @@
             </div>
         </div>
     </div>
+
+    <!-- ===== ONGLET RESOURCE PACKS ===== -->
+    <div id="resourcepacks-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Resource Packs</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Gérez vos resource packs. Ajoutez des fichiers .zip ou ouvrez directement le dossier.<br>
+                Les resource packs sont liés à l'instance actuellement sélectionnée.
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="rp-btn-box">
+                    <div class="rp-add-btn">+ Ajouter un Resource Pack</div>
+                    <div class="rp-open-folder-btn">Ouvrir le dossier</div>
+                </div>
+            </div>
+        </div>
+        <div class="titre-tab">Resource Packs installés</div>
+        <div class="settings-elements-box">
+            <div class="resourcepacks-list content-scroll">
+                <div class="rp-empty-msg">Aucun resource pack installé.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET SHADERPACKS ===== -->
+    <div id="shaderpacks-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Shaders</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Gérez vos shaderpacks. Ajoutez des fichiers .zip ou ouvrez directement le dossier.<br>
+                Les shaders sont liés à l'instance actuellement sélectionnée.<br>
+                <b>Note :</b> un mod de shaders (Optifine, Iris...) doit être installé dans votre modpack.
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="sp-btn-box">
+                    <div class="sp-add-btn">+ Ajouter un Shader</div>
+                    <div class="sp-open-folder-btn">Ouvrir le dossier</div>
+                </div>
+            </div>
+        </div>
+        <div class="titre-tab">Shaders installés</div>
+        <div class="settings-elements-box">
+            <div class="shaderpacks-list content-scroll">
+                <div class="sp-empty-msg">Aucun shader installé.</div>
+            </div>
+        </div>
+    </div>
+
 </div>

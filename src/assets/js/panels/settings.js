@@ -6,6 +6,9 @@
 import { changePanel, accountSelect, database, Slider, config, setStatus, popup, appdata, setBackground } from '../utils.js'
 const { ipcRenderer } = require('electron');
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const { shell } = require('electron');
 
 class Settings {
     static id = "settings";
@@ -14,10 +17,10 @@ class Settings {
         this.db = new database();
         this.navBTN()
         this.accounts()
-        this.ram()
-        this.javaPath()
-        this.resolution()
+        this.jeu()
         this.launcher()
+        this.resourcePacks()
+        this.shaderPacks()
     }
 
     navBTN() {
@@ -31,7 +34,6 @@ class Settings {
                 if (id == 'save') {
                     if (activeSettingsBTN) activeSettingsBTN.classList.toggle('active-settings-BTN');
                     document.querySelector('#account').classList.add('active-settings-BTN');
-
                     if (activeContainerSettings) activeContainerSettings.classList.toggle('active-container-settings');
                     document.querySelector(`#account-tab`).classList.add('active-container-settings');
                     return changePanel('home')
@@ -39,9 +41,14 @@ class Settings {
 
                 if (activeSettingsBTN) activeSettingsBTN.classList.toggle('active-settings-BTN');
                 e.target.classList.add('active-settings-BTN');
-
                 if (activeContainerSettings) activeContainerSettings.classList.toggle('active-container-settings');
                 document.querySelector(`#${id}-tab`).classList.add('active-container-settings');
+
+                // Le slider RAM doit s'initialiser APRES que le tab jeu soit visible
+                // car il a besoin de la largeur du DOM pour calculer les positions
+                if (id === 'jeu' && !this.sliderInitialized) {
+                    this.initRamSlider();
+                }
             }
         })
     }
@@ -122,8 +129,10 @@ class Settings {
         return configClient
     }
 
-    async ram() {
-        let config = await this.db.readData('configClient');
+    async jeu() {
+        let configClient = await this.db.readData('configClient');
+
+        // ===== RAM - prépare les données, le slider s'init au clic sur l'onglet =====
         let totalMem = Math.trunc(os.totalmem() / 1073741824 * 10) / 10;
         let freeMem = Math.trunc(os.freemem() / 1073741824 * 10) / 10;
 
@@ -133,72 +142,88 @@ class Settings {
         let sliderDiv = document.querySelector(".memory-slider");
         sliderDiv.setAttribute("max", Math.trunc((80 * totalMem) / 100));
 
-        // Initialiser java_config s'il n'existe pas
-        if (!config.java_config) {
-            config.java_config = {};
-        }
+        if (!configClient.java_config) configClient.java_config = {};
 
-        // Valeurs par défaut : min 2 Go, max 8 Go
-        let ram = config?.java_config?.java_memory ? {
-            ramMin: config.java_config.java_memory.min,
-            ramMax: config.java_config.java_memory.max
+        let ram = configClient?.java_config?.java_memory ? {
+            ramMin: configClient.java_config.java_memory.min,
+            ramMax: configClient.java_config.java_memory.max
         } : { ramMin: 2, ramMax: 8 };
 
-        // Vérifier que les valeurs sont cohérentes avec la mémoire disponible
         if (totalMem < ram.ramMin) {
-            config.java_config.java_memory = { min: 2, max: 8 };
-            await this.db.updateData('configClient', config);
-            ram = { ramMin: 2, ramMax: 8 }
+            configClient.java_config.java_memory = { min: 2, max: 8 };
+            await this.db.updateData('configClient', configClient);
+            ram = { ramMin: 2, ramMax: 8 };
         }
 
-        // S'assurer que ramMax ne dépasse pas 80% de la RAM totale
         let maxAllowed = Math.trunc((80 * totalMem) / 100);
         if (ram.ramMax > maxAllowed) {
             ram.ramMax = maxAllowed;
-            config.java_config.java_memory = { min: ram.ramMin, max: ram.ramMax };
-            await this.db.updateData('configClient', config);
+            configClient.java_config.java_memory = { min: ram.ramMin, max: ram.ramMax };
+            await this.db.updateData('configClient', configClient);
         }
 
-        // Sauvegarder les valeurs de RAM
+        // Stocke la config RAM, le slider sera créé dans initRamSlider() au clic
         this.ramConfig = ram;
         this.sliderInitialized = false;
-        
-        // Initialiser le slider IMMÉDIATEMENT
-        this.initRamSlider();
-    }
 
-    // Nouvelle méthode pour initialiser le slider (appelée quand l'onglet JAVA devient visible)
-    initRamSlider() {
-        if (this.sliderInitialized) {
-            return;
-        }
+        // ===== RESOLUTION - charge les valeurs sauvegardées =====
+        let resolution = configClient?.game_config?.screen_size || { width: 854, height: 480 };
 
-        
-        let slider = new Slider(".memory-slider", parseFloat(this.ramConfig.ramMin), parseFloat(this.ramConfig.ramMax));
+        let width = document.querySelector(".width-size");
+        let height = document.querySelector(".height-size");
+        let resolutionReset = document.querySelector(".size-reset");
 
-        // Event listener pour sauvegarder les changements
-        slider.on("change", async (min, max) => {
-            let config = await this.db.readData('configClient');
-            
-            // Initialiser java_config s'il n'existe pas
-            if (!config.java_config) {
-                config.java_config = {};
-            }
-            
-            // Sauvegarder les nouvelles valeurs
-            config.java_config.java_memory = { min: min, max: max };
-            await this.db.updateData('configClient', config);
-            
+        width.value = resolution.width;
+        height.value = resolution.height;
+
+        width.addEventListener("change", async () => {
+            let cfg = await this.db.readData('configClient');
+            cfg.game_config.screen_size.width = width.value;
+            await this.db.updateData('configClient', cfg);
         });
 
-        this.sliderInitialized = true;
-    }
+        height.addEventListener("change", async () => {
+            let cfg = await this.db.readData('configClient');
+            cfg.game_config.screen_size.height = height.value;
+            await this.db.updateData('configClient', cfg);
+        });
 
-    async javaPath() {
-        let javaPathText = document.querySelector(".java-path-txt")
+        resolutionReset.addEventListener("click", async () => {
+            let cfg = await this.db.readData('configClient');
+            cfg.game_config.screen_size = { width: '854', height: '480' };
+            width.value = '854';
+            height.value = '480';
+            await this.db.updateData('configClient', cfg);
+        });
+
+        // ===== FULLSCREEN =====
+        let fullscreenToggle = document.getElementById('fullscreen-toggle');
+        let fullscreen = configClient?.game_config?.fullscreen || false;
+        fullscreenToggle.checked = fullscreen;
+
+        // Grise les inputs résolution selon l'état du toggle
+        const updateResolutionState = (isFullscreen) => {
+            width.disabled = isFullscreen;
+            height.disabled = isFullscreen;
+            resolutionReset.style.pointerEvents = isFullscreen ? 'none' : '';
+            resolutionReset.style.opacity = isFullscreen ? '0.4' : '';
+            width.style.opacity = isFullscreen ? '0.4' : '';
+            height.style.opacity = isFullscreen ? '0.4' : '';
+        };
+
+        // Applique l'état au chargement
+        updateResolutionState(fullscreen);
+
+        fullscreenToggle.addEventListener('change', async () => {
+            let cfg = await this.db.readData('configClient');
+            cfg.game_config.fullscreen = fullscreenToggle.checked;
+            await this.db.updateData('configClient', cfg);
+            updateResolutionState(fullscreenToggle.checked);
+        });
+        // ===== JAVA PATH =====
+        let javaPathText = document.querySelector(".java-path-txt");
         javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;
 
-        let configClient = await this.db.readData('configClient')
         let javaPath = configClient?.java_config?.java_path || 'Utiliser la version de java livre avec le launcher';
         let javaPathInputTxt = document.querySelector(".java-path-input-text");
         let javaPathInputFile = document.querySelector(".java-path-input-file");
@@ -213,55 +238,38 @@ class Settings {
                     if (javaPathInputFile.value != '') resolve(clearInterval(interval));
                 }, 100);
             });
-
             if (javaPathInputFile.value.replace(".exe", '').endsWith("java") || javaPathInputFile.value.replace(".exe", '').endsWith("javaw")) {
-                let configClient = await this.db.readData('configClient')
+                let cfg = await this.db.readData('configClient');
                 let file = javaPathInputFile.files[0].path;
                 javaPathInputTxt.value = file;
-                configClient.java_config.java_path = file
-                await this.db.updateData('configClient', configClient);
+                cfg.java_config.java_path = file;
+                await this.db.updateData('configClient', cfg);
             } else alert("Le nom du fichier doit être java ou javaw");
         });
 
         document.querySelector(".java-path-reset").addEventListener("click", async () => {
-            let configClient = await this.db.readData('configClient')
+            let cfg = await this.db.readData('configClient');
             javaPathInputTxt.value = 'Utiliser la version de java livre avec le launcher';
-            configClient.java_config.java_path = null
-            await this.db.updateData('configClient', configClient);
+            cfg.java_config.java_path = null;
+            await this.db.updateData('configClient', cfg);
         });
     }
 
-    async resolution() {
-        let configClient = await this.db.readData('configClient')
-        let resolution = configClient?.game_config?.screen_size || { width: 1920, height: 1080 };
+    initRamSlider() {
+        if (this.sliderInitialized) return;
 
-        let width = document.querySelector(".width-size");
-        let height = document.querySelector(".height-size");
-        let resolutionReset = document.querySelector(".size-reset");
+        let slider = new Slider(".memory-slider", parseFloat(this.ramConfig.ramMin), parseFloat(this.ramConfig.ramMax));
 
-        width.value = resolution.width;
-        height.value = resolution.height;
+        slider.on("change", async (min, max) => {
+            let config = await this.db.readData('configClient');
+            if (!config.java_config) config.java_config = {};
+            config.java_config.java_memory = { min: min, max: max };
+            await this.db.updateData('configClient', config);
+        });
 
-        width.addEventListener("change", async () => {
-            let configClient = await this.db.readData('configClient')
-            configClient.game_config.screen_size.width = width.value;
-            await this.db.updateData('configClient', configClient);
-        })
-
-        height.addEventListener("change", async () => {
-            let configClient = await this.db.readData('configClient')
-            configClient.game_config.screen_size.height = height.value;
-            await this.db.updateData('configClient', configClient);
-        })
-
-        resolutionReset.addEventListener("click", async () => {
-            let configClient = await this.db.readData('configClient')
-            configClient.game_config.screen_size = { width: '854', height: '480' };
-            width.value = '854';
-            height.value = '480';
-            await this.db.updateData('configClient', configClient);
-        })
+        this.sliderInitialized = true;
     }
+
 
     async launcher() {
         let configClient = await this.db.readData('configClient');
@@ -356,5 +364,142 @@ class Settings {
             }
         })
     }
+
+    // ===== RESOURCE PACKS =====
+    async resourcePacks() {
+        const appdataPath = await appdata();
+        const dataDir = process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`;
+
+        const getRpFolder = async () => {
+            const configClient = await this.db.readData('configClient');
+            const instanceName = configClient.instance_select;
+            const folder = path.join(appdataPath, dataDir, 'instances', instanceName, 'resourcepacks');
+            if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+            return folder;
+        };
+
+        this.rpFolder = await getRpFolder();
+
+        document.querySelector('#resourcepacks').addEventListener('click', async () => {
+            this.rpFolder = await getRpFolder();
+            this.loadResourcePacksList();
+        });
+
+        document.querySelector('.rp-add-btn').addEventListener('click', async () => {
+            const filePath = await ipcRenderer.invoke('dialog-open-resourcepack');
+            if (!filePath) return;
+            const dest = path.join(this.rpFolder, path.basename(filePath));
+            try {
+                fs.copyFileSync(filePath, dest);
+                this.loadResourcePacksList();
+            } catch (err) {
+                console.error('Erreur lors de la copie du resource pack :', err);
+                alert('Impossible de copier le resource pack.');
+            }
+        });
+
+        document.querySelector('.rp-open-folder-btn').addEventListener('click', () => {
+            ipcRenderer.invoke('open-folder', this.rpFolder);
+        });
+    }
+
+    loadResourcePacksList() {
+        const list = document.querySelector('.resourcepacks-list');
+        list.innerHTML = '';
+        let files;
+        try {
+            files = fs.readdirSync(this.rpFolder).filter(f => f.endsWith('.zip') || fs.statSync(path.join(this.rpFolder, f)).isDirectory());
+        } catch { files = []; }
+
+        if (files.length === 0) {
+            list.innerHTML = '<div class="rp-empty-msg">Aucun resource pack installé.</div>';
+            return;
+        }
+        files.forEach(file => {
+            const item = document.createElement('div');
+            item.classList.add('rp-item');
+            item.innerHTML = `<div class="rp-item-name">${file}</div><div class="rp-item-delete rp-delete-btn" data-file="${file}">Supprimer</div>`;
+            list.appendChild(item);
+        });
+        list.querySelectorAll('.rp-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const fileName = e.target.getAttribute('data-file');
+                const filePath = path.join(this.rpFolder, fileName);
+                try {
+                    if (fs.statSync(filePath).isDirectory()) fs.rmSync(filePath, { recursive: true, force: true });
+                    else fs.unlinkSync(filePath);
+                    this.loadResourcePacksList();
+                } catch (err) { alert('Impossible de supprimer le resource pack.'); }
+            });
+        });
+    }
+    // ===== FIN RESOURCE PACKS =====
+
+    // ===== SHADER PACKS =====
+    async shaderPacks() {
+        const appdataPath = await appdata();
+        const dataDir = process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`;
+
+        const getSpFolder = async () => {
+            const configClient = await this.db.readData('configClient');
+            const instanceName = configClient.instance_select;
+            const folder = path.join(appdataPath, dataDir, 'instances', instanceName, 'shaderpacks');
+            if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+            return folder;
+        };
+
+        this.spFolder = await getSpFolder();
+
+        document.querySelector('#shaderpacks').addEventListener('click', async () => {
+            this.spFolder = await getSpFolder();
+            this.loadShaderPacksList();
+        });
+
+        document.querySelector('.sp-add-btn').addEventListener('click', async () => {
+            const filePath = await ipcRenderer.invoke('dialog-open-shaderpack');
+            if (!filePath) return;
+            const dest = path.join(this.spFolder, path.basename(filePath));
+            try {
+                fs.copyFileSync(filePath, dest);
+                this.loadShaderPacksList();
+            } catch (err) { alert('Impossible de copier le shader.'); }
+        });
+
+        document.querySelector('.sp-open-folder-btn').addEventListener('click', () => {
+            ipcRenderer.invoke('open-folder', this.spFolder);
+        });
+    }
+
+    loadShaderPacksList() {
+        const list = document.querySelector('.shaderpacks-list');
+        list.innerHTML = '';
+        let files;
+        try {
+            files = fs.readdirSync(this.spFolder).filter(f => f.endsWith('.zip') || fs.statSync(path.join(this.spFolder, f)).isDirectory());
+        } catch { files = []; }
+
+        if (files.length === 0) {
+            list.innerHTML = '<div class="sp-empty-msg">Aucun shader installé.</div>';
+            return;
+        }
+        files.forEach(file => {
+            const item = document.createElement('div');
+            item.classList.add('rp-item');
+            item.innerHTML = `<div class="rp-item-name">${file}</div><div class="sp-delete-btn" data-file="${file}">Supprimer</div>`;
+            list.appendChild(item);
+        });
+        list.querySelectorAll('.sp-delete-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const fileName = e.target.getAttribute('data-file');
+                const filePath = path.join(this.spFolder, fileName);
+                try {
+                    if (fs.statSync(filePath).isDirectory()) fs.rmSync(filePath, { recursive: true, force: true });
+                    else fs.unlinkSync(filePath);
+                    this.loadShaderPacksList();
+                } catch (err) { alert('Impossible de supprimer le shader.'); }
+            });
+        });
+    }
+    // ===== FIN SHADER PACKS =====
 }
 export default Settings;

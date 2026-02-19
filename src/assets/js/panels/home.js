@@ -169,7 +169,6 @@ class Home {
             let instanceSelect = configClient.instance_select
             let auth = await this.db.readData('accounts', configClient.account_selected)
 
-            // ✅ Utilise closest pour être sûr du clic
             if (e.target.closest('.instance-select')) {
 
         instancesListPopup.innerHTML = ''
@@ -200,7 +199,6 @@ class Home {
             }
         }
 
-        // 🔥 DÉLÉGATION D'ÉVÉNEMENT (fix release)
         instancesListPopup.onclick = async (e) => {
             const el = e.target.closest('.instance-elements')
             if (!el) return
@@ -212,27 +210,21 @@ class Home {
             configClient.instance_select = selected
             await this.db.updateData('configClient', configClient)
 
-            // Update UI
             document.querySelector('.instance-select').textContent = selected
 
-            // Update status serveur
             let instance = instancesList.find(i => i.name == selected)
             if (instance?.status) setStatus(instance.status)
 
-            // Ferme popup
             instancePopup.style.display = 'none'
         }
 
         instancePopup.style.display = 'flex'
         }
-
-        // ▶️ Sinon ça lance le jeu
         if (!e.target.closest('.instance-select')) {
             this.startGame()
         }
         })
 
-        // ❌ bouton fermer popup
         instanceCloseBTN.addEventListener('click', () => {
             instancePopup.style.display = 'none'
         })
@@ -277,7 +269,10 @@ class Home {
             },
 
             JVM_ARGS:  options.jvm_args ? options.jvm_args : [],
-            GAME_ARGS: options.game_args ? options.game_args : [],
+            GAME_ARGS: [
+                ...(options.game_args ? options.game_args : []),
+                ...(configClient.game_config.fullscreen ? ['--fullscreen'] : [])
+            ],
 
             screen: {
                 width: configClient.game_config.screen_size.width,

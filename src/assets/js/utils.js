@@ -4,7 +4,7 @@
  */
 
 const { ipcRenderer } = require('electron')
-const { StatusServer } = require('minecraft-java-core')
+const { Status } = require('minecraft-java-core')
 const fs = require('fs');
 const pkg = require('../package.json');
 
@@ -69,9 +69,7 @@ async function addAccount(data) {
         </div>
     `
     
-    // ⭐ AJOUTE CE CODE ICI ⭐
     div.addEventListener('click', async (e) => {
-        // Empêcher le clic si on clique sur le bouton supprimer
         if (e.target.closest('.delete-profile')) return;
         
         let db = new database();
@@ -114,8 +112,11 @@ async function setStatus(opt) {
     let { ip, port, nameServer } = opt
     nameServerElement.innerHTML = nameServer
 
-    // IMPORTANT : recréer une instance propre à chaque appel
-    let status = new StatusServer(ip, port);
+    let status = new Status(ip, port, {
+        enableSRV: true,
+        cache: false,
+        timeout: 3000
+    });
 
     let statusServer = await status.getStatus().catch(err => ({ error: true }));
     console.log("STATUS SERVER RAW:", statusServer);
@@ -125,7 +126,6 @@ async function setStatus(opt) {
         document.querySelector('.status-player-count').classList.remove('red')
         statusServerElement.innerHTML = `En ligne - ${statusServer.ms ? statusServer.ms : 0} ms`
 
-        // On essaie d'abord playersConnect, puis players.online, sinon 0
         let players =
             statusServer.playersConnect ??
             statusServer.players?.online ??
