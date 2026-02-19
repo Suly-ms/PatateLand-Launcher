@@ -40,9 +40,13 @@ async function setBackground(theme) {
 
 async function changePanel(id) {
     let panel = document.querySelector(`.${id}`);
-    let active = document.querySelector(`.active`)
-    if (active) active.classList.toggle("active");
+    let active = document.querySelector(`.active`);
+    if (active) {
+        active.classList.remove("active");
+        active.style.display = 'none';
+    }
     panel.classList.add("active");
+    panel.style.display = '';
 }
 
 async function appdata() {
