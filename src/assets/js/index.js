@@ -12,7 +12,6 @@ const os = require('os');
 import { config, database } from './utils.js';
 const nodeFetch = require("node-fetch");
 
-
 class Splash {
     constructor() {
         this.splash = document.querySelector(".splash");
@@ -30,26 +29,21 @@ class Splash {
 
             if (process.platform == 'win32') ipcRenderer.send('update-window-progress-load')
 
-            // --- AJOUT : fond aléatoire ---
             this.setRandomBackground();
-
             this.startAnimation();
         });
     }
 
-    // --- AJOUT : sélection automatique d'une image aléatoire ---
     setRandomBackground() {
         try {
             const baseFolder = path.join(__dirname, "assets", "images", "background");
 
-            // Récupère les sous-dossiers (dark, light, easterEgg…)
             const subfolders = fs.readdirSync(baseFolder).filter(name =>
                 fs.statSync(path.join(baseFolder, name)).isDirectory()
             );
 
             let images = [];
 
-            // Parcourt chaque sous-dossier et récupère les images
             for (const folder of subfolders) {
                 const folderPath = path.join(baseFolder, folder);
                 const files = fs.readdirSync(folderPath);
@@ -69,10 +63,7 @@ class Splash {
                 return;
             }
 
-            // Choisit une image au hasard
             const random = images[Math.floor(Math.random() * images.length)];
-
-            // Applique l'image comme fond
             const container = document.querySelector(".splash-container");
             container.style.backgroundImage = `url("${random}")`;
 
@@ -80,7 +71,6 @@ class Splash {
             console.error("Erreur lors du chargement du fond aléatoire :", err);
         }
     }
-
 
     async startAnimation() {
         let splashes = [
@@ -111,9 +101,11 @@ class Splash {
     async checkUpdate() {
         this.setStatus(`Recherche de mise à jour...`);
 
-        ipcRenderer.invoke('update-app').then().catch(err => {
-            return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${err.message}`);
-        });
+        ipcRenderer.invoke('update-app')
+            .catch(err => {
+                const msg = err?.message || JSON.stringify(err) || err;
+                return this.shutdown(`erreur lors de la recherche de mise à jour :<br>${msg}`);
+            });
 
         ipcRenderer.on('updateAvailable', () => {
             this.setStatus(`Mise à jour disponible !`);
@@ -122,51 +114,76 @@ class Splash {
                 ipcRenderer.send('start-update');
             }
             else return this.dowloadUpdate();
-        })
+        });
 
         ipcRenderer.on('error', (event, err) => {
-            if (err) return this.shutdown(`${err.message}`);
-        })
+            const msg = err?.message || JSON.stringify(err) || err;
+            return this.shutdown(msg);
+        });
 
         ipcRenderer.on('download-progress', (event, progress) => {
             ipcRenderer.send('update-window-progress', { progress: progress.transferred, size: progress.total })
             this.setProgress(progress.transferred, progress.total);
-        })
+        });
 
         ipcRenderer.on('update-not-available', () => {
             console.error("Mise à jour non disponible");
             this.maintenanceCheck();
-        })
+        });
     }
 
-    getLatestReleaseForOS(os, preferredFormat, asset) {
-        return asset.filter(asset => {
-            const name = asset.name.toLowerCase();
-            const isOSMatch = name.includes(os);
-            const isFormatMatch = name.endsWith(preferredFormat);
-            return isOSMatch && isFormatMatch;
-        }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+    getLatestReleaseForOS(osName, preferredFormat, assets) {
+        return assets
+            .filter(asset => {
+                const name = asset.name.toLowerCase();
+                return name.includes(osName) && name.endsWith(preferredFormat);
+            })
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
     }
 
     async dowloadUpdate() {
-        const repoURL = pkg.repository.url.replace("git+", "").replace(".git", "").replace("https://github.com/", "").split("/");
-        const githubAPI = await nodeFetch('https://api.github.com').then(res => res.json()).catch(err => err);
+        try {
+            const repoURL = pkg.repository.url
+                .replace("git+", "")
+                .replace(".git", "")
+                .replace("https://github.com/", "")
+                .split("/");
 
-        const githubAPIRepoURL = githubAPI.repository_url.replace("{owner}", repoURL[0]).replace("{repo}", repoURL[1]);
-        const githubAPIRepo = await nodeFetch(githubAPIRepoURL).then(res => res.json()).catch(err => err);
+            const githubAPI = await nodeFetch('https://api.github.com')
+                .then(res => res.json());
 
-        const releases_url = await nodeFetch(githubAPIRepo.releases_url.replace("{/id}", '')).then(res => res.json()).catch(err => err);
-        const latestRelease = releases_url[0].assets;
-        let latest;
+            const githubAPIRepoURL = githubAPI.repository_url
+                .replace("{owner}", repoURL[0])
+                .replace("{repo}", repoURL[1]);
 
-        if (os.platform() == 'darwin') latest = this.getLatestReleaseForOS('mac', '.dmg', latestRelease);
-        else if (os == 'linux') latest = this.getLatestReleaseForOS('linux', '.appimage', latestRelease);
+            const githubAPIRepo = await nodeFetch(githubAPIRepoURL)
+                .then(res => res.json());
 
-        this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
-        document.querySelector(".download-update").addEventListener("click", () => {
-            shell.openExternal(latest.browser_download_url);
-            return this.shutdown("Téléchargement en cours...");
-        });
+            const releases = await nodeFetch(githubAPIRepo.releases_url.replace("{/id}", ''))
+                .then(res => res.json());
+
+            const latestRelease = releases[0]?.assets || [];
+            let latest;
+
+            if (os.platform() == 'darwin')
+                latest = this.getLatestReleaseForOS('mac', '.dmg', latestRelease);
+            else if (os.platform() == 'linux')
+                latest = this.getLatestReleaseForOS('linux', '.appimage', latestRelease);
+
+            if (!latest)
+                return this.shutdown("Impossible de trouver la mise à jour pour votre OS.");
+
+            this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
+
+            document.querySelector(".download-update").addEventListener("click", () => {
+                shell.openExternal(latest.browser_download_url);
+                return this.shutdown("Téléchargement en cours...");
+            });
+
+        } catch (err) {
+            const msg = err?.message || JSON.stringify(err) || err;
+            return this.shutdown(`Erreur lors de la récupération de la mise à jour :<br>${msg}`);
+        }
     }
 
     async maintenanceCheck() {
@@ -176,7 +193,7 @@ class Splash {
         }).catch(e => {
             console.error(e);
             return this.shutdown("Aucune connexion internet détectée,<br>veuillez réessayer ultérieurement.");
-        })
+        });
     }
 
     startLauncher() {
@@ -188,9 +205,12 @@ class Splash {
     shutdown(text) {
         this.setStatus(`${text}<br>Arrêt dans 5s`);
         let i = 4;
-        setInterval(() => {
+        const interval = setInterval(() => {
             this.setStatus(`${text}<br>Arrêt dans ${i--}s`);
-            if (i < 0) ipcRenderer.send('update-window-close');
+            if (i < 0) {
+                clearInterval(interval);
+                ipcRenderer.send('update-window-close');
+            }
         }, 1000);
     }
 
@@ -216,6 +236,6 @@ document.addEventListener("keydown", (e) => {
     if (e.ctrlKey && e.shiftKey && e.keyCode == 73 || e.keyCode == 123) {
         ipcRenderer.send("update-window-dev-tools");
     }
-})
+});
 
 new Splash();
