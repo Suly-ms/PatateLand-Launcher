@@ -32,8 +32,6 @@ Store.initRenderer();
 app.setName('PatateLand');
 app.setAppUserModelId('fr.patateland.launcher');
 
-app.whenReady().then(() => restoreAutoLaunch());
-
 // Démarrage automatique avec Windows/macOS
 function setAutoLaunch(enabled) {
     app.setLoginItemSettings({
@@ -103,7 +101,8 @@ function createTray() {
 // ===== FIN SYSTEM TRAY =====
 
 if (!app.requestSingleInstanceLock()) app.quit();
-else app.whenReady().then(() => {
+else app.whenReady().then(async () => {
+    await restoreAutoLaunch();
     if (dev) {
         MainWindow.createWindow();
         createTray();
