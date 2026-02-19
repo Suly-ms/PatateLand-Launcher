@@ -1,7 +1,7 @@
 {
     "name": "PatateLand",
     "productName": "PatateLand",
-    "version": "1.1.24",
+    "version": "1.1.25",
     "description": "Launcher Minecraft moddé pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
@@ -26,7 +26,13 @@
         "productName": "PatateLand",
         "win": {
             "icon": "src/assets/images/icon/icon.ico",
-            "target": "nsis"
+            "target": "nsis",
+            "appUserModelId": "fr.patateland.launcher"
+        },
+        "nsis": {
+            "createDesktopShortcut": true,
+            "createStartMenuShortcut": true,
+            "shortcutName": "PatateLand"
         },
         "mac": {
             "icon": "src/assets/images/icon/icon.icns"
