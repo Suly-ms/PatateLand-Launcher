@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
+    <title>PatateLand - Console</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --element-color: #fd8e39;
+            --element-color-dim: rgba(253, 142, 57, 0.15);
+            --element-color-border: rgba(253, 142, 57, 0.3);
+            --background: rgba(0, 0, 0, 0.55);
+            --background-element: rgba(20, 20, 20, 0.5);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --blur-strength: 15px;
+            --shadow: rgba(0, 0, 0, 0.5);
+            --color: #ffffff;
+            --color-dim: rgba(255, 255, 255, 0.4);
+            --red: #ff4757;
+            --red-dim: rgba(255, 71, 87, 0.15);
+            --green: #2ecc71;
+            --green-dim: rgba(46, 204, 113, 0.15);
+            --yellow: #f1c40f;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            user-select: none;
+            color: var(--color);
+            /* Fond sombre comme le launcher */
+            background: #0a0a0a;
+        }
+
+        /* Fond dynamique flou comme le launcher */
+        .bg-blur {
+            position: fixed;
+            inset: 0;
+            background: url('assets/images/background/background.png') center/cover no-repeat;
+            filter: brightness(0.3) blur(8px);
+            transform: scale(1.05);
+            z-index: 0;
+        }
+
+        .layout {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* ===== TITLEBAR ===== */
+        .titlebar {
+            -webkit-app-region: drag;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 14px;
+            background: rgba(0, 0, 0, 0.6);
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(var(--blur-strength));
+            flex-shrink: 0;
+        }
+
+        .titlebar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .titlebar-logo {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+        }
+
+        .titlebar-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            color: var(--color);
+            text-transform: uppercase;
+        }
+
+        .titlebar-title span { color: var(--element-color); }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--element-color-dim);
+            border: 1px solid var(--element-color-border);
+            border-radius: 20px;
+            padding: 2px 9px;
+            font-size: 9px;
+            font-weight: 700;
+            color: var(--element-color);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--element-color);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.running { background: var(--green); }
+        .status-dot.stopped { background: var(--color-dim); animation: none; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .titlebar-controls {
+            display: flex;
+            gap: 2px;
+            -webkit-app-region: no-drag;
+        }
+
+        .ctrl-btn {
+            width: 30px;
+            height: 28px;
+            background: transparent;
+            border: none;
+            color: var(--color-dim);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover { background: rgba(255,255,255,0.08); color: var(--color); }
+        .ctrl-btn.close:hover { background: rgba(255, 71, 87, 0.25); color: var(--red); }
+
+        /* ===== STATS BAR ===== */
+        .stats-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--background-element);
+            backdrop-filter: blur(var(--blur-strength));
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .stat-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 3px 10px;
+            font-size: 10px;
+        }
+
+        .stat-chip .label { color: var(--color-dim); }
+        .stat-chip .value { font-weight: 700; color: var(--color); }
+        .stat-chip .value.orange { color: var(--element-color); }
+        .stat-chip .value.red { color: var(--red); }
+        .stat-chip .value.green { color: var(--green); }
+
+        .stat-sep { flex: 1; }
+
+        .btn-clear {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-color);
+            color: var(--color-dim);
+            font-family: 'Poppins', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-clear:hover {
+            background: var(--element-color-dim);
+            border-color: var(--element-color-border);
+            color: var(--element-color);
+        }
+
+        /* ===== CONSOLE ===== */
+        .console-wrapper {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .console {
+            height: 100%;
+            overflow-y: auto;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .console::-webkit-scrollbar { width: 4px; }
+        .console::-webkit-scrollbar-thumb {
+            background: var(--element-color);
+            border-radius: 10px;
+        }
+        .console::-webkit-scrollbar-track { background: transparent; }
+
+        .log-line {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 1.6;
+            animation: slideIn 0.12s ease;
+            border: 1px solid transparent;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-4px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .log-time {
+            color: var(--color-dim);
+            font-size: 9px;
+            flex-shrink: 0;
+            margin-top: 3px;
+            font-weight: 400;
+        }
+
+        .log-badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 5px;
+            flex-shrink: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 1px;
+        }
+
+        .log-text {
+            flex: 1;
+            word-break: break-all;
+            color: var(--color);
+        }
+
+        /* Types */
+        .log-info .log-badge { background: rgba(255,255,255,0.08); color: var(--color-dim); }
+
+        .log-warn { background: rgba(241, 196, 15, 0.04); border-color: rgba(241, 196, 15, 0.08); }
+        .log-warn .log-badge { background: rgba(241, 196, 15, 0.15); color: var(--yellow); }
+        .log-warn .log-text { color: var(--yellow); }
+
+        .log-error { background: var(--red-dim); border-color: rgba(255, 71, 87, 0.15); }
+        .log-error .log-badge { background: rgba(255, 71, 87, 0.2); color: var(--red); }
+        .log-error .log-text { color: var(--red); }
+
+        .log-success { background: var(--green-dim); border-color: rgba(46, 204, 113, 0.15); }
+        .log-success .log-badge { background: rgba(46, 204, 113, 0.2); color: var(--green); }
+        .log-success .log-text { color: var(--green); }
+
+        .log-system { background: var(--element-color-dim); border-color: var(--element-color-border); }
+        .log-system .log-badge { background: rgba(253, 142, 57, 0.2); color: var(--element-color); }
+        .log-system .log-text { color: var(--element-color); }
+
+        /* Scroll bottom btn */
+        .scroll-btn {
+            position: absolute;
+            bottom: 10px;
+            right: 18px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--element-color);
+            border: none;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 16px rgba(253, 142, 57, 0.5);
+            transition: transform 0.15s;
+        }
+
+        .scroll-btn:hover { transform: scale(1.1); }
+        .scroll-btn.visible { display: flex; }
+
+        /* ===== BOTTOM BAR ===== */
+        .bottom-bar {
+            padding: 5px 14px;
+            background: rgba(0,0,0,0.5);
+            border-top: 1px solid var(--border-color);
+            backdrop-filter: blur(var(--blur-strength));
+            font-size: 9px;
+            color: var(--color-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .bottom-bar span { color: var(--element-color); font-weight: 700; }
+    </style>
+</head>
+<body>
+
+<div class="bg-blur"></div>
+
+<div class="layout">
+    <div class="titlebar">
+        <div class="titlebar-left">
+            <img class="titlebar-logo" src="assets/images/icon/icon.png">
+            <div class="titlebar-title"><span>Patate</span>Land — Console</div>
+            <div class="status-pill">
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">Démarrage</span>
+            </div>
+        </div>
+        <div class="titlebar-controls">
+            <button class="ctrl-btn" id="btn-minimize">−</button>
+            <button class="ctrl-btn close" id="btn-close">×</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-chip">
+            <span class="label">Lignes</span>
+            <span class="value orange" id="stat-lines">0</span>
+        </div>
+        <div class="stat-chip">
+            <span class="label">Erreurs</span>
+            <span class="value" id="stat-errors">0</span>
+        </div>
+        <div class="stat-chip">
+            <span class="label">Warnings</span>
+            <span class="value" id="stat-warns">0</span>
+        </div>
+        <div class="stat-chip">
+            <span class="label">Statut</span>
+            <span class="value green" id="stat-status">En cours...</span>
+        </div>
+        <div class="stat-sep"></div>
+        <button class="btn-clear" id="btn-clear">Effacer</button>
+    </div>
+
+    <div class="console-wrapper">
+        <div class="console" id="console"></div>
+        <button class="scroll-btn" id="scroll-btn">↓</button>
+    </div>
+
+    <div class="bottom-bar">
+        Total : <span id="log-count">0</span> entrées
+    </div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+let lineCount = 0, errorCount = 0, warnCount = 0;
+const consoleEl = document.getElementById('console');
+const scrollBtn = document.getElementById('scroll-btn');
+let autoScroll = true;
+
+consoleEl.addEventListener('scroll', () => {
+    const atBottom = consoleEl.scrollHeight - consoleEl.scrollTop - consoleEl.clientHeight < 40;
+    autoScroll = atBottom;
+    scrollBtn.classList.toggle('visible', !atBottom);
+});
+
+scrollBtn.addEventListener('click', () => {
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+    autoScroll = true;
+    scrollBtn.classList.remove('visible');
+});
+
+function getTime() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
+function detectType(text) {
+    const t = text.toLowerCase();
+    if (t.includes('error') || t.includes('erreur') || t.includes('exception') || t.includes('fatal')) return 'error';
+    if (t.includes('warn') || t.includes('warning')) return 'warn';
+    if (t.includes('started') || t.includes('démarré') || t.includes('ready') || t.includes('success') || t.includes('done')) return 'success';
+    return 'info';
+}
+
+function addLog(text, forceType = null) {
+    if (!text || !text.trim()) return;
+    const type = forceType || detectType(text);
+    lineCount++;
+    if (type === 'error') errorCount++;
+    if (type === 'warn') warnCount++;
+
+    const labels = { info: 'INFO', warn: 'WARN', error: 'ERR', success: 'OK', system: 'SYS' };
+    const line = document.createElement('div');
+    line.className = `log-line log-${type}`;
+    line.innerHTML = `
+        <span class="log-time">${getTime()}</span>
+        <span class="log-badge">${labels[type] || 'INFO'}</span>
+        <span class="log-text">${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
+    `;
+    consoleEl.appendChild(line);
+
+    document.getElementById('stat-lines').textContent = lineCount;
+    document.getElementById('stat-errors').textContent = errorCount;
+    document.getElementById('stat-warns').textContent = warnCount;
+    document.getElementById('log-count').textContent = lineCount;
+
+    const errEl = document.getElementById('stat-errors');
+    errEl.className = `value${errorCount > 0 ? ' red' : ''}`;
+
+    if (autoScroll) consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+ipcRenderer.on('log-data', (_, text) => {
+    if (typeof text === 'string') text.split('\n').forEach(l => addLog(l.trim()));
+});
+
+ipcRenderer.on('log-status', (_, status) => {
+    const dot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const statStatus = document.getElementById('stat-status');
+
+    if (status === 'running') {
+        dot.className = 'status-dot running';
+        statusText.textContent = 'En jeu';
+        statStatus.textContent = 'En jeu';
+        statStatus.className = 'value green';
+        addLog('Minecraft lancé avec succès !', 'success');
+    } else if (status === 'closed') {
+        dot.className = 'status-dot stopped';
+        statusText.textContent = 'Fermé';
+        statStatus.textContent = 'Fermé';
+        statStatus.className = 'value';
+        statStatus.style.color = 'var(--color-dim)';
+        addLog("Minecraft s'est fermé.", 'system');
+    } else if (status === 'error') {
+        dot.className = 'status-dot stopped';
+        statusText.textContent = 'Erreur';
+        statStatus.textContent = 'Erreur';
+        statStatus.className = 'value red';
+        addLog('Une erreur est survenue.', 'error');
+    }
+});
+
+document.getElementById('btn-minimize').addEventListener('click', () => ipcRenderer.send('log-window-minimize'));
+document.getElementById('btn-close').addEventListener('click', () => ipcRenderer.send('log-window-close'));
+document.getElementById('btn-clear').addEventListener('click', () => {
+    consoleEl.innerHTML = '';
+    lineCount = 0; errorCount = 0; warnCount = 0;
+    ['stat-lines','stat-errors','stat-warns','log-count'].forEach(id => document.getElementById(id).textContent = 0);
+});
+
+addLog('Console PatateLand initialisée', 'system');
+addLog('En attente des logs de Minecraft...', 'info');
+</script>
+</body>
+</html>

@@ -33,6 +33,7 @@ class Home {
         document.querySelector('.player-head').addEventListener('click', () => { 
             changePanel('settings'); 
         });
+
     }
 
 
@@ -111,11 +112,12 @@ class Home {
     }
 
     socialLick() {
-        let socials = document.querySelectorAll('.social-block')
+        let socials = document.querySelectorAll('.social-block, .social-sidebar-btn')
 
         socials.forEach(social => {
             social.addEventListener('click', e => {
-                shell.openExternal(e.target.dataset.url)
+                const url = e.currentTarget.dataset.url
+                if (url) shell.openExternal(url)
             })
         });
     }
@@ -302,6 +304,7 @@ class Home {
             ipcRenderer.send('main-window-progress', { progress, size })
             progressBar.value = progress;
             progressBar.max = size;
+            ipcRenderer.send('log-send', `Téléchargement : ${((progress / size) * 100).toFixed(0)}%`);
         });
 
         launch.on('check', (progress, size) => {
@@ -328,6 +331,7 @@ class Home {
             infoStarting.innerHTML = `Patch en cours...`
         });
 
+        let logWindowOpened = false;
         launch.on('data', (e) => {
             progressBar.style.display = "none"
             if (configClient.launcher_config.closeLauncher == 'close-launcher') {
@@ -336,6 +340,14 @@ class Home {
             new logger('Minecraft', '#36b030');
             ipcRenderer.send('main-window-progress-load')
             infoStarting.innerHTML = `Demarrage en cours...`
+            // Ouvre la fenêtre de logs une seule fois, seulement si activée dans les settings
+            if (!logWindowOpened && configClient.game_config?.show_console !== false) {
+                logWindowOpened = true;
+                ipcRenderer.send('log-window-open');
+                ipcRenderer.send('log-status', 'running');
+            }
+            const line = typeof e === 'string' ? e : JSON.stringify(e);
+            ipcRenderer.send('log-send', line);
             console.log(e);
         })
 
@@ -344,6 +356,7 @@ class Home {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
+            ipcRenderer.send('log-status', 'closed');
             infoStartingBOX.style.display = "none"
             playInstanceBTN.style.display = "flex"
             playTitle.style.display = "block"
@@ -366,6 +379,8 @@ class Home {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
+            ipcRenderer.send('log-status', 'error');
+            ipcRenderer.send('log-send', `ERREUR: ${JSON.stringify(err)}`);
             infoStartingBOX.style.display = "none"
             playInstanceBTN.style.display = "flex"
             playTitle.style.display = "block"

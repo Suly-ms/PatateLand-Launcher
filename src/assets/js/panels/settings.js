@@ -220,6 +220,18 @@ class Settings {
             await this.db.updateData('configClient', cfg);
             updateResolutionState(fullscreenToggle.checked);
         });
+
+        // ===== CONSOLE DE JEU =====
+        let consoleToggle = document.getElementById('console-toggle');
+        let showConsole = configClient?.game_config?.show_console ?? true;
+        consoleToggle.checked = showConsole;
+
+        consoleToggle.addEventListener('change', async () => {
+            let cfg = await this.db.readData('configClient');
+            cfg.game_config.show_console = consoleToggle.checked;
+            await this.db.updateData('configClient', cfg);
+        });
+
         // ===== JAVA PATH =====
         let javaPathText = document.querySelector(".java-path-txt");
         javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;
@@ -364,7 +376,6 @@ class Settings {
             }
         })
     }
-
     // ===== RESOURCE PACKS =====
     async resourcePacks() {
         const appdataPath = await appdata();
