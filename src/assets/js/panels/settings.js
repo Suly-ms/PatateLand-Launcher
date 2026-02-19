@@ -381,13 +381,23 @@ class Settings {
 
         // ===== AUTO LAUNCH =====
         let autoLaunchToggle = document.getElementById('autolaunch-toggle');
-        // Récupère l'état actuel depuis le système
-        let currentAutoLaunch = await ipcRenderer.invoke('get-auto-launch');
-        autoLaunchToggle.checked = currentAutoLaunch;
-
-        autoLaunchToggle.addEventListener('change', () => {
-            ipcRenderer.send('set-auto-launch', autoLaunchToggle.checked);
-        });
+        if (process.platform === 'linux') {
+            // Non supporté sur Linux, on cache le toggle
+            autoLaunchToggle.closest('.settings-elements-box')?.previousElementSibling?.remove();
+            autoLaunchToggle.closest('.settings-elements-box')?.remove();
+        } else {
+            // Priorité à la valeur en DB (survive aux mises à jour)
+            let cfgForAutoLaunch = await this.db.readData('configClient');
+            let currentAutoLaunch = cfgForAutoLaunch?.launcher_config?.auto_launch ?? await ipcRenderer.invoke('get-auto-launch');
+            autoLaunchToggle.checked = currentAutoLaunch;
+            autoLaunchToggle.addEventListener('change', async () => {
+                ipcRenderer.send('set-auto-launch', autoLaunchToggle.checked);
+                // Sauvegarder dans la DB pour survivre aux mises à jour
+                let cfg = await this.db.readData('configClient');
+                cfg.launcher_config.auto_launch = autoLaunchToggle.checked;
+                await this.db.updateData('configClient', cfg);
+            });
+        }
         // ===== FIN AUTO LAUNCH =====
     }
     // ===== RESOURCE PACKS =====

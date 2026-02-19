@@ -32,13 +32,27 @@ Store.initRenderer();
 app.setName('PatateLand');
 app.setAppUserModelId('fr.patateland.launcher');
 
-// Démarrage automatique avec Windows
+app.whenReady().then(() => restoreAutoLaunch());
+
+// Démarrage automatique avec Windows/macOS
 function setAutoLaunch(enabled) {
     app.setLoginItemSettings({
         openAtLogin: enabled,
         name: 'PatateLand',
         path: process.execPath
     });
+}
+
+// Restaure l'auto-launch depuis la DB après une mise à jour
+async function restoreAutoLaunch() {
+    try {
+        const Store = require('electron-store');
+        const store = new Store({ name: 'configClient' });
+        const configClient = store.get('data');
+        if (configClient?.launcher_config?.auto_launch === true) {
+            setAutoLaunch(true);
+        }
+    } catch(e) {}
 }
 
 // Helper notification Electron natif (son Windows fiable)
