@@ -1,4 +1,12 @@
 /* Container global */
+.settings {
+    z-index: 0;
+}
+
+.settings.active {
+    z-index: 1;
+}
+
 .settings .container {
     display: flex;
     flex-direction: row;
