@@ -5,7 +5,7 @@ const JavaScriptObfuscator = require('javascript-obfuscator');
 const png2icons = require('png2icons');
 const { Jimp, JimpMime } = require('jimp');
 
-const { preductname } = require('./package.json');
+const { productName } = require('./package.json');
 
 class Index {
     async init() {
@@ -62,8 +62,8 @@ class Index {
         builder.build({
             config: {
                 generateUpdatesFilesForAllChannels: false,
-                appId: preductname,
-                productName: preductname,
+                appId: 'fr.patateland.launcher',
+                productName: productName,
                 copyright: `Copyright © 2020-${new Date().getFullYear()} Luuxis`,
                 artifactName: "${productName}-${os}-${arch}.${ext}",
                 extraMetadata: { main: 'app/app.js' },
@@ -84,6 +84,7 @@ class Index {
                 }],
                 win: {
                     icon: "./app/assets/images/icon/icon.ico",
+                    requestedExecutionLevel: "asInvoker",
                     target: [{
                         target: "nsis",
                         arch: "x64"
@@ -95,8 +96,11 @@ class Index {
                 },
                 nsis: {
                     oneClick: true,
+                    perMachine: false,
                     allowToChangeInstallationDirectory: false,
                     createDesktopShortcut: true,
+                    createStartMenuShortcut: true,
+                    shortcutName: "PatateLand",
                     runAfterFinish: true
                 },
                 mac: {
