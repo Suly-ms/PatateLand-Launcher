@@ -12,7 +12,7 @@
 
 <p align="center">
     <a href="http://discord.luuxis.fr">
-        <img src="https://invidget.switchblade.xyz/e9q7Yr2cuQ">
+        <img src="https://invidget.switchblade.xyz/cadkgjanFD">
     </a>
 </p>
 
