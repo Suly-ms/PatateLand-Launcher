@@ -101,16 +101,27 @@ function createTray() {
 // ===== FIN SYSTEM TRAY =====
 
 if (!app.requestSingleInstanceLock()) app.quit();
-else app.whenReady().then(async () => {
-    await restoreAutoLaunch();
-    if (dev) {
-        MainWindow.createWindow();
-        createTray();
-        scheduleUpdateCheck();
-        return;
-    }
-    UpdateWindow.createWindow();
-});
+else {
+    // Quand on clique sur le logo dans la barre des tâches ou qu'on relance l'exe
+    app.on('second-instance', () => {
+        const win = MainWindow.getWindow();
+        if (win) {
+            win.show();
+            win.focus();
+        }
+    });
+
+    app.whenReady().then(async () => {
+        await restoreAutoLaunch();
+        if (dev) {
+            MainWindow.createWindow();
+            createTray();
+            scheduleUpdateCheck();
+            return;
+        }
+        UpdateWindow.createWindow();
+    });
+}
 
 ipcMain.on('main-window-open', () => {
     MainWindow.createWindow();
@@ -225,6 +236,9 @@ ipcMain.handle('dialog-open-shaderpack', async () => {
 ipcMain.handle('open-folder', (_, folderPath) => {
     shell.openPath(folderPath);
 });
+
+// ===== RCON =====
+// ===== FIN RCON =====
 
 // ===== FIN RESOURCE PACKS & SHADERS =====
 

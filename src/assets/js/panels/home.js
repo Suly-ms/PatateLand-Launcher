@@ -29,6 +29,11 @@ class Home {
             } catch(e) {}
         }, 5000)
 
+        // Rafraîchissement automatique des news toutes les 5 minutes
+        setInterval(() => {
+            this.news();
+        }, 3 * 60 * 1000);
+
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
 
         document.querySelector('.player-head').addEventListener('click', () => { 
