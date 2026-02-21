@@ -11,7 +11,7 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/luuxis/Selvania-Launcher?style=for-the-badge)
 
 <p align="center">
-    <a href="http://discord.luuxis.fr">
+    <a href="http://dsc.gg/lacrimo">
         <img src="https://invidget.switchblade.xyz/cadkgjanFD">
     </a>
 </p>
