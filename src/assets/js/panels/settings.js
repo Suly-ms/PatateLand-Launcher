@@ -232,6 +232,24 @@ class Settings {
             await this.db.updateData('configClient', cfg);
         });
 
+        // ===== BOUTONS +/- NUMBER INPUTS =====
+        document.querySelectorAll('.number-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.target;
+                const input = document.querySelector(`.${target}`);
+                if (!input) return;
+                const step = parseInt(input.step) || 1;
+                const min = parseInt(input.min) || 0;
+                const max = parseInt(input.max) || 99999;
+                let val = parseInt(input.value) || 0;
+                if (btn.classList.contains('plus')) val = Math.min(val + step, max);
+                else val = Math.max(val - step, min);
+                input.value = val;
+                input.dispatchEvent(new Event('change'));
+            });
+        });
+        // ===== FIN BOUTONS +/- NUMBER INPUTS =====
+
         // ===== JAVA PATH =====
         let javaPathText = document.querySelector(".java-path-txt");
         javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;

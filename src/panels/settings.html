@@ -33,9 +33,17 @@
             </div>
             <div class="settings-elements content-center">
                 <div class="input-size-element">
-                    <input type="number" class="width-size input-resolution" placeholder="Largeur">
+                    <div class="number-input-wrapper">
+                        <button class="number-btn minus" data-target="width-size">−</button>
+                        <input type="number" class="width-size input-resolution" placeholder="Largeur">
+                        <button class="number-btn plus" data-target="width-size">+</button>
+                    </div>
                     <div class="size-cross">X</div>
-                    <input type="number" class="height-size input-resolution" placeholder="Hauteur">
+                    <div class="number-input-wrapper">
+                        <button class="number-btn minus" data-target="height-size">−</button>
+                        <input type="number" class="height-size input-resolution" placeholder="Hauteur">
+                        <button class="number-btn plus" data-target="height-size">+</button>
+                    </div>
                 </div>
                 <div class="size-reset size-btn">Par defaut</div>
             </div>
@@ -147,7 +155,11 @@
                 Augmentez cette valeur si vous avez une très bonne connexion (Fibre).
             </div>
             <div class="settings-elements content-center">
-                <input type="number" class="max-files input-max-files">
+                <div class="number-input-wrapper">
+                    <button class="number-btn minus" data-target="max-files">−</button>
+                    <input type="number" class="max-files input-max-files">
+                    <button class="number-btn plus" data-target="max-files">+</button>
+                </div>
                 <p style="margin-left:10px;">Fichiers</p>
                 <div class="max-files-reset max-files-btn">Par defaut</div>
             </div>

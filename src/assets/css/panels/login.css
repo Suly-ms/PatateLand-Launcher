@@ -127,3 +127,24 @@
 .cancel:hover {
     background: rgba(255, 255, 255, 0.1);
 }
+
+/* ===== LIEN CRÉER UN COMPTE ===== */
+.login-register {
+    margin-top: 15px;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.5);
+    text-align: center;
+}
+
+.register-link {
+    color: var(--element-color);
+    cursor: pointer;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+
+.register-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+/* ===== FIN LIEN CRÉER UN COMPTE ===== */

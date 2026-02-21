@@ -226,9 +226,6 @@ ipcMain.handle('open-folder', (_, folderPath) => {
     shell.openPath(folderPath);
 });
 
-// ===== RCON =====
-// ===== FIN RCON =====
-
 // ===== FIN RESOURCE PACKS & SHADERS =====
 
 app.on('window-all-closed', () => {

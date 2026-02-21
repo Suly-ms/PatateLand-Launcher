@@ -3,7 +3,7 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 const { AZauth, Mojang } = require('minecraft-java-core');
-const { ipcRenderer } = require('electron');
+const { ipcRenderer, shell } = require('electron');
 
 import { popup, database, changePanel, accountSelect, addAccount, config, setStatus } from '../utils.js';
 
@@ -118,6 +118,11 @@ class Login {
         let AZauthCancelA2F = document.querySelector('.cancel-AZauth-A2F');
 
         loginAZauth.style.display = 'block';
+
+        // Lien créer un compte
+        document.querySelector('.register-link').addEventListener('click', e => {
+            shell.openExternal(e.target.dataset.url);
+        });
 
         document.addEventListener("keydown", (event) => {
             if (event.key === "Enter") AZauthConnectBTN.click();

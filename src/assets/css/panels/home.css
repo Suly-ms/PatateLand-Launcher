@@ -106,6 +106,15 @@
     animation: slideIn 0.3s ease;
 }
 
+/* Images dans les news */
+.news-content img {
+    max-width: 100%;
+    max-height: 150px;
+    object-fit: cover;
+    border-radius: 8px;
+    display: block;
+}
+
 @keyframes slideIn {
     from { opacity: 0; transform: translateX(20px); }
     to   { opacity: 1; transform: translateX(0); }
@@ -220,6 +229,18 @@
     position: relative;
 }
 
+/* Centrage absolu du play-container */
+.play-container {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
 .player-head {
     width: 60px;
     height: 60px;
@@ -242,12 +263,7 @@
     transform: scale(0.95);
 }
 
-.play-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
+
 
 .play-container:has(.info-starting-game[style*="display: flex"]) .play-title,
 .play-container:has(.info-starting-game[style*="display: block"]) .play-title {
@@ -305,11 +321,11 @@
     background: linear-gradient(90deg, var(--button-instance-start), var(--button-instance-end)); 
     box-shadow: 0 5px 15px var(--button-instance-shadow); 
     height: 50px;
-    min-width: 180px; 
-    padding: 0 20px;
+    min-width: 130px; 
+    padding: 0 15px;
     border-radius: 15px;
     color: white;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
     text-transform: uppercase;
     cursor: pointer;

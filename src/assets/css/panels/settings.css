@@ -661,3 +661,60 @@ input {
     text-align: left;
     padding-left: 14px;
 }
+
+
+
+/* ========== NUMBER INPUT CUSTOM ========== */
+.number-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.number-input-wrapper input[type="number"] {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    text-align: center;
+    width: 80px;
+    padding: 10px 5px;
+    color: white;
+    font-size: 0.95rem;
+    -moz-appearance: textfield;
+}
+
+.number-input-wrapper input[type="number"]::-webkit-outer-spin-button,
+.number-input-wrapper input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-btn {
+    background: rgba(255,255,255,0.08);
+    border: none;
+    color: var(--color);
+    width: 32px;
+    height: 38px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.number-btn:hover {
+    background: var(--element-color);
+    color: white;
+}
+
+.number-btn:active {
+    transform: scale(0.95);
+}
+/* ========== FIN NUMBER INPUT CUSTOM ========== */
