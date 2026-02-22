@@ -2,7 +2,7 @@
  * @author Luuxis
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
-import { config, database, logger, changePanel, appdata, setStatus, pkg, popup } from '../utils.js'
+import { config as configModule, database, logger, changePanel, appdata, setStatus, pkg, popup } from '../utils.js'
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
@@ -18,16 +18,15 @@ class Home {
         this.socialLick()
         this.instancesSelect()
 
-        const cfg = this.config;
         const db = this.db;
         setInterval(async () => {
             try {
                 let configClient = await db.readData('configClient')
-                let instanceList = await cfg.getInstanceList()
+                let instanceList = await configModule.getInstanceList()
                 let options = instanceList.find(i => i.name == configClient.instance_select)
                 if (options?.status) await setStatus(options.status)
-            } catch(e) {}
-        }, 5000)
+            } catch(e) { console.log("INTERVAL ERR:", e.message) }
+        }, 15000)
 
         // Rafraîchissement automatique des news toutes les 5 minutes
         setInterval(() => {
@@ -45,7 +44,7 @@ class Home {
 
     async news() {
         let newsContainer = document.querySelector('.news-list');
-        let news = await config.getNews(this.config).then(res => res).catch(err => false);
+        let news = await configModule.getNews(this.config).then(res => res).catch(err => false);
 
         let slides = [];
 
@@ -144,7 +143,7 @@ class Home {
     async instancesSelect() {
         let configClient = await this.db.readData('configClient')
         let auth = await this.db.readData('accounts', configClient.account_selected)
-        let instancesList = await config.getInstanceList()
+        let instancesList = await configModule.getInstanceList()
         let instanceSelect = instancesList.find(i => i.name == configClient?.instance_select) ? configClient?.instance_select : null
 
         let instanceBTN = document.querySelector('.play-instance')
@@ -185,12 +184,18 @@ class Home {
                 }
         }
 
-        instanceBTN.addEventListener('click', async e => {
+        // Bouton JOUER - séparé du sélecteur d'instance
+        document.querySelector('.play-btn').addEventListener('click', async () => {
+            this.startGame()
+        })
+
+        // Sélecteur d'instance - séparé du bouton JOUER
+        document.querySelector('.instance-select').addEventListener('click', async e => {
             let configClient = await this.db.readData('configClient')
             let instanceSelect = configClient.instance_select
             let auth = await this.db.readData('accounts', configClient.account_selected)
 
-            if (e.target.closest('.instance-select')) {
+            if (true) {
 
         instancesListPopup.innerHTML = ''
 
@@ -241,9 +246,6 @@ class Home {
 
         instancePopup.style.display = 'flex'
         }
-        if (!e.target.closest('.instance-select')) {
-            this.startGame()
-        }
         })
 
         instanceCloseBTN.addEventListener('click', () => {
@@ -254,7 +256,7 @@ class Home {
     async startGame() {
         let launch = new Launch()
         let configClient = await this.db.readData('configClient')
-        let instance = await config.getInstanceList()
+        let instance = await configModule.getInstanceList()
         let authenticator = await this.db.readData('accounts', configClient.account_selected)
         let options = instance.find(i => i.name == configClient.instance_select)
 

@@ -236,23 +236,17 @@ ipcMain.handle('dialog-open-shaderpack', async () => {
 ipcMain.handle('open-folder', (_, folderPath) => {
     shell.openPath(folderPath);
 });
-
-// ===== RCON =====
-// ===== FIN RCON =====
-
 // ===== FIN RESOURCE PACKS & SHADERS =====
 
 app.on('window-all-closed', () => {
-    // L'utilisateur quitte via le menu tray "Quitter"
 });
 
 autoUpdater.autoDownload = false;
 
-// Vérification automatique toutes les 10 minutes
 let isFirstUpdateCheck = true;
 
 function scheduleUpdateCheck() {
-    // Premier check silencieux au démarrage (pas de notif)
+
     autoUpdater.checkForUpdates().catch(() => {});
 
     setInterval(() => {

@@ -167,7 +167,7 @@ class Settings {
         this.sliderInitialized = false;
 
         // ===== RESOLUTION - charge les valeurs sauvegardées =====
-        let resolution = configClient?.game_config?.screen_size || { width: 854, height: 480 };
+        let resolution = configClient?.game_config?.screen_size || { width: 1280, height: 720 };
 
         let width = document.querySelector(".width-size");
         let height = document.querySelector(".height-size");
@@ -190,9 +190,9 @@ class Settings {
 
         resolutionReset.addEventListener("click", async () => {
             let cfg = await this.db.readData('configClient');
-            cfg.game_config.screen_size = { width: '854', height: '480' };
-            width.value = '854';
-            height.value = '480';
+            cfg.game_config.screen_size = { width: '1280', height: '720' };
+            width.value = '1280';
+            height.value = '720';
             await this.db.updateData('configClient', cfg);
         });
 
@@ -400,17 +400,14 @@ class Settings {
         // ===== AUTO LAUNCH =====
         let autoLaunchToggle = document.getElementById('autolaunch-toggle');
         if (process.platform === 'linux') {
-            // Non supporté sur Linux, on cache le toggle
             autoLaunchToggle.closest('.settings-elements-box')?.previousElementSibling?.remove();
             autoLaunchToggle.closest('.settings-elements-box')?.remove();
         } else {
-            // Priorité à la valeur en DB (survive aux mises à jour)
             let cfgForAutoLaunch = await this.db.readData('configClient');
             let currentAutoLaunch = cfgForAutoLaunch?.launcher_config?.auto_launch ?? await ipcRenderer.invoke('get-auto-launch');
             autoLaunchToggle.checked = currentAutoLaunch;
             autoLaunchToggle.addEventListener('change', async () => {
                 ipcRenderer.send('set-auto-launch', autoLaunchToggle.checked);
-                // Sauvegarder dans la DB pour survivre aux mises à jour
                 let cfg = await this.db.readData('configClient');
                 cfg.launcher_config.auto_launch = autoLaunchToggle.checked;
                 await this.db.updateData('configClient', cfg);

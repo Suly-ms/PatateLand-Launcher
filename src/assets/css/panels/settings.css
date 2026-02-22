@@ -654,7 +654,6 @@ input {
 
 /* ========== FIN TOGGLE FULLSCREEN ========== */
 
-/* Input java-path plus large pour afficher le texte en entier */
 .java-path-input-text {
     width: 100%;
     max-width: 420px;

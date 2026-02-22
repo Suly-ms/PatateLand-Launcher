@@ -115,11 +115,13 @@ async function setStatus(opt) {
     let status = new Status(ip, port, {
         enableSRV: true,
         cache: false,
-        timeout: 3000
+        timeout: 5000
     });
 
-    let statusServer = await status.getStatus().catch(err => ({ error: true }));
-    console.log("STATUS SERVER RAW:", statusServer);
+    let statusServer = await status.getStatus().catch(err => {
+        console.log("STATUS ERROR:", err?.message || err);
+        return { error: true };
+    });
 
     if (!statusServer.error) {
         statusServerElement.classList.remove('red')
