@@ -1,6 +1,6 @@
 <p align="center"><img src="../src/assets/images/icon/icon.png" alt="icon-launcher"></p>
 
-<h1 align="center">Selvania Launcher</h1>
+<h1 align="center">PatateLand Launcher</h1>
 
 [<p align="center">]()
 ![GitHub all releases](https://img.shields.io/github/downloads/luuxis/Selvania-Launcher/total?style=for-the-badge)
@@ -11,8 +11,8 @@
 ![GitHub Repo stars](https://img.shields.io/github/stars/luuxis/Selvania-Launcher?style=for-the-badge)
 
 <p align="center">
-    <a href="http://discord.luuxis.fr">
-        <img src="https://invidget.switchblade.xyz/e9q7Yr2cuQ">
+    <a href="http://dsc.gg/lacrimo">
+        <img src="https://invidget.switchblade.xyz/cadkgjanFD">
     </a>
 </p>
 
