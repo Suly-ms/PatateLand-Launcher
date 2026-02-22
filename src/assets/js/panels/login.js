@@ -110,6 +110,12 @@ class Login {
         let loginAZauth = document.querySelector('.login-AZauth');
         let loginAZauthA2F = document.querySelector('.login-AZauth-A2F');
 
+        // Reset à chaque fois qu'on revient sur le panel login
+        loginAZauth.style.display = 'block';
+        loginAZauthA2F.style.display = 'none';
+        document.querySelector('.email-AZauth').value = '';
+        document.querySelector('.password-AZauth').value = '';
+
         let AZauthEmail = document.querySelector('.email-AZauth');
         let AZauthPassword = document.querySelector('.password-AZauth');
         let AZauthA2F = document.querySelector('.A2F-AZauth');
@@ -117,11 +123,11 @@ class Login {
         let AZauthConnectBTN = document.querySelector('.connect-AZauth');
         let AZauthCancelA2F = document.querySelector('.cancel-AZauth-A2F');
 
-        loginAZauth.style.display = 'block';
-
         // Lien créer un compte
-        document.querySelector('.register-link').addEventListener('click', e => {
-            shell.openExternal(e.target.dataset.url);
+        document.querySelectorAll('.register-link').forEach(link => {
+            link.addEventListener('click', e => {
+                shell.openExternal(e.currentTarget.dataset.url);
+            });
         });
 
         document.addEventListener("keydown", (event) => {
