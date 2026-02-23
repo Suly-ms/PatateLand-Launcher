@@ -21,6 +21,7 @@ function destroyWindow() {
 
 function createWindow() {
     destroyWindow();
+    const isMac = os.platform() === 'darwin';
     mainWindow = new BrowserWindow({
         title: app.getName(),
         width: 1280,
@@ -29,7 +30,10 @@ function createWindow() {
         minHeight: 552,
         resizable: true,
         icon: `./src/assets/images/icon/icon.${os.platform() === "win32" ? "ico" : "png"}`,
-        frame: false,
+        // Sur Mac : on garde la barre native avec les boutons rouge/jaune/vert
+        // Sur Windows/Linux : frame false avec notre propre barre custom
+        frame: isMac,
+        titleBarStyle: isMac ? 'hiddenInset' : 'default',
         show: false,
         webPreferences: {
             contextIsolation: false,
