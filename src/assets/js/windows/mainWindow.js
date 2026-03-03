@@ -43,6 +43,14 @@ function createWindow() {
     Menu.setApplicationMenu(null);
     mainWindow.setMenuBarVisibility(false);
     mainWindow.loadFile(path.join(`${app.getAppPath()}/src/launcher.html`));
+    // Sur Mac : la croix cache la fenêtre au lieu de la détruire
+    mainWindow.on('close', (e) => {
+        if (process.platform === 'darwin') {
+            e.preventDefault();
+            mainWindow.hide();
+        }
+    });
+
     mainWindow.once('ready-to-show', () => {
         if (mainWindow) {
             if (dev) mainWindow.webContents.openDevTools({ mode: 'detach' })

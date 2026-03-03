@@ -87,8 +87,11 @@ function createTray() {
         {
             label: 'Ouvrir le launcher',
             click: () => {
-                MainWindow.getWindow().show();
-                MainWindow.getWindow().focus();
+                const win = MainWindow.getWindow();
+                if (win && !win.isDestroyed()) {
+                    win.show();
+                    win.focus();
+                }
             }
         },
         { type: 'separator' },
@@ -113,7 +116,7 @@ else {
     // Quand on clique sur le logo dans la barre des tâches ou qu'on relance l'exe
     app.on('second-instance', () => {
         const win = MainWindow.getWindow();
-        if (win) {
+        if (win && !win.isDestroyed()) {
             win.show();
             win.focus();
         }
@@ -251,7 +254,17 @@ ipcMain.handle('open-folder', (_, folderPath) => {
 // ===== FIN RESOURCE PACKS & SHADERS =====
 
 app.on('window-all-closed', () => {
-    // L'utilisateur quitte via le menu tray "Quitter"
+    // Sur Mac, on ne quitte pas quand toutes les fenêtres sont fermées
+    if (process.platform !== 'darwin') app.quit();
+});
+
+// Sur Mac : clic sur l'icône du dock réaffiche la fenêtre
+app.on('activate', () => {
+    const win = MainWindow.getWindow();
+    if (win && !win.isDestroyed()) {
+        win.show();
+        win.focus();
+    }
 });
 
 autoUpdater.autoDownload = false;
