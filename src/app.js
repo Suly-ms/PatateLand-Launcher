@@ -35,10 +35,15 @@ app.setAppUserModelId('fr.patateland.launcher');
 // Démarrage automatique avec Windows/macOS
 function setAutoLaunch(enabled) {
     if (process.platform === 'darwin') {
+        // Sur Mac, pointer vers le bundle .app et pas le binaire interne
+        const exePath = app.getPath('exe');
+        const appPath = exePath.includes('.app/') 
+            ? exePath.split('.app/')[0] + '.app'
+            : exePath;
         app.setLoginItemSettings({
             openAtLogin: enabled,
             name: 'PatateLand',
-            path: app.getPath('exe')
+            path: appPath
         });
     } else {
         app.setLoginItemSettings({
@@ -97,7 +102,10 @@ function createTray() {
         { type: 'separator' },
         {
             label: 'Quitter',
-            click: () => app.quit()
+            click: () => {
+                app.isQuitting = true;
+                app.quit();
+            }
         }
     ]);
 
@@ -252,6 +260,10 @@ ipcMain.handle('open-folder', (_, folderPath) => {
 // ===== FIN RCON =====
 
 // ===== FIN RESOURCE PACKS & SHADERS =====
+
+app.on('before-quit', () => {
+    app.isQuitting = true;
+});
 
 app.on('window-all-closed', () => {
     // Sur Mac, on ne quitte pas quand toutes les fenêtres sont fermées

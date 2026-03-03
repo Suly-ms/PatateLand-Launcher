@@ -44,8 +44,9 @@ function createWindow() {
     mainWindow.setMenuBarVisibility(false);
     mainWindow.loadFile(path.join(`${app.getAppPath()}/src/launcher.html`));
     // Sur Mac : la croix cache la fenêtre au lieu de la détruire
+    // sauf si on force le quit (menu tray ou Cmd+Q)
     mainWindow.on('close', (e) => {
-        if (process.platform === 'darwin') {
+        if (process.platform === 'darwin' && !app.isQuitting) {
             e.preventDefault();
             mainWindow.hide();
         }

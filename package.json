@@ -1,7 +1,7 @@
 {
     "name": "PatateLand",
     "productName": "PatateLand",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "description": "Launcher Minecraft moddé pour le serveur PatateLand",
     "main": "src/app.js",
     "author": {
