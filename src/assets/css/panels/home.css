@@ -571,3 +571,38 @@
     pointer-events: none;
 }
 /* ===== FIN SOCIAL SIDEBAR ===== */
+
+/* ===== NEWS AUTO-SLIDE PROGRESS BAR ===== */
+.news-dots-wrap {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 8px;
+}
+
+.news-progress-bar {
+    width: 120px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.news-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--element-color), var(--element-color-hover, #ff8c00));
+    border-radius: 3px;
+    animation: news-progress 12s linear forwards;
+}
+
+@keyframes news-progress {
+    from { width: 0%; }
+    to   { width: 100%; }
+}
+
+.news-block {
+    opacity: 1;
+    transform: translateX(0);
+}
+/* ===== FIN NEWS AUTO-SLIDE ===== */

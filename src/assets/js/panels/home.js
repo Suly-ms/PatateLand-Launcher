@@ -98,12 +98,23 @@ class Home {
                     ${slides.length > 1 ? `
                     <div class="news-slider-controls">
                         <button class="news-arrow news-prev" ${current === 0 ? 'disabled' : ''}>&#8249;</button>
-                        <div class="news-dots">
-                            ${slides.map((_, i) => `<span class="news-dot ${i === current ? 'active' : ''}"></span>`).join('')}
+                        <div class="news-dots-wrap">
+                            <div class="news-dots">
+                                ${slides.map((_, i) => `<span class="news-dot ${i === current ? 'active' : ''}"></span>`).join('')}
+                            </div>
+                            <div class="news-progress-bar"><div class="news-progress-fill"></div></div>
                         </div>
                         <button class="news-arrow news-next" ${current === slides.length - 1 ? 'disabled' : ''}>&#8250;</button>
                     </div>` : ''}
                 </div>`;
+
+            // Relancer l'animation de la barre de progression
+            const fillBar = newsContainer.querySelector('.news-progress-fill');
+            if (fillBar) {
+                fillBar.style.animation = 'none';
+                fillBar.offsetHeight; // reflow
+                fillBar.style.animation = 'news-progress 12s linear forwards';
+            }
 
             if (slides.length > 1) {
                 newsContainer.querySelector('.news-prev')?.addEventListener('click', () => {
@@ -117,16 +128,76 @@ class Home {
                 });
             }
 
-            // Navigation au scroll
-            newsContainer.onwheel = (e) => {
-                e.preventDefault();
-                if (slides.length <= 1) return;
-                if (e.deltaY > 0 && current < slides.length - 1) { current++; render(); }
-                else if (e.deltaY < 0 && current > 0) { current--; render(); }
-            };
+            // Scroll désactivé pour la navigation des news
         };
 
         render();
+
+        // Auto-slide toutes les 6 secondes avec animation fade
+        if (slides.length > 1) {
+            let autoSlideTimer = setInterval(() => {
+                const next = (current + 1) % slides.length;
+                const block = newsContainer.querySelector('.news-block');
+                if (!block) return;
+
+                // Animation sortie
+                block.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                block.style.opacity = '0';
+                block.style.transform = 'translateX(-20px)';
+
+                setTimeout(() => {
+                    current = next;
+                    render();
+
+                    // Animation entrée
+                    const newBlock = newsContainer.querySelector('.news-block');
+                    if (newBlock) {
+                        newBlock.style.opacity = '0';
+                        newBlock.style.transform = 'translateX(20px)';
+                        newBlock.style.transition = 'none';
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                                newBlock.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                newBlock.style.opacity = '1';
+                                newBlock.style.transform = 'translateX(0)';
+                            });
+                        });
+                    }
+                }, 400);
+            }, 12000);
+
+            // Reset le timer si l'utilisateur interagit manuellement
+            const resetTimer = () => {
+                clearInterval(autoSlideTimer);
+                autoSlideTimer = setInterval(() => {
+                    const next = (current + 1) % slides.length;
+                    const block = newsContainer.querySelector('.news-block');
+                    if (!block) return;
+                    block.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                    block.style.opacity = '0';
+                    block.style.transform = 'translateX(-20px)';
+                    setTimeout(() => {
+                        current = next;
+                        render();
+                        const newBlock = newsContainer.querySelector('.news-block');
+                        if (newBlock) {
+                            newBlock.style.opacity = '0';
+                            newBlock.style.transform = 'translateX(20px)';
+                            newBlock.style.transition = 'none';
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => {
+                                    newBlock.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                                    newBlock.style.opacity = '1';
+                                    newBlock.style.transform = 'translateX(0)';
+                                });
+                            });
+                        }
+                    }, 400);
+                }, 12000);
+            };
+
+            newsContainer.addEventListener('click', resetTimer);
+        }
     }
 
     socialLick() {
