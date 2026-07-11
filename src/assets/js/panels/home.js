@@ -7,6 +7,14 @@ import { config as configModule, database, logger, changePanel, appdata, setStat
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
 
+// Descriptions affichées via l'icône "?" pour chaque instance.
+// Les clés doivent correspondre exactement au champ "name" de l'instance.
+const instanceDescriptions = {
+    "Event": "Instance dédiée aux événements spéciaux et temporaires.",
+    "Extra": "Instance avec des fonctionnalités et du contenu supplémentaire.",
+    "Opti": "Instance optimisée pour de meilleures performances, idéale pour les configurations modestes."
+}
+
 class Home {
     static id = "home";
 
@@ -270,33 +278,60 @@ class Home {
 
         instancesListPopup.innerHTML = ''
 
-        for (let instance of instancesList) {
+        const buildInstanceHTML = (instance, isActive) => {
+            const matchKey = Object.keys(instanceDescriptions).find(
+                k => k.trim().toLowerCase() === instance.name.trim().toLowerCase()
+            )
+            const desc = instance.description || instanceDescriptions[matchKey] || "Aucune description disponible pour cette instance."
+            const cls = isActive ? 'instance-elements active-instance' : 'instance-elements'
+            return `
+                <div id="${instance.name}" class="${cls}">
+                    <span class="instance-name">${instance.name}</span>
+                    <div class="instance-info-icon">?</div>
+                    <div class="instance-info-tooltip">${desc}</div>
+                </div>`
+        }
+
+        // "Event" s'affiche toujours en dernier dans le popup, peu importe
+        // l'ordre renvoyé par la config.
+        const displayList = [...instancesList].sort((a, b) => {
+            const aIsEvent = a.name.trim().toLowerCase() === 'event'
+            const bIsEvent = b.name.trim().toLowerCase() === 'event'
+            if (aIsEvent && !bIsEvent) return 1
+            if (!aIsEvent && bIsEvent) return -1
+            return 0
+        })
+
+        for (let instance of displayList) {
             if (instance.whitelistActive) {
                 instance.whitelist.map(whitelist => {
                     if (whitelist == auth?.name) {
                         if (instance.name == instanceSelect) {
-                            instancesListPopup.innerHTML += `
-                                <div class="glow-container">
-                                    <div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>
-                                </div>`
+                            instancesListPopup.innerHTML += `<div class="glow-container">${buildInstanceHTML(instance, true)}</div>`
                         } else {
-                            instancesListPopup.innerHTML += `
-                                <div id="${instance.name}" class="instance-elements">${instance.name}</div>`
+                            instancesListPopup.innerHTML += buildInstanceHTML(instance, false)
                         }
                     }
                 })
             } else {
                 if (instance.name == instanceSelect) {
-                    instancesListPopup.innerHTML += `
-                        <div id="${instance.name}" class="instance-elements active-instance">${instance.name}</div>`
+                    instancesListPopup.innerHTML += buildInstanceHTML(instance, true)
                 } else {
-                    instancesListPopup.innerHTML += `
-                        <div id="${instance.name}" class="instance-elements">${instance.name}</div>`
+                    instancesListPopup.innerHTML += buildInstanceHTML(instance, false)
                 }
             }
         }
 
         instancesListPopup.onclick = async (e) => {
+            // Le "?" affiche son info au survol (CSS) ; un clic dessus ou sur
+            // le tooltip ne doit jamais sélectionner l'instance en dessous.
+            const icon = e.target.closest('.instance-info-icon')
+            const tooltip = e.target.closest('.instance-info-tooltip')
+            if (icon || tooltip) {
+                e.stopPropagation()
+                return
+            }
+
             const el = e.target.closest('.instance-elements')
             if (!el) return
 

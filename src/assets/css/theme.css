@@ -1,7 +1,7 @@
 .global {
     --element-color: #f27312;
     --transition: all 0.3s ease-in-out;
-    --blur-strength: 15px; /* Intensité du flou derrière les fenêtres */
+    --blur-strength: 8px; /* Intensité du flou derrière les fenêtres (réduit de 15px à 8px) */
 }
 
 .dark {
@@ -71,7 +71,7 @@
     --background-element: rgba(0, 0, 0, 0.4);   /* Background des éléments */
     --border-color: rgba(255, 255, 255, 0.1);   /* Couleur bordures */
     --shadow: rgba(0, 0, 0, 0.3);               /* Ombre générale */
-    --blur-strength: 10px;                       /* Force du blur */
+    --blur-strength: 8px;                       /* Force du blur (réduit de 10px à 8px) */
 }
 
 /* ============================================
