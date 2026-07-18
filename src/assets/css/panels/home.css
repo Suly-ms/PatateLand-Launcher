@@ -265,13 +265,6 @@
     transform: scale(0.95);
 }
 
-
-
-.play-container:has(.info-starting-game[style*="display: flex"]) .play-title,
-.play-container:has(.info-starting-game[style*="display: block"]) .play-title {
-    display: none;
-}
-
 .play-title {
     font-size: 0.9rem;
     font-weight: 600;
@@ -435,6 +428,21 @@
 .instance-elements:hover {
     background: rgba(255, 255, 255, 0.12);
     transform: translateY(-1px);
+}
+
+/* Petit badge "En cours" affiché dans le popup de sélection sur l'instance
+   déjà en cours de lancement/exécution (voir home.js: buildInstanceHTML) */
+.instance-running-badge {
+    margin-left: 10px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--status-dot-online, #2ecc71);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 20px;
+    vertical-align: middle;
 }
 
 .active-instance {

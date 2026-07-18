@@ -7,20 +7,21 @@ const path = require("path");
 const os = require("os");
 
 let dev = process.env.DEV_TOOL === 'open';
-let logWindow = undefined;
+let logWindows = new Map(); // id (nom de l'instance) -> BrowserWindow
 
-function getWindow() {
-    return logWindow;
+function getWindow(id = 'default') {
+    return logWindows.get(id);
 }
 
-function destroyWindow() {
-    if (!logWindow) return;
-    logWindow.close();
-    logWindow = undefined;
+function destroyWindow(id = 'default') {
+    const win = logWindows.get(id);
+    if (!win) return;
+    win.close();
+    logWindows.delete(id);
 }
 
-function createWindow() {
-    if (logWindow) return logWindow;
+function createWindow(id = 'default', title = 'PatateLand - Console de jeu') {
+    if (logWindows.has(id)) return logWindows.get(id);
 
     // Récupère tous les écrans disponibles
     const displays = screen.getAllDisplays();
@@ -28,14 +29,16 @@ function createWindow() {
     const targetDisplay = displays.length > 1 ? displays[1] : displays[0];
     const { x, y, width, height } = targetDisplay.workArea;
 
-    // Centre la fenêtre sur l'écran cible
+    // Centre la fenêtre sur l'écran cible, avec un léger décalage
+    // par fenêtre déjà ouverte pour éviter qu'elles se superposent pile
     const winWidth = 750;
     const winHeight = 480;
-    const winX = Math.round(x + (width - winWidth) / 2);
-    const winY = Math.round(y + (height - winHeight) / 2);
+    const offset = logWindows.size * 30;
+    const winX = Math.round(x + (width - winWidth) / 2) + offset;
+    const winY = Math.round(y + (height - winHeight) / 2) + offset;
 
-    logWindow = new BrowserWindow({
-        title: "PatateLand - Console de jeu",
+    const win = new BrowserWindow({
+        title,
         width: winWidth,
         height: winHeight,
         x: winX,
@@ -53,21 +56,20 @@ function createWindow() {
     });
 
     Menu.setApplicationMenu(null);
-    logWindow.setMenuBarVisibility(false);
-    logWindow.loadFile(path.join(`${app.getAppPath()}/src/log.html`));
+    win.setMenuBarVisibility(false);
+    win.loadFile(path.join(`${app.getAppPath()}/src/log.html`));
 
-    logWindow.once('ready-to-show', () => {
-        if (logWindow) {
-            if (dev) logWindow.webContents.openDevTools({ mode: 'detach' });
-            logWindow.show();
-        }
+    win.once('ready-to-show', () => {
+        if (dev) win.webContents.openDevTools({ mode: 'detach' });
+        win.show();
     });
 
-    logWindow.on('closed', () => {
-        logWindow = undefined;
+    win.on('closed', () => {
+        logWindows.delete(id);
     });
 
-    return logWindow;
+    logWindows.set(id, win);
+    return win;
 }
 
 module.exports = {

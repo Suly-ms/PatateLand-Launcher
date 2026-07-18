@@ -21,6 +21,8 @@ class Home {
     async init(config) {
         this.config = config;
         this.db = new database();
+        // instanceName -> instance de Launch en cours (permet le multi-lancement)
+        this.activeLaunches = new Map();
 
         this.news()
         this.socialLick()
@@ -264,8 +266,19 @@ class Home {
         }
 
         // Bouton JOUER - séparé du sélecteur d'instance
+        // On lance toujours l'instance actuellement sélectionnée dans la config.
+        // Comme this.activeLaunches est vérifié dans startGame(), cliquer sur
+        // JOUER pendant qu'une instance tourne déjà lancera une AUTRE instance
+        // (celle sélectionnée à ce moment-là) sans bloquer la première.
         document.querySelector('.play-btn').addEventListener('click', async () => {
-            this.startGame()
+            let configClient = await this.db.readData('configClient')
+            this.startGame(configClient.instance_select).catch(err => {
+                // Filet de sécurité ultime : ne devrait plus jamais se déclencher
+                // (toutes les erreurs sont normalement interceptées dans startGame),
+                // mais évite un blocage silencieux si un cas imprévu survient.
+                console.error('Erreur inattendue au lancement :', err)
+                this.activeLaunches.delete(configClient.instance_select)
+            })
         })
 
         // Sélecteur d'instance - séparé du bouton JOUER
@@ -284,9 +297,10 @@ class Home {
             )
             const desc = instance.description || instanceDescriptions[matchKey] || "Aucune description disponible pour cette instance."
             const cls = isActive ? 'instance-elements active-instance' : 'instance-elements'
+            const running = this.activeLaunches.has(instance.name) ? ' <span class="instance-running-badge">En cours</span>' : ''
             return `
                 <div id="${instance.name}" class="${cls}">
-                    <span class="instance-name">${instance.name}</span>
+                    <span class="instance-name">${instance.name}${running}</span>
                     <div class="instance-info-icon">?</div>
                     <div class="instance-info-tooltip">${desc}</div>
                 </div>`
@@ -359,108 +373,144 @@ class Home {
         })
             }
 
-    async startGame() {
-        let launch = new Launch()
-        let configClient = await this.db.readData('configClient')
-        let instance = await configModule.getInstanceList()
-        let authenticator = await this.db.readData('accounts', configClient.account_selected)
-        let options = instance.find(i => i.name == configClient.instance_select)
-
-        let playInstanceBTN = document.querySelector('.play-instance')
-        let infoStartingBOX = document.querySelector('.info-starting-game')
-        let infoStarting = document.querySelector(".info-starting-game-text")
-        let progressBar = document.querySelector('.progress-bar')
-        let playTitle = document.querySelector('.play-title')
-
-        let opt = {
-            url: options.url,
-            authenticator: authenticator,
-            timeout: 10000,
-            path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,
-            instance: options.name,
-            version: options.loader.minecraft_version,
-            detached: configClient.launcher_config.closeLauncher == "close-all" ? false : true,
-            downloadFileMultiple: configClient.launcher_config.download_multi,
-            intelEnabledMac: configClient.launcher_config.intelEnabledMac,
-
-            loader: {
-                type: options.loader.loader_type,
-                build: options.loader.loader_version,
-                enable: options.loader.loader_type == 'none' ? false : true
-            },
-
-            verify: options.verify,
-
-            ignored: [...options.ignored],
-
-            java: {
-                path: configClient.java_config.java_path,
-            },
-
-            JVM_ARGS:  options.jvm_args ? options.jvm_args : [],
-            GAME_ARGS: [
-                ...(options.game_args ? options.game_args : []),
-                ...(configClient.game_config.fullscreen ? ['--fullscreen'] : [])
-            ],
-
-            screen: {
-                width: configClient.game_config.screen_size.width,
-                height: configClient.game_config.screen_size.height
-            },
-
-            memory: {
-                min: `${configClient.java_config.java_memory.min * 1024}M`,
-                max: `${configClient.java_config.java_memory.max * 1024}M`
-            }
+    // startGame prend désormais le nom de l'instance à lancer en paramètre.
+    // this.activeLaunches (Map) garde une trace des lancements en cours pour
+    // permettre à plusieurs instances de tourner en parallèle sans se marcher
+    // dessus. Chaque instance a son propre objet Launch() et ses propres
+    // événements identifiés par son nom (utilisé aussi pour la fenêtre de logs).
+    // La progression n'est plus affichée dans l'UI (cartes flottantes) mais
+    // via des notifications natives OS (Windows/Linux/Mac), voir
+    // ipcRenderer.send('game-notification', ...) et app.js.
+    async startGame(instanceName) {
+        if (this.activeLaunches.has(instanceName)) {
+            console.log(`L'instance${instanceName} est déjà en cours de lancement ou d'exécution.`)
+            return
         }
 
-        launch.Launch(opt);
+        let launch = new Launch()
+        this.activeLaunches.set(instanceName, launch)
 
-        playInstanceBTN.style.display = "none"
-        infoStartingBOX.style.display = "block"
-        progressBar.style.display = "";
+        // Filet de sécurité : si quoi que ce soit plante pendant la
+        // préparation du lancement (config manquante, instance introuvable,
+        // etc.), on nettoie l'état au lieu de bloquer l'instance pour toujours.
+        let configClient, instanceListAll, authenticator, options
+        try {
+            configClient = await this.db.readData('configClient')
+            instanceListAll = await configModule.getInstanceList()
+            authenticator = await this.db.readData('accounts', configClient.account_selected)
+            options = instanceListAll.find(i => i.name == instanceName)
+            if (!options) throw new Error(`Instance "${instanceName}" introuvable dans la configuration.`)
+        } catch (err) {
+            console.error('Erreur lors de la préparation du lancement :', err)
+            let popupError = new popup()
+            popupError.openPopup({
+                title: 'Erreur',
+                content: err.message || String(err),
+                color: 'red',
+                options: true
+            })
+            this.activeLaunches.delete(instanceName)
+            return
+        }
+
+        ipcRenderer.send('game-notification', {
+            title: 'PatateLand',
+            body: `Lancement de l'instance ${instanceName}...`
+        })
+
+        let opt
+        try {
+            opt = {
+                url: options.url,
+                authenticator: authenticator,
+                timeout: 10000,
+                path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,
+                instance: options.name,
+                version: options.loader.minecraft_version,
+                detached: configClient.launcher_config.closeLauncher == "close-all" ? false : true,
+                downloadFileMultiple: configClient.launcher_config.download_multi,
+                intelEnabledMac: configClient.launcher_config.intelEnabledMac,
+
+                loader: {
+                    type: options.loader.loader_type,
+                    build: options.loader.loader_version,
+                    enable: options.loader.loader_type == 'none' ? false : true
+                },
+
+                verify: options.verify,
+
+                ignored: [...options.ignored],
+
+                java: {
+                    path: configClient.java_config.java_path,
+                },
+
+                JVM_ARGS:  options.jvm_args ? options.jvm_args : [],
+                GAME_ARGS: [
+                    ...(options.game_args ? options.game_args : []),
+                    ...(configClient.game_config.fullscreen ? ['--fullscreen'] : [])
+                ],
+
+                screen: {
+                    width: configClient.game_config.screen_size.width,
+                    height: configClient.game_config.screen_size.height
+                },
+
+                memory: {
+                    min: `${configClient.java_config.java_memory.min * 1024}M`,
+                    max: `${configClient.java_config.java_memory.max * 1024}M`
+                }
+            }
+
+            launch.Launch(opt);
+        } catch (err) {
+            console.error('Erreur lors du lancement :', err)
+            let popupError = new popup()
+            popupError.openPopup({
+                title: 'Erreur',
+                content: err.message || String(err),
+                color: 'red',
+                options: true
+            })
+            this.activeLaunches.delete(instanceName)
+            return
+        }
+
         ipcRenderer.send('main-window-progress-load')
 
         launch.on('extract', extract => {
             ipcRenderer.send('main-window-progress-load')
-            console.log(extract);
+            console.log(instanceName, extract);
         });
 
         launch.on('progress', (progress, size) => {
-            infoStarting.innerHTML = `Téléchargement ${((progress / size) * 100).toFixed(0)}%`
             ipcRenderer.send('main-window-progress', { progress, size })
-            progressBar.value = progress;
-            progressBar.max = size;
-            ipcRenderer.send('log-send', `Téléchargement : ${((progress / size) * 100).toFixed(0)}%`);
+            ipcRenderer.send('log-send', instanceName, `Téléchargement : ${((progress / size) * 100).toFixed(0)}%`);
         });
 
         launch.on('check', (progress, size) => {
-            infoStarting.innerHTML = `Vérification ${((progress / size) * 100).toFixed(0)}%`
             ipcRenderer.send('main-window-progress', { progress, size })
-            progressBar.value = progress;
-            progressBar.max = size;
         });
 
         launch.on('estimated', (time) => {
             let hours = Math.floor(time / 3600);
             let minutes = Math.floor((time - hours * 3600) / 60);
             let seconds = Math.floor(time - hours * 3600 - minutes * 60);
-            console.log(`${hours}h ${minutes}m ${seconds}s`);
+            console.log(instanceName, `${hours}h ${minutes}m ${seconds}s`);
         })
 
         launch.on('speed', (speed) => {
-            console.log(`${(speed / 1067008).toFixed(2)} Mb/s`)
+            console.log(instanceName, `${(speed / 1067008).toFixed(2)} Mb/s`)
         })
 
         launch.on('patch', patch => {
-            console.log(patch);
+            console.log(instanceName, patch);
             ipcRenderer.send('main-window-progress-load')
-            infoStarting.innerHTML = `Patch en cours...`
         });
 
         let logWindowOpened = false;
+        let readyNotified = false;
         launch.on('data', (e) => {
-            progressBar.style.display = "none"
             const closeMode = configClient.launcher_config.closeLauncher;
             if (closeMode == 'close-launcher') {
                 ipcRenderer.send("main-window-minimize");
@@ -469,16 +519,24 @@ class Home {
             }
             new logger('Minecraft', '#36b030');
             ipcRenderer.send('main-window-progress-load')
-            infoStarting.innerHTML = `Demarrage en cours...`
-            // Ouvre la fenêtre de logs une seule fois, seulement si activée dans les settings
+            // Ouvre la fenêtre de logs de cette instance une seule fois, seulement si activée dans les settings
             if (!logWindowOpened && configClient.game_config?.show_console !== false) {
                 logWindowOpened = true;
-                ipcRenderer.send('log-window-open');
-                ipcRenderer.send('log-status', 'running');
+                ipcRenderer.send('log-window-open', instanceName, `PatateLand - ${instanceName}`);
+                ipcRenderer.send('log-status', instanceName, 'running');
+            }
+            // Le jeu a réellement démarré : on prévient une seule fois via
+            // notification native que l'instance est prête.
+            if (!readyNotified) {
+                readyNotified = true
+                ipcRenderer.send('game-notification', {
+                    title: 'PatateLand',
+                    body: `L'instance ${instanceName} a démarré !`
+                })
             }
             const line = typeof e === 'string' ? e : JSON.stringify(e);
-            ipcRenderer.send('log-send', line);
-            console.log(e);
+            ipcRenderer.send('log-send', instanceName, line);
+            console.log(instanceName, e);
         })
 
         launch.on('close', code => {
@@ -486,13 +544,10 @@ class Home {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
-            ipcRenderer.send('log-status', 'closed');
-            infoStartingBOX.style.display = "none"
-            playInstanceBTN.style.display = "flex"
-            playTitle.style.display = "block"
-            infoStarting.innerHTML = `Vérification`
+            ipcRenderer.send('log-status', instanceName, 'closed');
             new logger(pkg.name, '#7289da');
-            console.log('Close');
+            console.log(instanceName, 'Close');
+            this.activeLaunches.delete(instanceName)
         });
 
         launch.on('error', err => {
@@ -505,18 +560,20 @@ class Home {
                 options: true
             })
 
+            ipcRenderer.send('game-notification', {
+                title: 'PatateLand',
+                body: `Erreur au lancement de l'instance ${instanceName}.`
+            })
+
             if (['close-launcher', 'close-window'].includes(configClient.launcher_config.closeLauncher)) {
                 ipcRenderer.send("main-window-show")
             };
             ipcRenderer.send('main-window-progress-reset')
-            ipcRenderer.send('log-status', 'error');
-            ipcRenderer.send('log-send', `ERREUR: ${JSON.stringify(err)}`);
-            infoStartingBOX.style.display = "none"
-            playInstanceBTN.style.display = "flex"
-            playTitle.style.display = "block"
-            infoStarting.innerHTML = `Vérification`
+            ipcRenderer.send('log-status', instanceName, 'error');
+            ipcRenderer.send('log-send', instanceName, `ERREUR: ${JSON.stringify(err)}`);
             new logger(pkg.name, '#7289da');
-            console.log(err);
+            console.log(instanceName, err);
+            this.activeLaunches.delete(instanceName)
         });
     }
 

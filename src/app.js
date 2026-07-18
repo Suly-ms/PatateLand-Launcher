@@ -130,18 +130,20 @@ else {
         }
     });
 
+    // Autorise plusieurs instances du launcher
     app.whenReady().then(async () => {
         await restoreAutoLaunch();
+
         if (dev) {
             MainWindow.createWindow();
             createTray();
             scheduleUpdateCheck();
             return;
         }
+
         UpdateWindow.createWindow();
     });
 }
-
 ipcMain.on('main-window-open', () => {
     MainWindow.createWindow();
     if (!tray) createTray();
@@ -174,6 +176,33 @@ ipcMain.on('main-window-minimize', () => {
     }
 })
 
+// ===== GAME NOTIFICATIONS =====
+// Notifications natives OS liées au lancement d'une instance (démarrage,
+// téléchargement en cours, jeu prêt, erreur...). Le renderer (home.js) passe
+// juste titre/texte, main.js s'occupe de l'affichage natif Windows/Linux/Mac.
+ipcMain.on('game-notification', (_, { title, body }) => {
+    sendNotification({ title, body, silent: false });
+})
+// ===== FIN GAME NOTIFICATIONS =====
+
+// ===== LOG WINDOW (multi-instances) =====
+// Chaque appel passe désormais un "id" (nom de l'instance) en premier argument
+// pour permettre plusieurs fenêtres de logs simultanées.
+ipcMain.on('log-window-open', (_, id, title) => LogWindow.createWindow(id, title))
+ipcMain.on('log-window-close', (_, id) => LogWindow.destroyWindow(id))
+ipcMain.on('log-window-minimize', (_, id) => LogWindow.getWindow(id)?.minimize())
+
+ipcMain.on('log-send', (_, id, data) => {
+    const win = LogWindow.getWindow(id);
+    if (win) win.webContents.send('log-data', data);
+})
+
+ipcMain.on('log-status', (_, id, status) => {
+    const win = LogWindow.getWindow(id);
+    if (win) win.webContents.send('log-status', status);
+})
+// ===== FIN LOG WINDOW =====
+
 ipcMain.on('update-window-close', () => UpdateWindow.destroyWindow())
 ipcMain.on('update-window-dev-tools', () => UpdateWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
 ipcMain.on('update-window-progress', (event, options) => UpdateWindow.getWindow().setProgressBar(options.progress / options.size))
@@ -203,22 +232,6 @@ ipcMain.on('set-auto-launch', (_, enabled) => {
     setAutoLaunch(enabled);
 });
 // ===== FIN AUTO LAUNCH =====
-
-// ===== LOG WINDOW =====
-ipcMain.on('log-window-open', () => LogWindow.createWindow())
-ipcMain.on('log-window-close', () => LogWindow.destroyWindow())
-ipcMain.on('log-window-minimize', () => LogWindow.getWindow()?.minimize())
-
-ipcMain.on('log-send', (_, data) => {
-    const win = LogWindow.getWindow();
-    if (win) win.webContents.send('log-data', data);
-})
-
-ipcMain.on('log-status', (_, status) => {
-    const win = LogWindow.getWindow();
-    if (win) win.webContents.send('log-status', status);
-})
-// ===== FIN LOG WINDOW =====
 
 ipcMain.handle('Microsoft-window', async (_, client_id) => {
     return await new Microsoft(client_id).getAuth();
