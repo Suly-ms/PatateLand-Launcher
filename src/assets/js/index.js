@@ -75,7 +75,7 @@ class Splash {
     async startAnimation() {
         let splashes = [
             { "message": "Bienvenue sur PatateLand.", "author": "" },
-            { "message": "Rien n’est figé ici.", "author": "" },
+            { "message": "Rien n'est figé ici.", "author": "" },
             { "message": "Patate un jour, patate toujours.", "author": "" },
             { "message": "Observe bien. Tout a un sens.", "author": "" }
         ];
@@ -99,6 +99,13 @@ class Splash {
     }
 
     async checkUpdate() {
+        // En mode dev, electron-updater ignore silencieusement la vérification
+        // (app non packagée) et n'émet jamais "update-not-available", ce qui
+        // bloquerait indéfiniment ici. On saute donc direct à la maintenance.
+        if (process.env.NODE_ENV === 'dev') {
+            return this.maintenanceCheck();
+        }
+
         this.setStatus(`Recherche de mise à jour...`);
 
         ipcRenderer.invoke('update-app')
@@ -186,15 +193,82 @@ class Splash {
         }
     }
 
+    // ===== MAINTENANCE (avec whitelist et compte à rebours) =====
     async maintenanceCheck() {
-        config.GetConfig().then(res => {
-            if (res.maintenance) return this.shutdown(res.maintenance_message);
-            this.startLauncher();
+        config.GetConfig().then(async res => {
+            if (!res.maintenance) return this.startLauncher();
+
+            // Vérifie si un compte déjà enregistré localement fait partie
+            // de la whitelist de maintenance (admins/staff) — si oui, on
+            // laisse passer normalement sans afficher l'écran de maintenance.
+            const isWhitelisted = await this.checkMaintenanceWhitelist(res.maintenance_whitelist);
+            if (isWhitelisted) return this.startLauncher();
+
+            return this.startMaintenance(res.maintenance_message, res.maintenance_end);
         }).catch(e => {
             console.error(e);
             return this.shutdown("Aucune connexion internet détectée,<br>veuillez réessayer ultérieurement.");
         });
     }
+
+    // Compare les comptes stockés localement (déjà connectés sur cette
+    // machine) avec la liste blanche envoyée par le serveur.
+    async checkMaintenanceWhitelist(whitelist) {
+        if (!Array.isArray(whitelist) || whitelist.length === 0) return false;
+
+        try {
+            let databaseLauncher = new database();
+            let accounts = await databaseLauncher.readAllData('accounts');
+            if (!accounts || accounts.length === 0) return false;
+
+            const whitelistLower = whitelist.map(name => name.toLowerCase());
+            return accounts.some(account => whitelistLower.includes((account.name || '').toLowerCase()));
+        } catch (err) {
+            console.error("Erreur lors de la vérification de la whitelist maintenance :", err);
+            return false;
+        }
+    }
+
+    // Affiche le message de maintenance, avec un compte à rebours en direct
+    // si une date de fin (maintenance_end, format ISO) est fournie par le serveur.
+    startMaintenance(message, endDateISO) {
+        if (!endDateISO) {
+            this.setStatus(message);
+            return;
+        }
+
+        const endDate = new Date(endDateISO);
+
+        if (isNaN(endDate.getTime())) {
+            this.setStatus(message);
+            return;
+        }
+
+        const updateCountdown = () => {
+            const now = new Date();
+            const diffMs = endDate - now;
+
+            if (diffMs <= 0) {
+                clearInterval(this.maintenanceInterval);
+                this.maintenanceCheck();
+                return;
+            }
+
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+
+            const pad = (n) => String(n).padStart(2, '0');
+            const countdownText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+            this.setStatus(`${message}<br><span class="maintenance-countdown">Retour estimé dans ${countdownText}</span>`);
+        };
+
+        updateCountdown();
+        this.maintenanceInterval = setInterval(updateCountdown, 1000);
+    }
+    // ===== FIN MAINTENANCE =====
 
     startLauncher() {
         this.setStatus(`Démarrage du launcher`);

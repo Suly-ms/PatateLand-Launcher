@@ -82,13 +82,8 @@ function sendNotification({ title, body, silent = false, onClick = null }) {
 
 // ===== SYSTEM TRAY =====
 let tray = null;
-// Liste des instances (nom uniquement) envoyée par le renderer une fois
-// chargée depuis le serveur, pour peupler le sous-menu "Jouer" du popup tray.
 let trayInstances = [];
 
-// Ouvre (ou révèle) la fenêtre principale, puis envoie un message IPC au
-// renderer une fois prêt. Utilisé par les actions du popup tray qui ont
-// besoin d'agir dans l'UI (ouvrir les paramètres, lancer une instance...).
 function focusMainWindowAndSend(channel, payload) {
     let win = MainWindow.getWindow();
     if (!win || win.isDestroyed()) {
@@ -114,7 +109,6 @@ function createTray() {
 
     tray.setToolTip('PatateLand Launcher');
 
-    // Popup custom stylé au lieu du menu natif Windows
     tray.on('click', (event, bounds) => TrayMenu.toggleWindow(bounds));
     tray.on('right-click', (event, bounds) => TrayMenu.toggleWindow(bounds));
 
@@ -124,14 +118,11 @@ function createTray() {
     });
 }
 
-// Le renderer envoie la liste des instances dès qu'il les a chargées
-// (voir home.js instancesSelect()), pour peupler le sous-menu "Jouer".
 ipcMain.on('update-tray-instances', (_, instanceNames) => {
     trayInstances = Array.isArray(instanceNames) ? instanceNames : [];
     TrayMenu.updateInstances(trayInstances);
 });
 
-// ===== IPC du popup tray custom =====
 ipcMain.on('trayPopup-request-instances', (event) => {
     event.sender.send('trayPopup-instances', trayInstances);
 });
@@ -164,12 +155,10 @@ ipcMain.on('trayPopup-quit', () => {
     app.isQuitting = true;
     app.quit();
 });
-// ===== FIN IPC du popup tray custom =====
 // ===== FIN SYSTEM TRAY =====
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-    // Quand on clique sur le logo dans la barre des tâches ou qu'on relance l'exe
     app.on('second-instance', () => {
         const win = MainWindow.getWindow();
         if (win && !win.isDestroyed()) {
@@ -178,15 +167,24 @@ else {
         }
     });
 
-    // Autorise plusieurs instances du launcher
     app.whenReady().then(async () => {
         await restoreAutoLaunch();
 
         if (dev) {
-            MainWindow.createWindow();
-            createTray();
+            // ===== MODE TEST MAINTENANCE =====
+            // Temporairement, on passe aussi par UpdateWindow (splash) en dev,
+            // pour pouvoir tester l'écran de maintenance / whitelist / timer
+            // sans avoir à builder l'appli à chaque fois.
+            //
+            // ⚠️ Une fois les tests terminés, remets le comportement normal :
+            //     MainWindow.createWindow();
+            //     createTray();
+            //     scheduleUpdateCheck();
+            //     return;
+            UpdateWindow.createWindow();
             scheduleUpdateCheck();
             return;
+            // ===== FIN MODE TEST MAINTENANCE =====
         }
 
         UpdateWindow.createWindow();
@@ -224,13 +222,10 @@ ipcMain.on('main-window-minimize', () => {
     }
 })
 
-// ===== GAME NOTIFICATIONS =====
 ipcMain.on('game-notification', (_, { title, body }) => {
     sendNotification({ title, body, silent: false });
 })
-// ===== FIN GAME NOTIFICATIONS =====
 
-// ===== LOG WINDOW (multi-instances) =====
 ipcMain.on('log-window-open', (_, id, title) => LogWindow.createWindow(id, title))
 ipcMain.on('log-window-close', (_, id) => LogWindow.destroyWindow(id))
 ipcMain.on('log-window-minimize', (_, id) => LogWindow.getWindow(id)?.minimize())
@@ -244,7 +239,6 @@ ipcMain.on('log-status', (_, id, status) => {
     const win = LogWindow.getWindow(id);
     if (win) win.webContents.send('log-status', status);
 })
-// ===== FIN LOG WINDOW =====
 
 ipcMain.on('update-window-close', () => UpdateWindow.destroyWindow())
 ipcMain.on('update-window-dev-tools', () => UpdateWindow.getWindow().webContents.openDevTools({ mode: 'detach' }))
@@ -266,7 +260,6 @@ ipcMain.on('main-window-maximize', () => {
 ipcMain.on('main-window-hide', () => MainWindow.getWindow().hide())
 ipcMain.on('main-window-show', () => MainWindow.getWindow().show())
 
-// ===== AUTO LAUNCH =====
 ipcMain.handle('get-auto-launch', () => {
     return app.getLoginItemSettings().openAtLogin;
 });
@@ -274,7 +267,6 @@ ipcMain.handle('get-auto-launch', () => {
 ipcMain.on('set-auto-launch', (_, enabled) => {
     setAutoLaunch(enabled);
 });
-// ===== FIN AUTO LAUNCH =====
 
 ipcMain.handle('Microsoft-window', async (_, client_id) => {
     return await new Microsoft(client_id).getAuth();
@@ -286,7 +278,6 @@ ipcMain.handle('is-dark-theme', (_, theme) => {
     return nativeTheme.shouldUseDarkColors;
 })
 
-// ===== RESOURCE PACKS & SHADERS =====
 ipcMain.handle('dialog-open-resourcepack', async () => {
     const result = await dialog.showOpenDialog(MainWindow.getWindow(), {
         title: 'Selectionner un Resource Pack',
@@ -310,7 +301,6 @@ ipcMain.handle('dialog-open-shaderpack', async () => {
 ipcMain.handle('open-folder', (_, folderPath) => {
     shell.openPath(folderPath);
 });
-// ===== FIN RESOURCE PACKS & SHADERS =====
 
 app.on('before-quit', () => {
     app.isQuitting = true;
