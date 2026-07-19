@@ -70,6 +70,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Si jamais la lecture échoue, on retombe sur le thème sombre par défaut
         document.body.classList.add('dark');
     }
+
+    // Mesure la vraie hauteur du menu (header + tous les items + séparateurs)
+    // et l'envoie au main process, pour que la fenêtre popup fasse exactement
+    // cette taille (évite que "Quitter" ou tout autre item soit coupé en bas).
+    sendMeasuredHeight();
+});
+
+function sendMeasuredHeight() {
+    const menuEl = document.querySelector('.tray-menu');
+    const realHeight = menuEl.getBoundingClientRect().height;
+    ipcRenderer.send('trayPopup-content-height', { height: realHeight, bounds: null });
+}
+
+// Le main process redemande une mesure fraîche à chaque réouverture du popup
+// (au cas où le nombre d'instances ait changé depuis la dernière fois).
+ipcRenderer.on('trayPopup-request-height', (_, bounds) => {
+    const menuEl = document.querySelector('.tray-menu');
+    const realHeight = menuEl.getBoundingClientRect().height;
+    ipcRenderer.send('trayPopup-content-height', { height: realHeight, bounds });
 });
 
 document.getElementById('open-launcher').addEventListener('click', () => {

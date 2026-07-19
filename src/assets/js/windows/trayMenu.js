@@ -15,8 +15,10 @@ let win = null;
 // windows -> js -> assets -> src
 const HTML_PATH = path.join(__dirname, '..', '..', '..', 'trayMenu.html');
 
-// Hauteur du popup fermé (sans le sous-menu "Jouer" déplié)
-const COLLAPSED_HEIGHT = 232;
+// Hauteur par défaut avant que le contenu réel ne soit mesuré par le renderer
+// (trayMenu.html envoie 'trayPopup-content-height' juste après son chargement,
+// donc cette valeur ne sert que le temps d'un très court instant au premier affichage).
+let collapsedHeight = 260;
 // Hauteur max ajoutée quand le sous-menu "Jouer" est ouvert
 const EXPANDED_EXTRA_HEIGHT = 150;
 const WINDOW_WIDTH = 240;
@@ -41,7 +43,7 @@ function createWindow() {
 
     win = new BrowserWindow({
         width: WINDOW_WIDTH,
-        height: COLLAPSED_HEIGHT,
+        height: collapsedHeight,
         show: false,
         frame: false,
         transparent: false,
@@ -119,10 +121,17 @@ function toggleWindow(bounds) {
         return;
     }
 
-    win.setSize(WINDOW_WIDTH, COLLAPSED_HEIGHT);
-    positionWindow(bounds, COLLAPSED_HEIGHT);
+    win.setSize(WINDOW_WIDTH, collapsedHeight);
+    positionWindow(bounds, collapsedHeight);
     win.show();
     win.focus();
+
+    // Une fois le contenu chargé, on redemande une mesure fraîche au cas où
+    // le nombre d'items ait changé depuis la dernière ouverture (ex: instances
+    // ajoutées/retirées), et on repositionne proprement.
+    win.webContents.once('did-finish-load', () => {
+        win.webContents.send('trayPopup-request-height', bounds);
+    });
 }
 
 function hideWindow() {
@@ -141,7 +150,7 @@ ipcMain.on('trayPopup-toggle-submenu', (event, { open, itemCount }) => {
     if (!win || win.isDestroyed()) return;
 
     const extra = open ? Math.min(itemCount * 32, EXPANDED_EXTRA_HEIGHT) : 0;
-    const newHeight = COLLAPSED_HEIGHT + extra;
+    const newHeight = collapsedHeight + extra;
     const [currentX, currentY] = win.getPosition();
     const heightDiff = newHeight - win.getBounds().height;
 
@@ -152,6 +161,17 @@ ipcMain.on('trayPopup-toggle-submenu', (event, { open, itemCount }) => {
         width: WINDOW_WIDTH,
         height: newHeight
     });
+});
+
+// Le renderer mesure la vraie hauteur de son contenu (.tray-menu) au chargement
+// et nous l'envoie ici, pour éviter tout écart entre la hauteur fixe supposée
+// et le contenu réellement affiché (ce qui coupait "Quitter" en bas du popup).
+ipcMain.on('trayPopup-content-height', (event, { height, bounds }) => {
+    if (!win || win.isDestroyed()) return;
+
+    collapsedHeight = Math.ceil(height) + 4; // petite marge de sécurité
+    win.setSize(WINDOW_WIDTH, collapsedHeight);
+    positionWindow(bounds, collapsedHeight);
 });
 
 module.exports = { createWindow, getWindow, toggleWindow, hideWindow, updateInstances };
