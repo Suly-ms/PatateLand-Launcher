@@ -101,3 +101,107 @@
     --popup-overlay-bg: rgba(0, 0, 0, 0.6);
     --popup-shadow: rgba(0, 0, 0, 0.5);
 }
+
+/* ============================================
+   TRAY POPUP (menu personnalisé de l'icône masquée)
+   ============================================ */
+.tray-menu {
+    background: #1b1d24;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    color: var(--color);
+}
+
+.tray-menu-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+
+.tray-menu-header img {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+}
+
+.tray-menu-header span {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.tray-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tray-menu-item:hover {
+    background: var(--account-selected-bg);
+    color: var(--element-color);
+}
+
+.tray-menu-item .tray-chevron {
+    font-size: 11px;
+    opacity: 0.6;
+    transition: var(--transition);
+}
+
+.tray-menu-item.expanded .tray-chevron {
+    transform: rotate(90deg);
+    color: var(--element-color);
+    opacity: 1;
+}
+
+.tray-submenu {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.18s ease;
+}
+
+.tray-submenu.open {
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.tray-submenu-item {
+    padding: 8px 12px 8px 30px;
+    font-size: 12.5px;
+    opacity: 0.75;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.tray-submenu-item:hover {
+    background: var(--account-selected-bg);
+    color: var(--element-color);
+    opacity: 1;
+}
+
+.tray-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 6px 4px;
+}
+
+.tray-menu-item.tray-danger:hover {
+    background: var(--delete-button-bg);
+    color: var(--delete-button-color);
+}
+
+.tray-empty {
+    padding: 8px 12px 8px 30px;
+    font-size: 12px;
+    opacity: 0.5;
+    font-style: italic;
+}

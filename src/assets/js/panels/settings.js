@@ -21,6 +21,7 @@ class Settings {
         this.launcher()
         this.resourcePacks()
         this.shaderPacks()
+        this.trayLogout()
     }
 
     navBTN() {
@@ -83,23 +84,7 @@ class Settings {
                         content: 'Veuillez patienter...',
                         color: 'var(--color)'
                     })
-                    await this.db.deleteData('accounts', id);
-                    let deleteProfile = document.getElementById(`${id}`);
-                    let accountListElement = document.querySelector('.accounts-list');
-                    accountListElement.removeChild(deleteProfile);
-
-                    if (accountListElement.children.length == 1) return changePanel('login');
-
-                    let configClient = await this.db.readData('configClient');
-
-                    if (configClient.account_selected == id) {
-                        let allAccounts = await this.db.readAllData('accounts');
-                        configClient.account_selected = allAccounts[0].ID
-                        accountSelect(allAccounts[0]);
-                        let newInstanceSelect = await this.setInstance(allAccounts[0]);
-                        configClient.instance_select = newInstanceSelect.instance_select
-                        return await this.db.updateData('configClient', configClient);
-                    }
+                    await this.deleteAccount(id);
                 }
             } catch (err) {
                 console.error(err)
@@ -108,6 +93,65 @@ class Settings {
             }
         })
     }
+
+    // ===== SUPPRESSION / DÉCONNEXION DE COMPTE =====
+    // Logique commune utilisée par :
+    // - le clic sur le bouton rouge "delete-profile" dans les paramètres
+    // - l'événement "tray-logout" envoyé depuis le menu de l'icône masquée (main.js)
+    // Le paramètre fromTray évite de toucher au DOM des paramètres quand
+    // l'appel vient du tray (le panel settings n'est pas forcément affiché).
+    async deleteAccount(id, fromTray = false) {
+        await this.db.deleteData('accounts', id);
+
+        let deleteProfile = document.getElementById(`${id}`);
+        let accountListElement = document.querySelector('.accounts-list');
+
+        if (deleteProfile && accountListElement && deleteProfile.parentElement === accountListElement) {
+            accountListElement.removeChild(deleteProfile);
+        }
+
+        let allAccounts = await this.db.readAllData('accounts');
+
+        if (!allAccounts || allAccounts.length === 0) {
+            let configClient = await this.db.readData('configClient');
+            configClient.account_selected = null;
+            await this.db.updateData('configClient', configClient);
+            return changePanel('login');
+        }
+
+        let configClient = await this.db.readData('configClient');
+
+        if (configClient.account_selected == id) {
+            configClient.account_selected = allAccounts[0].ID
+            accountSelect(allAccounts[0]);
+            let newInstanceSelect = await this.setInstance(allAccounts[0]);
+            configClient.instance_select = newInstanceSelect.instance_select
+            await this.db.updateData('configClient', configClient);
+        }
+
+        // Si l'appel vient du tray et qu'il ne restait qu'un seul compte
+        // (celui qu'on vient de supprimer), on passe déjà par le "return changePanel('login')"
+        // ci-dessus. Sinon on ne force pas de changement de panel depuis le tray.
+    }
+
+    // Écoute l'IPC envoyé par main.js quand on clique sur "Se déconnecter"
+    // dans le menu contextuel du tray. Supprime le compte actuellement
+    // sélectionné (même logique que le bouton rouge des paramètres).
+    trayLogout() {
+        ipcRenderer.on('tray-logout', async () => {
+            try {
+                let configClient = await this.db.readData('configClient');
+                if (configClient.account_selected) {
+                    await this.deleteAccount(configClient.account_selected, true);
+                } else {
+                    changePanel('login');
+                }
+            } catch (err) {
+                console.error('Erreur lors de la déconnexion via le tray :', err);
+            }
+        });
+    }
+    // ===== FIN SUPPRESSION / DÉCONNEXION DE COMPTE =====
 
     async setInstance(auth) {
         let configClient = await this.db.readData('configClient')

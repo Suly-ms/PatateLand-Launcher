@@ -231,5 +231,31 @@ class Login {
         await accountSelect(account);
         changePanel('home');
     }
+
+    // ===== DÉCONNEXION =====
+    // Supprime le compte actuellement sélectionné et renvoie sur le panel login.
+    async logout() {
+        let db = new database();
+        let configClient = await db.readData('configClient');
+
+        if (configClient.account_selected) {
+            await db.deleteData('accounts', configClient.account_selected);
+            configClient.account_selected = null;
+            await db.updateData('configClient', configClient);
+        }
+
+        changePanel('login');
+    }
+    // ===== FIN DÉCONNEXION =====
 }
+
+// Listener global : réagit au clic "Se déconnecter" dans le menu du tray
+// (voir main.js -> focusMainWindowAndSend('tray-logout')).
+// Placé ici au niveau du module pour être actif dès le chargement,
+// peu importe le panel actuellement affiché.
+ipcRenderer.on('tray-logout', async () => {
+    const login = new Login();
+    await login.logout();
+});
+
 export default Login;

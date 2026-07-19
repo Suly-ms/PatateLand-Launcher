@@ -49,6 +49,29 @@ class Home {
             changePanel('settings'); 
         });
 
+        // ===== Actions déclenchées depuis le menu contextuel du tray =====
+        // (voir app.js : clic droit sur l'icône dans la barre des tâches)
+        ipcRenderer.on('tray-launch-instance', async (_, instanceName) => {
+            this.startGame(instanceName)
+        })
+
+        ipcRenderer.on('tray-open-settings', () => {
+            changePanel('settings')
+        })
+
+        ipcRenderer.on('tray-logout', async () => {
+            // Déconnecte le compte actuellement sélectionné.
+            // NOTE : adapte cette logique si ta page settings gère la
+            // déconnexion différemment (ex: suppression du compte plutôt
+            // que simple désélection). Ici on se contente de désélectionner
+            // le compte actif et de recharger l'interface.
+            let configClient = await this.db.readData('configClient')
+            configClient.account_selected = null
+            await this.db.updateData('configClient', configClient)
+            location.reload()
+        })
+        // ===== FIN actions tray =====
+
     }
 
 
@@ -227,6 +250,10 @@ class Home {
         let instancesList = await configModule.getInstanceList()
         let instanceSelect = instancesList.find(i => i.name == configClient?.instance_select) ? configClient?.instance_select : null
 
+        // Transmet la liste des instances au processus principal pour qu'il
+        // puisse construire le sous-menu "Jouer" du tray.
+        ipcRenderer.send('update-tray-instances', instancesList.map(i => i.name))
+
         let instanceBTN = document.querySelector('.play-instance')
         let instancePopup = document.querySelector('.instance-popup')
         let instancesListPopup = document.querySelector('.instances-List')
@@ -383,7 +410,7 @@ class Home {
     // ipcRenderer.send('game-notification', ...) et app.js.
     async startGame(instanceName) {
         if (this.activeLaunches.has(instanceName)) {
-            console.log(`L'instance${instanceName} est déjà en cours de lancement ou d'exécution.`)
+            console.log(`${instanceName} est déjà en cours de lancement ou d'exécution.`)
             return
         }
 
@@ -415,7 +442,7 @@ class Home {
 
         ipcRenderer.send('game-notification', {
             title: 'PatateLand',
-            body: `Lancement de l'instance ${instanceName}...`
+            body: `Lancement de ${instanceName}...`
         })
 
         let opt
@@ -531,7 +558,7 @@ class Home {
                 readyNotified = true
                 ipcRenderer.send('game-notification', {
                     title: 'PatateLand',
-                    body: `L'instance ${instanceName} a démarré !`
+                    body: `${instanceName} a démarré !`
                 })
             }
             const line = typeof e === 'string' ? e : JSON.stringify(e);
@@ -562,7 +589,7 @@ class Home {
 
             ipcRenderer.send('game-notification', {
                 title: 'PatateLand',
-                body: `Erreur au lancement de l'instance ${instanceName}.`
+                body: `Erreur au lancement de ${instanceName}.`
             })
 
             if (['close-launcher', 'close-window'].includes(configClient.launcher_config.closeLauncher)) {

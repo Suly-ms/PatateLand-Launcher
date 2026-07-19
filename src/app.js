@@ -3,7 +3,7 @@
  * Luuxis License v1.0 (voir fichier LICENSE pour les détails en FR/EN)
  */
 
-const { app, ipcMain, nativeTheme, dialog, shell, Tray, Menu, nativeImage, Notification } = require('electron');
+const { app, ipcMain, nativeTheme, dialog, shell, Tray, nativeImage, Notification } = require('electron');
 const { Microsoft } = require('minecraft-java-core');
 const { autoUpdater } = require('electron-updater')
 const notifier = require('node-notifier');
@@ -15,6 +15,7 @@ const Store = require('electron-store');
 const UpdateWindow = require("./assets/js/windows/updateWindow.js");
 const MainWindow = require("./assets/js/windows/mainWindow.js");
 const LogWindow = require("./assets/js/windows/logWindow.js");
+const TrayMenu = require("./assets/js/windows/trayMenu.js");
 
 let dev = process.env.NODE_ENV === 'dev';
 
@@ -81,6 +82,29 @@ function sendNotification({ title, body, silent = false, onClick = null }) {
 
 // ===== SYSTEM TRAY =====
 let tray = null;
+// Liste des instances (nom uniquement) envoyée par le renderer une fois
+// chargée depuis le serveur, pour peupler le sous-menu "Jouer" du popup tray.
+let trayInstances = [];
+
+// Ouvre (ou révèle) la fenêtre principale, puis envoie un message IPC au
+// renderer une fois prêt. Utilisé par les actions du popup tray qui ont
+// besoin d'agir dans l'UI (ouvrir les paramètres, lancer une instance...).
+function focusMainWindowAndSend(channel, payload) {
+    let win = MainWindow.getWindow();
+    if (!win || win.isDestroyed()) {
+        MainWindow.createWindow();
+        win = MainWindow.getWindow();
+        win.webContents.once('did-finish-load', () => {
+            win.show();
+            win.focus();
+            win.webContents.send(channel, payload);
+        });
+    } else {
+        win.show();
+        win.focus();
+        win.webContents.send(channel, payload);
+    }
+}
 
 function createTray() {
     if (tray) return;
@@ -88,35 +112,59 @@ function createTray() {
     const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
     tray = new Tray(icon);
 
-    const contextMenu = Menu.buildFromTemplate([
-        {
-            label: 'Ouvrir le launcher',
-            click: () => {
-                const win = MainWindow.getWindow();
-                if (win && !win.isDestroyed()) {
-                    win.show();
-                    win.focus();
-                }
-            }
-        },
-        { type: 'separator' },
-        {
-            label: 'Quitter',
-            click: () => {
-                app.isQuitting = true;
-                app.quit();
-            }
-        }
-    ]);
-
     tray.setToolTip('PatateLand Launcher');
-    tray.setContextMenu(contextMenu);
+
+    // Popup custom stylé au lieu du menu natif Windows
+    tray.on('click', (event, bounds) => TrayMenu.toggleWindow(bounds));
+    tray.on('right-click', (event, bounds) => TrayMenu.toggleWindow(bounds));
 
     tray.on('double-click', () => {
         MainWindow.getWindow().show();
         MainWindow.getWindow().focus();
     });
 }
+
+// Le renderer envoie la liste des instances dès qu'il les a chargées
+// (voir home.js instancesSelect()), pour peupler le sous-menu "Jouer".
+ipcMain.on('update-tray-instances', (_, instanceNames) => {
+    trayInstances = Array.isArray(instanceNames) ? instanceNames : [];
+    TrayMenu.updateInstances(trayInstances);
+});
+
+// ===== IPC du popup tray custom =====
+ipcMain.on('trayPopup-request-instances', (event) => {
+    event.sender.send('trayPopup-instances', trayInstances);
+});
+
+ipcMain.on('trayPopup-open-launcher', () => {
+    TrayMenu.hideWindow();
+    const win = MainWindow.getWindow();
+    if (win && !win.isDestroyed()) {
+        win.show();
+        win.focus();
+    }
+});
+
+ipcMain.on('trayPopup-launch-instance', (_, name) => {
+    TrayMenu.hideWindow();
+    focusMainWindowAndSend('tray-launch-instance', name);
+});
+
+ipcMain.on('trayPopup-open-settings', () => {
+    TrayMenu.hideWindow();
+    focusMainWindowAndSend('tray-open-settings');
+});
+
+ipcMain.on('trayPopup-logout', () => {
+    TrayMenu.hideWindow();
+    focusMainWindowAndSend('tray-logout');
+});
+
+ipcMain.on('trayPopup-quit', () => {
+    app.isQuitting = true;
+    app.quit();
+});
+// ===== FIN IPC du popup tray custom =====
 // ===== FIN SYSTEM TRAY =====
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -143,7 +191,7 @@ else {
 
         UpdateWindow.createWindow();
     });
-}
+
 ipcMain.on('main-window-open', () => {
     MainWindow.createWindow();
     if (!tray) createTray();
@@ -177,17 +225,12 @@ ipcMain.on('main-window-minimize', () => {
 })
 
 // ===== GAME NOTIFICATIONS =====
-// Notifications natives OS liées au lancement d'une instance (démarrage,
-// téléchargement en cours, jeu prêt, erreur...). Le renderer (home.js) passe
-// juste titre/texte, main.js s'occupe de l'affichage natif Windows/Linux/Mac.
 ipcMain.on('game-notification', (_, { title, body }) => {
     sendNotification({ title, body, silent: false });
 })
 // ===== FIN GAME NOTIFICATIONS =====
 
 // ===== LOG WINDOW (multi-instances) =====
-// Chaque appel passe désormais un "id" (nom de l'instance) en premier argument
-// pour permettre plusieurs fenêtres de logs simultanées.
 ipcMain.on('log-window-open', (_, id, title) => LogWindow.createWindow(id, title))
 ipcMain.on('log-window-close', (_, id) => LogWindow.destroyWindow(id))
 ipcMain.on('log-window-minimize', (_, id) => LogWindow.getWindow(id)?.minimize())
@@ -244,7 +287,6 @@ ipcMain.handle('is-dark-theme', (_, theme) => {
 })
 
 // ===== RESOURCE PACKS & SHADERS =====
-
 ipcMain.handle('dialog-open-resourcepack', async () => {
     const result = await dialog.showOpenDialog(MainWindow.getWindow(), {
         title: 'Selectionner un Resource Pack',
@@ -268,10 +310,6 @@ ipcMain.handle('dialog-open-shaderpack', async () => {
 ipcMain.handle('open-folder', (_, folderPath) => {
     shell.openPath(folderPath);
 });
-
-// ===== RCON =====
-// ===== FIN RCON =====
-
 // ===== FIN RESOURCE PACKS & SHADERS =====
 
 app.on('before-quit', () => {
@@ -279,11 +317,9 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-    // Sur Mac, on ne quitte pas quand toutes les fenêtres sont fermées
     if (process.platform !== 'darwin') app.quit();
 });
 
-// Sur Mac : clic sur l'icône du dock réaffiche la fenêtre
 app.on('activate', () => {
     const win = MainWindow.getWindow();
     if (win && !win.isDestroyed()) {
@@ -294,17 +330,15 @@ app.on('activate', () => {
 
 autoUpdater.autoDownload = false;
 
-// Vérification automatique toutes les 10 minutes
 let isFirstUpdateCheck = true;
 
 function scheduleUpdateCheck() {
-    // Premier check silencieux au démarrage (pas de notif)
     autoUpdater.checkForUpdates().catch(() => {});
 
     setInterval(() => {
         isFirstUpdateCheck = false;
         autoUpdater.checkForUpdates().catch(() => {});
-    }, 10 * 60 * 1000); // 10 minutes
+    }, 10 * 60 * 1000);
 }
 
 ipcMain.handle('update-app', async () => {
@@ -324,7 +358,6 @@ autoUpdater.on('update-available', (info) => {
     const updateWindow = UpdateWindow.getWindow();
     if (updateWindow) updateWindow.webContents.send('updateAvailable');
 
-    // Pas de notif au premier check (démarrage du launcher = mise à jour en cours)
     if (isFirstUpdateCheck) return;
 
     sendNotification({
@@ -332,7 +365,6 @@ autoUpdater.on('update-available', (info) => {
         body: 'Une nouvelle version est disponible. Double-cliquez pour relancer et mettre à jour.',
         silent: false,
         onClick: () => {
-            // Relance le launcher pour déclencher la mise à jour
             app.relaunch();
             app.exit(0);
         }
@@ -361,3 +393,4 @@ autoUpdater.on('error', (err) => {
     const updateWindow = UpdateWindow.getWindow();
     if (updateWindow) updateWindow.webContents.send('error', err);
 });
+}

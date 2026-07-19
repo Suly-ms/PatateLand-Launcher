@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>PatateLand - Menu</title>
+<link rel="stylesheet" href="./assets/css/theme.css">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: 'Segoe UI', 'Poppins', sans-serif;
+    user-select: none;
+    overflow: hidden;
+  }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body class="global">
+  <div class="tray-menu">
+    <div class="tray-menu-header">
+      <img src="./assets/images/icon/icon.png" onerror="this.style.display='none'">
+      <span>PatateLand Launcher</span>
+    </div>
+
+    <div class="tray-menu-item" id="open-launcher">
+      <div>Ouvrir le launcher</div>
+    </div>
+
+    <div class="tray-menu-item" id="toggle-play">
+      <div>Jouer</div>
+      <div class="tray-chevron">&#10148;</div>
+    </div>
+    <div class="tray-submenu" id="instances-list">
+      <div class="tray-empty">Chargement...</div>
+    </div>
+
+    <div class="tray-menu-item" id="open-settings">
+      <div>Paramètres</div>
+    </div>
+
+    <div class="tray-separator"></div>
+
+    <div class="tray-menu-item tray-danger" id="logout-btn">
+      <div>Se déconnecter</div>
+    </div>
+
+    <div class="tray-separator"></div>
+
+    <div class="tray-menu-item" id="quit-btn">
+      <div>Quitter</div>
+    </div>
+  </div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+// Applique le thème (dark/light) exactement comme le fait le splash (app.js),
+// pour que le popup tray reste cohérent avec le reste du launcher.
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const Store = require('electron-store');
+        Store.initRenderer();
+        const store = new Store({ name: 'configClient' });
+        const configClient = store.get('data');
+        const theme = configClient?.launcher_config?.theme || 'auto';
+        const isDarkTheme = await ipcRenderer.invoke('is-dark-theme', theme);
+        document.body.classList.add(isDarkTheme ? 'dark' : 'light');
+    } catch (err) {
+        // Si jamais la lecture échoue, on retombe sur le thème sombre par défaut
+        document.body.classList.add('dark');
+    }
+});
+
+document.getElementById('open-launcher').addEventListener('click', () => {
+    ipcRenderer.send('trayPopup-open-launcher');
+});
+
+document.getElementById('open-settings').addEventListener('click', () => {
+    ipcRenderer.send('trayPopup-open-settings');
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+    ipcRenderer.send('trayPopup-logout');
+});
+
+document.getElementById('quit-btn').addEventListener('click', () => {
+    ipcRenderer.send('trayPopup-quit');
+});
+
+const toggleBtn = document.getElementById('toggle-play');
+const instancesList = document.getElementById('instances-list');
+let currentInstanceCount = 0;
+
+toggleBtn.addEventListener('click', () => {
+    const isOpening = !toggleBtn.classList.contains('expanded');
+    toggleBtn.classList.toggle('expanded');
+    instancesList.classList.toggle('open');
+    ipcRenderer.send('trayPopup-toggle-submenu', { open: isOpening, itemCount: currentInstanceCount });
+});
+
+function renderInstances(instances) {
+    instancesList.innerHTML = '';
+    currentInstanceCount = instances ? instances.length : 0;
+    if (!instances || instances.length === 0) {
+        instancesList.innerHTML = '<div class="tray-empty">Aucune instance</div>';
+        return;
+    }
+    instances.forEach(name => {
+        const item = document.createElement('div');
+        item.classList.add('tray-submenu-item');
+        item.textContent = name;
+        item.addEventListener('click', () => {
+            ipcRenderer.send('trayPopup-launch-instance', name);
+        });
+        instancesList.appendChild(item);
+    });
+}
+
+ipcRenderer.on('trayPopup-instances', (_, instances) => {
+    renderInstances(instances);
+});
+
+// Demande la liste actuelle dès l'ouverture du popup
+ipcRenderer.send('trayPopup-request-instances');
+</script>
+</body>
+</html>
