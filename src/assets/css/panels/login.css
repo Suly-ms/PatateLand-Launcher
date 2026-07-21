@@ -44,9 +44,9 @@
 
 /* Définition des icônes (via mask ou background-image) */
 .icon-microsoft { mask-image: url('../../images/svgs/web.svg'); -webkit-mask-image: url('../../images/svgs/web.svg'); }
-.icon-user { mask-image: url('../../images/svgs/discord.svg'); /* Temporaire si pas d'icone user */ } 
-.icon-lock { mask-image: url('../../images/svgs/github.svg'); /* Temporaire */ }
-.icon-shield { mask-image: url('../../images/svgs/twitch.svg'); /* Temporaire */ }
+.icon-user { mask-image: url('../../images/svgs/discord.svg');} 
+.icon-lock { mask-image: url('../../images/svgs/github.svg'); }
+.icon-shield { mask-image: url('../../images/svgs/twitch.svg');}
 
 .login-title {
     font-size: 2rem;
@@ -81,7 +81,7 @@
     font-size: 1rem;
     outline: none;
     transition: 0.3s;
-    box-sizing: border-box; /* Important */
+    box-sizing: border-box;
 }
 
 .input-field:focus {

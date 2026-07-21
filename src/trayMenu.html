@@ -118,7 +118,7 @@ toggleBtn.addEventListener('click', () => {
     ipcRenderer.send('trayPopup-toggle-submenu', { open: isOpening, itemCount: currentInstanceCount });
 });
 
-function renderInstances(instances) {
+function renderInstances(instances, running = []) {
     instancesList.innerHTML = '';
     currentInstanceCount = instances ? instances.length : 0;
     if (!instances || instances.length === 0) {
@@ -128,7 +128,10 @@ function renderInstances(instances) {
     instances.forEach(name => {
         const item = document.createElement('div');
         item.classList.add('tray-submenu-item');
-        item.textContent = name;
+        const isRunning = running.includes(name);
+        item.innerHTML = isRunning
+            ? `${name} <span class="tray-running-badge">En cours</span>`
+            : name;
         item.addEventListener('click', () => {
             ipcRenderer.send('trayPopup-launch-instance', name);
         });
@@ -136,8 +139,8 @@ function renderInstances(instances) {
     });
 }
 
-ipcRenderer.on('trayPopup-instances', (_, instances) => {
-    renderInstances(instances);
+ipcRenderer.on('trayPopup-instances', (_, data) => {
+    renderInstances(data.instances, data.running || []);
 });
 
 // Demande la liste actuelle dès l'ouverture du popup

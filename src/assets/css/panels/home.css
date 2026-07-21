@@ -231,7 +231,6 @@
     will-change: backdrop-filter;
 }
 
-/* Centrage absolu du play-container */
 .play-container {
     position: absolute;
     left: 50%;
@@ -431,7 +430,7 @@
 }
 
 /* Petit badge "En cours" affiché dans le popup de sélection sur l'instance
-   déjà en cours de lancement/exécution (voir home.js: buildInstanceHTML) */
+   déjà en cours de lancement/exécution (voir home.js si jamais: buildInstanceHTML) */
 .instance-running-badge {
     margin-left: 10px;
     font-size: 0.65rem;
@@ -582,7 +581,7 @@
 }
 /* ===== FIN SOCIAL SIDEBAR ===== */
 
-/* ===== NEWS AUTO-SLIDE PROGRESS BAR ===== */
+/* ===== NEWS AUTO-SLIDE ===== */
 .news-dots-wrap {
     display: flex;
     flex-direction: column-reverse;
@@ -695,7 +694,7 @@
     border-right-color: var(--border-color);
 }
 
-/* Affichage au SURVOL du "?" uniquement (:has remonte au parent commun) */
+/* Affichage au SURVOL du "?" uniquement (:has remonte au parent commun pour pas ce perdre) */
 .instance-elements:has(.instance-info-icon:hover) .instance-info-tooltip {
     opacity: 1 !important;
 }

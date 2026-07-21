@@ -155,6 +155,10 @@ img {
 
 /* ============================================
    SPLASH SCREEN
+   ============================================
+   IMPORTANT : le fond de cet écran est TOUJOURS sombre (image assombrie),
+   quel que soit le thème choisi dans les paramètres (clair/sombre/auto).
+   Le texte doit donc rester clair en dur.
    ============================================ */
 #splash {
     position: fixed;
@@ -224,7 +228,7 @@ img {
 .splash-message {
     font-size: 1.2rem;
     font-weight: 700;
-    color: var(--color);
+    color: #ffffff !important;
     opacity: 0;
     transition: opacity 0.5s ease 0.3s;
     text-align: center;
@@ -239,7 +243,7 @@ img {
 
 .splash-author {
     font-size: 0.8rem;
-    color: var(--color);
+    color: #ffffff !important;
     opacity: 0;
     transition: opacity 0.5s ease 0.4s;
     text-align: center;
@@ -258,7 +262,7 @@ img {
 
 .message {
     font-size: 0.95rem;
-    color: var(--color);
+    color: #ffffff !important;
     opacity: 0;
     transition: opacity 0.5s ease 0.5s;
     text-align: center;

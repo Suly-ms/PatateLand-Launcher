@@ -36,7 +36,7 @@ img {
     outline: none;
 }
 
-/* Scrollbar fine et discrète */
+/* Scrollbar */
 .content-scroll::-webkit-scrollbar {
     width: 6px;
 }
@@ -66,7 +66,6 @@ img {
     right: 0;
     z-index: 51;
     display: none;
-    /* INDISPENSABLE : Rend les boutons cliquables au lieu de déplacer la fenêtre */
     -webkit-app-region: no-drag; 
 }
 
@@ -83,7 +82,6 @@ img {
     color: var(--color);
     cursor: pointer;
     transition: background 0.2s;
-    /* Sécurité supplémentaire */
     -webkit-app-region: no-drag; 
 }
 
@@ -112,7 +110,7 @@ img {
     pointer-events: all;
 }
 
-/* Design des popups en verre */
+/* Design des popups effet liquid glass */
 .popup {
     position: absolute;
     width: 100%;

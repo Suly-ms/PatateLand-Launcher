@@ -67,7 +67,7 @@ class Settings {
                     })
 
                     if (id == 'add') {
-                        document.querySelector('.cancel-home').style.display = 'inline'
+                        document.querySelector('.login-back-btn').style.display = 'flex'
                         return changePanel('login')
                     }
 
@@ -78,13 +78,14 @@ class Settings {
                     return await this.db.updateData('configClient', configClient);
                 }
 
-                if (e.target.classList.contains("delete-profile")) {
+                if (e.target.closest(".delete-profile")) {
                     popupAccount.openPopup({
                         title: 'Connexion',
                         content: 'Veuillez patienter...',
                         color: 'var(--color)'
                     })
-                    await this.deleteAccount(id);
+                    let deleteBtn = e.target.closest(".delete-profile")
+                    await this.deleteAccount(deleteBtn.dataset.accountId);
                 }
             } catch (err) {
                 console.error(err)
@@ -94,12 +95,6 @@ class Settings {
         })
     }
 
-    // ===== SUPPRESSION / DÉCONNEXION DE COMPTE =====
-    // Logique commune utilisée par :
-    // - le clic sur le bouton rouge "delete-profile" dans les paramètres
-    // - l'événement "tray-logout" envoyé depuis le menu de l'icône masquée (main.js)
-    // Le paramètre fromTray évite de toucher au DOM des paramètres quand
-    // l'appel vient du tray (le panel settings n'est pas forcément affiché).
     async deleteAccount(id, fromTray = false) {
         await this.db.deleteData('accounts', id);
 
@@ -129,14 +124,8 @@ class Settings {
             await this.db.updateData('configClient', configClient);
         }
 
-        // Si l'appel vient du tray et qu'il ne restait qu'un seul compte
-        // (celui qu'on vient de supprimer), on passe déjà par le "return changePanel('login')"
-        // ci-dessus. Sinon on ne force pas de changement de panel depuis le tray.
     }
 
-    // Écoute l'IPC envoyé par main.js quand on clique sur "Se déconnecter"
-    // dans le menu contextuel du tray. Supprime le compte actuellement
-    // sélectionné (même logique que le bouton rouge des paramètres).
     trayLogout() {
         ipcRenderer.on('tray-logout', async () => {
             try {
@@ -151,7 +140,6 @@ class Settings {
             }
         });
     }
-    // ===== FIN SUPPRESSION / DÉCONNEXION DE COMPTE =====
 
     async setInstance(auth) {
         let configClient = await this.db.readData('configClient')
@@ -206,11 +194,9 @@ class Settings {
             await this.db.updateData('configClient', configClient);
         }
 
-        // Stocke la config RAM, le slider sera créé dans initRamSlider() au clic
         this.ramConfig = ram;
         this.sliderInitialized = false;
 
-        // ===== RESOLUTION - charge les valeurs sauvegardées =====
         let resolution = configClient?.game_config?.screen_size || { width: 1280, height: 720 };
 
         let width = document.querySelector(".width-size");
@@ -240,12 +226,10 @@ class Settings {
             await this.db.updateData('configClient', cfg);
         });
 
-        // ===== FULLSCREEN =====
         let fullscreenToggle = document.getElementById('fullscreen-toggle');
         let fullscreen = configClient?.game_config?.fullscreen || false;
         fullscreenToggle.checked = fullscreen;
 
-        // Grise les inputs résolution selon l'état du toggle
         const updateResolutionState = (isFullscreen) => {
             width.disabled = isFullscreen;
             height.disabled = isFullscreen;
@@ -255,7 +239,6 @@ class Settings {
             height.style.opacity = isFullscreen ? '0.4' : '';
         };
 
-        // Applique l'état au chargement
         updateResolutionState(fullscreen);
 
         fullscreenToggle.addEventListener('change', async () => {
@@ -265,9 +248,8 @@ class Settings {
             updateResolutionState(fullscreenToggle.checked);
         });
 
-        // ===== CONSOLE DE JEU =====
         let consoleToggle = document.getElementById('console-toggle');
-        let showConsole = configClient?.game_config?.show_console ?? true;
+        let showConsole = configClient?.game_config?.show_console ?? false;
         consoleToggle.checked = showConsole;
 
         consoleToggle.addEventListener('change', async () => {
@@ -276,7 +258,6 @@ class Settings {
             await this.db.updateData('configClient', cfg);
         });
 
-        // ===== BOUTONS +/- NUMBER INPUTS =====
         document.querySelectorAll('.number-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const target = btn.dataset.target;
@@ -292,9 +273,7 @@ class Settings {
                 input.dispatchEvent(new Event('change'));
             });
         });
-        // ===== FIN BOUTONS +/- NUMBER INPUTS =====
 
-        // ===== JAVA PATH =====
         let javaPathText = document.querySelector(".java-path-txt");
         javaPathText.textContent = `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}/runtime`;
 
@@ -457,7 +436,6 @@ class Settings {
                 await this.db.updateData('configClient', cfg);
             });
         }
-        // ===== FIN AUTO LAUNCH =====
     }
     // ===== RESOURCE PACKS =====
     async resourcePacks() {

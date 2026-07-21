@@ -1,21 +1,16 @@
 .global {
     --element-color: #f27312;
     --transition: all 0.3s ease-in-out;
-    --blur-strength: 8px; /* Intensité du flou derrière les fenêtres (réduit de 15px à 8px) */
+    --blur-strength: 8px;
 }
 
 .dark {
     --color: #ffffff;
-    /* Fond principal très transparent */
     --background: rgba(0, 0, 0, 0.4); 
-    /* Fond des éléments (boutons, blocs) un peu plus opaque */
     --background-element: rgba(30, 30, 30, 0.5); 
-    /* Bordure subtile blanche pour l'effet de verre */
     --border-color: rgba(255, 255, 255, 0.1);
     --shadow: rgba(0, 0, 0, 0.5);
     --svg-color: brightness(0) saturate(100%) invert(100%);
-    
-    /* Dégradé léger pour donner du volume */
     --glass-gradient: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
 }
 
@@ -204,4 +199,37 @@
     font-size: 12px;
     opacity: 0.5;
     font-style: italic;
+}
+.tray-running-badge {
+    font-size: 10px;
+    color: var(--online-color, #2ecc71);
+    border: 1px solid var(--online-color, #2ecc71);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+.login-back-btn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--background-element, rgba(30, 30, 30, 0.5));
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    color: var(--color, #ffffff);
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition, all 0.2s ease);
+    z-index: 10;
+}
+
+.login-back-btn:hover {
+    background: rgba(255, 59, 48, 0.2);
+    border-color: rgba(255, 59, 48, 0.5);
+    color: #ff3b30;
 }

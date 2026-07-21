@@ -11,8 +11,14 @@ const { shell, ipcRenderer } = require('electron')
 // Les clés doivent correspondre exactement au champ "name" de l'instance.
 const instanceDescriptions = {
     "Event": "Instance dédiée aux événements spéciaux et temporaires.",
-    "Extra": "Instance avec des fonctionnalités et du contenu supplémentaire.",
+    "Extra": "Instance avec des mods rendant le jeux plus beau et plus gourmant.",
     "Opti": "Instance optimisée pour de meilleures performances, idéale pour les configurations modestes."
+}
+
+const activeLaunches = new Map();
+
+function notifyTrayRunning() {
+    ipcRenderer.send('update-tray-running', Array.from(activeLaunches.keys()));
 }
 
 class Home {
@@ -21,8 +27,8 @@ class Home {
     async init(config) {
         this.config = config;
         this.db = new database();
-        // instanceName -> instance de Launch en cours (permet le multi-lancement)
-        this.activeLaunches = new Map();
+
+        this.activeLaunches = activeLaunches;
 
         this.news()
         this.socialLick()
@@ -45,8 +51,12 @@ class Home {
 
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
 
-        document.querySelector('.player-head').addEventListener('click', () => { 
-            changePanel('settings'); 
+        document.querySelector('.player-head').addEventListener('click', () => {
+            if (typeof this.config.online === 'string') {
+                shell.openExternal(`${this.config.online}/profile`);
+            } else {
+                changePanel('settings');
+            }
         });
 
         // ===== Actions déclenchées depuis le menu contextuel du tray =====
@@ -60,11 +70,6 @@ class Home {
         })
 
         ipcRenderer.on('tray-logout', async () => {
-            // Déconnecte le compte actuellement sélectionné.
-            // NOTE : adapte cette logique si ta page settings gère la
-            // déconnexion différemment (ex: suppression du compte plutôt
-            // que simple désélection). Ici on se contente de désélectionner
-            // le compte actif et de recharger l'interface.
             let configClient = await this.db.readData('configClient')
             configClient.account_selected = null
             await this.db.updateData('configClient', configClient)
@@ -74,6 +79,74 @@ class Home {
 
     }
 
+    // ===== BANDEAU DE MAINTENANCE (visible pour les comptes whitelistés) =====
+    async checkMaintenanceBanner() {
+        try {
+            const res = await configModule.GetConfig();
+            if (!res.maintenance) return;
+
+            if (res.maintenance_end) {
+                const endDate = new Date(res.maintenance_end);
+                if (!isNaN(endDate.getTime()) && endDate <= new Date()) return;
+            }
+
+            this.renderMaintenanceBanner(res.maintenance_message, res.maintenance_end);
+        } catch (err) {
+            console.error("Erreur lors de la vérification du bandeau maintenance :", err);
+        }
+    }
+
+    renderMaintenanceBanner(message, endDateISO) {
+        let existing = document.querySelector('.maintenance-banner');
+        if (existing) existing.remove();
+
+        const banner = document.createElement('div');
+        banner.classList.add('maintenance-banner');
+
+        const plainMessage = message.replace(/<br\s*\/?>/gi, ' ');
+        banner.innerHTML = `
+            <span class="maintenance-banner-icon">⚠</span>
+            <span class="maintenance-banner-text">${plainMessage}</span>
+            <span class="maintenance-banner-countdown"></span>
+        `;
+
+        document.body.appendChild(banner);
+
+        const countdownEl = banner.querySelector('.maintenance-banner-countdown');
+
+        if (!endDateISO) return;
+
+        const endDate = new Date(endDateISO);
+        if (isNaN(endDate.getTime())) return;
+
+        const updateCountdown = () => {
+            const diffMs = endDate - new Date();
+
+            if (diffMs <= 0) {
+                clearInterval(this.maintenanceBannerInterval);
+                banner.remove();
+                return;
+            }
+
+            const totalSeconds = Math.floor(diffMs / 1000);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+
+            const timeText = `${pad(hours)}h ${pad(minutes)}min ${pad(seconds)}s`;
+            const countdownText = days > 0
+                ? `Fin dans ${days} jour${days > 1 ? 's' : ''} et ${timeText}`
+                : `Fin dans ${timeText}`;
+
+            countdownEl.textContent = countdownText;
+        };
+
+        updateCountdown();
+        this.maintenanceBannerInterval = setInterval(updateCountdown, 1000);
+    }
+    // ===== FIN BANDEAU DE MAINTENANCE =====
 
     async news() {
         let newsContainer = document.querySelector('.news-list');
@@ -141,7 +214,6 @@ class Home {
                     </div>` : ''}
                 </div>`;
 
-            // Relancer l'animation de la barre de progression
             const fillBar = newsContainer.querySelector('.news-progress-fill');
             if (fillBar) {
                 fillBar.style.animation = 'none';
@@ -161,19 +233,16 @@ class Home {
                 });
             }
 
-            // Scroll désactivé pour la navigation des news
         };
 
         render();
 
-        // Auto-slide toutes les 6 secondes avec animation fade
         if (slides.length > 1) {
             let autoSlideTimer = setInterval(() => {
                 const next = (current + 1) % slides.length;
                 const block = newsContainer.querySelector('.news-block');
                 if (!block) return;
 
-                // Animation sortie
                 block.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                 block.style.opacity = '0';
                 block.style.transform = 'translateX(-20px)';
@@ -182,7 +251,6 @@ class Home {
                     current = next;
                     render();
 
-                    // Animation entrée
                     const newBlock = newsContainer.querySelector('.news-block');
                     if (newBlock) {
                         newBlock.style.opacity = '0';
@@ -199,7 +267,6 @@ class Home {
                 }, 400);
             }, 12000);
 
-            // Reset le timer si l'utilisateur interagit manuellement
             const resetTimer = () => {
                 clearInterval(autoSlideTimer);
                 autoSlideTimer = setInterval(() => {
@@ -252,7 +319,16 @@ class Home {
 
         // Transmet la liste des instances au processus principal pour qu'il
         // puisse construire le sous-menu "Jouer" du tray.
-        ipcRenderer.send('update-tray-instances', instancesList.map(i => i.name))
+        // "Event" s'affiche toujours en dernier, que ce soit dans le popup
+        // du sélecteur d'instance ou dans le sous-menu "Jouer" du tray.
+        const sortedForTray = [...instancesList].sort((a, b) => {
+            const aIsEvent = a.name.trim().toLowerCase() === 'event'
+            const bIsEvent = b.name.trim().toLowerCase() === 'event'
+            if (aIsEvent && !bIsEvent) return 1
+            if (!aIsEvent && bIsEvent) return -1
+            return 0
+        })
+        ipcRenderer.send('update-tray-instances', sortedForTray.map(i => i.name))
 
         let instanceBTN = document.querySelector('.play-instance')
         let instancePopup = document.querySelector('.instance-popup')
@@ -292,23 +368,16 @@ class Home {
                 }
         }
 
-        // Bouton JOUER - séparé du sélecteur d'instance
-        // On lance toujours l'instance actuellement sélectionnée dans la config.
-        // Comme this.activeLaunches est vérifié dans startGame(), cliquer sur
-        // JOUER pendant qu'une instance tourne déjà lancera une AUTRE instance
-        // (celle sélectionnée à ce moment-là) sans bloquer la première.
+
         document.querySelector('.play-btn').addEventListener('click', async () => {
             let configClient = await this.db.readData('configClient')
             this.startGame(configClient.instance_select).catch(err => {
-                // Filet de sécurité ultime : ne devrait plus jamais se déclencher
-                // (toutes les erreurs sont normalement interceptées dans startGame),
-                // mais évite un blocage silencieux si un cas imprévu survient.
+
                 console.error('Erreur inattendue au lancement :', err)
-                this.activeLaunches.delete(configClient.instance_select)
+                this.activeLaunches.delete(configClient.instance_select); notifyTrayRunning();
             })
         })
 
-        // Sélecteur d'instance - séparé du bouton JOUER
         document.querySelector('.instance-select').addEventListener('click', async e => {
             let configClient = await this.db.readData('configClient')
             let instanceSelect = configClient.instance_select
@@ -333,8 +402,6 @@ class Home {
                 </div>`
         }
 
-        // "Event" s'affiche toujours en dernier dans le popup, peu importe
-        // l'ordre renvoyé par la config.
         const displayList = [...instancesList].sort((a, b) => {
             const aIsEvent = a.name.trim().toLowerCase() === 'event'
             const bIsEvent = b.name.trim().toLowerCase() === 'event'
@@ -400,14 +467,6 @@ class Home {
         })
             }
 
-    // startGame prend désormais le nom de l'instance à lancer en paramètre.
-    // this.activeLaunches (Map) garde une trace des lancements en cours pour
-    // permettre à plusieurs instances de tourner en parallèle sans se marcher
-    // dessus. Chaque instance a son propre objet Launch() et ses propres
-    // événements identifiés par son nom (utilisé aussi pour la fenêtre de logs).
-    // La progression n'est plus affichée dans l'UI (cartes flottantes) mais
-    // via des notifications natives OS (Windows/Linux/Mac), voir
-    // ipcRenderer.send('game-notification', ...) et app.js.
     async startGame(instanceName) {
         if (this.activeLaunches.has(instanceName)) {
             console.log(`${instanceName} est déjà en cours de lancement ou d'exécution.`)
@@ -415,11 +474,8 @@ class Home {
         }
 
         let launch = new Launch()
-        this.activeLaunches.set(instanceName, launch)
+        this.activeLaunches.set(instanceName, launch); notifyTrayRunning();
 
-        // Filet de sécurité : si quoi que ce soit plante pendant la
-        // préparation du lancement (config manquante, instance introuvable,
-        // etc.), on nettoie l'état au lieu de bloquer l'instance pour toujours.
         let configClient, instanceListAll, authenticator, options
         try {
             configClient = await this.db.readData('configClient')
@@ -436,7 +492,7 @@ class Home {
                 color: 'red',
                 options: true
             })
-            this.activeLaunches.delete(instanceName)
+            this.activeLaunches.delete(instanceName); notifyTrayRunning();
             return
         }
 
@@ -499,7 +555,7 @@ class Home {
                 color: 'red',
                 options: true
             })
-            this.activeLaunches.delete(instanceName)
+            this.activeLaunches.delete(instanceName); notifyTrayRunning();
             return
         }
 
@@ -552,8 +608,7 @@ class Home {
                 ipcRenderer.send('log-window-open', instanceName, `PatateLand - ${instanceName}`);
                 ipcRenderer.send('log-status', instanceName, 'running');
             }
-            // Le jeu a réellement démarré : on prévient une seule fois via
-            // notification native que l'instance est prête.
+
             if (!readyNotified) {
                 readyNotified = true
                 ipcRenderer.send('game-notification', {
@@ -574,7 +629,7 @@ class Home {
             ipcRenderer.send('log-status', instanceName, 'closed');
             new logger(pkg.name, '#7289da');
             console.log(instanceName, 'Close');
-            this.activeLaunches.delete(instanceName)
+            this.activeLaunches.delete(instanceName); notifyTrayRunning();
         });
 
         launch.on('error', err => {
@@ -600,7 +655,7 @@ class Home {
             ipcRenderer.send('log-send', instanceName, `ERREUR: ${JSON.stringify(err)}`);
             new logger(pkg.name, '#7289da');
             console.log(instanceName, err);
-            this.activeLaunches.delete(instanceName)
+            this.activeLaunches.delete(instanceName); notifyTrayRunning();
         });
     }
 

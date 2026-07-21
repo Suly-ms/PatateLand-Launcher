@@ -99,11 +99,13 @@ class Splash {
     }
 
     async checkUpdate() {
-        // En mode dev, electron-updater ignore silencieusement la vérification
-        // (app non packagée) et n'émet jamais "update-not-available", ce qui
-        // bloquerait indéfiniment ici. On saute donc direct à la maintenance.
+
         if (process.env.NODE_ENV === 'dev') {
             return this.maintenanceCheck();
+        }
+
+        if (os.platform() !== 'win32') {
+            return this.checkUpdateManual();
         }
 
         this.setStatus(`Recherche de mise à jour...`);
@@ -116,11 +118,8 @@ class Splash {
 
         ipcRenderer.on('updateAvailable', () => {
             this.setStatus(`Mise à jour disponible !`);
-            if (os.platform() == 'win32') {
-                this.toggleProgress();
-                ipcRenderer.send('start-update');
-            }
-            else return this.dowloadUpdate();
+            this.toggleProgress();
+            ipcRenderer.send('start-update');
         });
 
         ipcRenderer.on('error', (event, err) => {
@@ -137,6 +136,65 @@ class Splash {
             console.error("Mise à jour non disponible");
             this.maintenanceCheck();
         });
+    }
+
+    async checkUpdateManual() {
+        this.setStatus(`Recherche de mise à jour...`);
+
+        try {
+            const repoURL = pkg.repository.url
+                .replace("git+", "")
+                .replace(".git", "")
+                .replace("https://github.com/", "")
+                .split("/");
+
+            const githubAPI = await nodeFetch('https://api.github.com')
+                .then(res => res.json());
+
+            const githubAPIRepoURL = githubAPI.repository_url
+                .replace("{owner}", repoURL[0])
+                .replace("{repo}", repoURL[1]);
+
+            const githubAPIRepo = await nodeFetch(githubAPIRepoURL)
+                .then(res => res.json());
+
+            const releases = await nodeFetch(githubAPIRepo.releases_url.replace("{/id}", ''))
+                .then(res => res.json());
+
+            const latestRelease = releases[0];
+            if (!latestRelease || !latestRelease.tag_name) {
+
+                return this.maintenanceCheck();
+            }
+
+            const latestVersion = latestRelease.tag_name.replace(/^v/, '');
+            const currentVersion = pkg.version;
+
+            if (this.isNewerVersion(latestVersion, currentVersion)) {
+                this.setStatus(`Mise à jour disponible !`);
+                return this.dowloadUpdate();
+            }
+
+            return this.maintenanceCheck();
+
+        } catch (err) {
+            console.error("Erreur lors de la vérification manuelle de mise à jour :", err);
+  
+            return this.maintenanceCheck();
+        }
+    }
+
+    isNewerVersion(remote, current) {
+        const r = remote.split('.').map(n => parseInt(n, 10) || 0);
+        const c = current.split('.').map(n => parseInt(n, 10) || 0);
+
+        for (let i = 0; i < Math.max(r.length, c.length); i++) {
+            const rv = r[i] || 0;
+            const cv = c[i] || 0;
+            if (rv > cv) return true;
+            if (rv < cv) return false;
+        }
+        return false;
     }
 
     getLatestReleaseForOS(osName, preferredFormat, assets) {
@@ -180,6 +238,12 @@ class Splash {
             if (!latest)
                 return this.shutdown("Impossible de trouver la mise à jour pour votre OS.");
 
+            ipcRenderer.send('update-available-notification', {
+                title: 'PatateLand - Mise à jour disponible !',
+                body: 'Cliquez ici pour télécharger la dernière version.',
+                url: latest.browser_download_url
+            });
+
             this.setStatus(`Mise à jour disponible !<br><div class="download-update">Télécharger</div>`);
 
             document.querySelector(".download-update").addEventListener("click", () => {
@@ -198,9 +262,13 @@ class Splash {
         config.GetConfig().then(async res => {
             if (!res.maintenance) return this.startLauncher();
 
-            // Vérifie si un compte déjà enregistré localement fait partie
-            // de la whitelist de maintenance (admins/staff) — si oui, on
-            // laisse passer normalement sans afficher l'écran de maintenance.
+            if (res.maintenance_end) {
+                const endDate = new Date(res.maintenance_end);
+                if (!isNaN(endDate.getTime()) && endDate <= new Date()) {
+                    return this.startLauncher();
+                }
+            }
+
             const isWhitelisted = await this.checkMaintenanceWhitelist(res.maintenance_whitelist);
             if (isWhitelisted) return this.startLauncher();
 
@@ -211,8 +279,6 @@ class Splash {
         });
     }
 
-    // Compare les comptes stockés localement (déjà connectés sur cette
-    // machine) avec la liste blanche envoyée par le serveur.
     async checkMaintenanceWhitelist(whitelist) {
         if (!Array.isArray(whitelist) || whitelist.length === 0) return false;
 
@@ -229,8 +295,6 @@ class Splash {
         }
     }
 
-    // Affiche le message de maintenance, avec un compte à rebours en direct
-    // si une date de fin (maintenance_end, format ISO) est fournie par le serveur.
     startMaintenance(message, endDateISO) {
         if (!endDateISO) {
             this.setStatus(message);
@@ -255,12 +319,18 @@ class Splash {
             }
 
             const totalSeconds = Math.floor(diffMs / 1000);
-            const hours = Math.floor(totalSeconds / 3600);
+            const days = Math.floor(totalSeconds / 86400);
+            const hours = Math.floor((totalSeconds % 86400) / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
             const seconds = totalSeconds % 60;
-
             const pad = (n) => String(n).padStart(2, '0');
-            const countdownText = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+
+            // Au-delà de 24h restantes : "X jour(s) et HHh MMmin SSs"
+            // En dessous de 24h : "HHh MMmin SSs"
+            const timeText = `${pad(hours)}h ${pad(minutes)}min ${pad(seconds)}s`;
+            const countdownText = days > 0
+                ? `${days} jour${days > 1 ? 's' : ''} et ${timeText}`
+                : timeText;
 
             this.setStatus(`${message}<br><span class="maintenance-countdown">Retour estimé dans ${countdownText}</span>`);
         };
@@ -268,7 +338,7 @@ class Splash {
         updateCountdown();
         this.maintenanceInterval = setInterval(updateCountdown, 1000);
     }
-    // ===== FIN MAINTENANCE =====
+
 
     startLauncher() {
         this.setStatus(`Démarrage du launcher`);

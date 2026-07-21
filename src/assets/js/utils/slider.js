@@ -34,22 +34,19 @@ export default class Slider {
         this.currentHandle = null;
 
 
-        // Initialiser immédiatement
         this.init();
     }
 
     init() {
-        // S'assurer que le slider a des dimensions
+
         if (this.slider.offsetWidth === 0) {
             setTimeout(() => this.init(), 50);
             return;
         }
 
 
-        // Positionner IMMÉDIATEMENT
         this.updatePositions();
 
-        // Événements
         this.touchLeft.addEventListener('mousedown', (e) => this.startDrag(e, 'left'));
         this.touchLeft.addEventListener('touchstart', (e) => this.startDrag(e, 'left'), { passive: false });
         this.touchRight.addEventListener('mousedown', (e) => this.startDrag(e, 'right'));
@@ -79,46 +76,37 @@ export default class Slider {
         
         event.preventDefault();
 
-        // Récupérer la position X de l'événement
         const clientX = event.type.includes('touch') ? event.touches[0].clientX : event.clientX;
-        
-        // Récupérer les dimensions du slider
+
         const sliderRect = this.slider.getBoundingClientRect();
         const sliderWidth = sliderRect.width;
-        
-        // Calculer la position relative dans le slider (0 à 1)
+
         let relativeX = (clientX - sliderRect.left) / sliderWidth;
-        
-        // Contraindre entre 0 et 1
+
         relativeX = Math.max(0, Math.min(1, relativeX));
-        
-        // Calculer la valeur correspondante
+
         let value = this.min + (relativeX * (this.max - this.min));
-        
-        // Arrondir selon le step
+
         if (this.step > 0) {
             value = Math.round(value / this.step) * this.step;
         }
 
-        // Mettre à jour la valeur appropriée
         if (this.currentHandle === 'left') {
-            // Le curseur gauche ne peut pas dépasser le curseur droit
+
             if (value >= this.maxValue - this.step) {
                 value = this.maxValue - this.step;
             }
             this.minValue = value;
         } else {
-            // Le curseur droit ne peut pas descendre en dessous du curseur gauche
+
             if (value <= this.minValue + this.step) {
                 value = this.minValue + this.step;
             }
             this.maxValue = value;
         }
 
-        // Mettre à jour l'affichage
         this.updatePositions();
-        
-        // Émettre l'événement de changement
+
         this.emit('change', this.minValue, this.maxValue);
     }
 
@@ -142,28 +130,23 @@ export default class Slider {
         }
 
 
-        // Calculer les positions en pourcentage
         const leftPercent = ((this.minValue - this.min) / (this.max - this.min));
         const rightPercent = ((this.maxValue - this.min) / (this.max - this.min));
 
-        // Positionner les curseurs
         const leftPos = leftPercent * (sliderWidth - handleWidth);
         const rightPos = rightPercent * (sliderWidth - handleWidth);
 
 
-        // Appliquer avec !important
         this.touchLeft.style.setProperty('left', leftPos + 'px', 'important');
         this.touchRight.style.setProperty('left', rightPos + 'px', 'important');
 
 
-        // Mettre à jour la barre colorée
         const barStart = leftPos + (handleWidth / 2);
         const barEnd = rightPos + (handleWidth / 2);
         
         this.lineSpan.style.marginLeft = barStart + 'px';
         this.lineSpan.style.width = (barEnd - barStart) + 'px';
 
-        // Mettre à jour les labels
         this.updateLabels();
     }
 
@@ -191,7 +174,6 @@ export default class Slider {
         this.updatePositions();
     }
 
-    // Système d'événements
     func = {};
 
     on(name, func) {

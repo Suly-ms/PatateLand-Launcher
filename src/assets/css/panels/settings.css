@@ -77,7 +77,6 @@
     border: 1px solid var(--border-color);
 }
 
-/* --- Contenu (Droite) --- */
 .container-settings {
     flex: 1;
     display: none;
@@ -104,12 +103,23 @@
 
 /* Titres des sections */
 .titre-tab {
+    display: inline-block;
     font-size: 1.8rem;
     font-weight: bold;
     margin-bottom: 20px;
     margin-top: 10px;
     color: var(--color);
-    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    /* Fond semi-opaque + blur, comme les cartes de navigation à gauche :
+       garantit la lisibilité peu importe la luminosité/couleur de la photo
+       de fond derrière, plutôt qu'un simple text-shadow qui ne suffit pas
+       sur des images très claires. */
+    background: var(--background-element);
+    backdrop-filter: blur(var(--blur-strength));
+    -webkit-backdrop-filter: blur(var(--blur-strength));
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 20px;
+    box-shadow: 0 4px 14px var(--shadow);
 }
 
 /* Boites de contenu */
@@ -145,7 +155,7 @@
 }
 
 .account {
-    background: rgba(0,0,0,0.3);
+    background: var(--background-element);
     border: 1px solid var(--border-color);
     border-radius: 15px;
     padding: 20px;
@@ -194,7 +204,7 @@
     font-size: 10px;
     color: rgba(255,255,255,0.4);
     font-family: monospace;
-    display: none; /* Caché par défaut */
+    display: none;
 }
 
 /* Bouton de suppression */
@@ -250,7 +260,7 @@
     font-size: 14px;
 }
 
-/* ========== SLIDER RAM - VERSION PROPRE ========== */
+/* ========== SLIDER RAM (CHIANT DE FOU !!!) ========== */
 
 .settings-elements {
     position: relative;
@@ -280,7 +290,7 @@
     border-radius: 5px !important;
 }
 
-/* CURSEURS - AUCUNE POSITION PAR DÉFAUT */
+/* CURSEURS */
 .slider-touch-left, 
 .slider-touch-right {
     width: 20px !important; 
@@ -463,7 +473,8 @@ input {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(0,0,0,0.3);
+    /* Fond adapté au thème (avant : rgba(0,0,0,0.3) fixe) */
+    background: var(--background-element);
     border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 10px 14px;
@@ -504,7 +515,7 @@ input {
 
 /* ========== FIN RESOURCE PACKS ========== */
 
-/* ========== SHADER PACKS (reprend les memes styles que resource packs) ========== */
+/* ========== SHADER PACKS ========== */
 
 .sp-btn-box {
     display: flex;
@@ -661,14 +672,13 @@ input {
     padding-left: 14px;
 }
 
-
-
 /* ========== NUMBER INPUT CUSTOM ========== */
 .number-input-wrapper {
     display: flex;
     align-items: center;
     gap: 0;
-    background: rgba(0,0,0,0.3);
+    /* Fond adapté au thème (avant : rgba(0,0,0,0.3) fixe) */
+    background: var(--background-element);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
@@ -681,7 +691,7 @@ input {
     text-align: center;
     width: 80px;
     padding: 10px 5px;
-    color: white;
+    color: var(--color);
     font-size: 0.95rem;
     -moz-appearance: textfield;
 }

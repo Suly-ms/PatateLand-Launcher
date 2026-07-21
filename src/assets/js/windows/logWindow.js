@@ -7,7 +7,7 @@ const path = require("path");
 const os = require("os");
 
 let dev = process.env.DEV_TOOL === 'open';
-let logWindows = new Map(); // id (nom de l'instance) -> BrowserWindow
+let logWindows = new Map();
 
 function getWindow(id = 'default') {
     return logWindows.get(id);
@@ -23,14 +23,11 @@ function destroyWindow(id = 'default') {
 function createWindow(id = 'default', title = 'PatateLand - Console de jeu') {
     if (logWindows.has(id)) return logWindows.get(id);
 
-    // Récupère tous les écrans disponibles
     const displays = screen.getAllDisplays();
-    // Si un second écran existe on l'utilise, sinon on prend le principal
+
     const targetDisplay = displays.length > 1 ? displays[1] : displays[0];
     const { x, y, width, height } = targetDisplay.workArea;
 
-    // Centre la fenêtre sur l'écran cible, avec un léger décalage
-    // par fenêtre déjà ouverte pour éviter qu'elles se superposent pile
     const winWidth = 750;
     const winHeight = 480;
     const offset = logWindows.size * 30;

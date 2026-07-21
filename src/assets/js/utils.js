@@ -64,7 +64,7 @@ async function addAccount(data) {
     div.innerHTML = `
         <img class="profile-image" src="${skin}" alt="${data.name}" onerror="this.src='https://crafatar.com/avatars/steve?size=128&overlay'">
         <div class="profile-name">${data.name}</div>
-        <div class="delete-profile" id="${data.ID}">
+        <div class="delete-profile" data-account-id="${data.ID}">
             <div class="icon-account-delete delete-profile-icon"></div>
         </div>
     `

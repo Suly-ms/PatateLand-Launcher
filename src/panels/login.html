@@ -1,6 +1,9 @@
 <div class="container">
     <div class="login-card glass-effect">
-        
+
+        <!-- Bouton retour unique (croix), commun à tous les modes de connexion -->
+        <div class="login-back-btn" style="display: none;">&#10005;</div>
+
         <div class="login-content login-home" style="display: none;">
             <div class="login-icon icon-microsoft"></div>
             <div class="login-title">Connexion</div>
@@ -8,10 +11,6 @@
             
             <button class="login-btn connect connect-home">
                 <span>Connexion Microsoft</span>
-            </button>
-            
-            <button class="login-btn cancel cancel-home" style="display: none;">
-                <span>Annuler</span>
             </button>
         </div>
 
@@ -27,10 +26,6 @@
             <button class="login-btn connect connect-offline">
                 <span>Connexion</span>
             </button>
-            
-            <button class="login-btn cancel cancel-offline" style="display: none;">
-                <span>Annuler</span>
-            </button>
         </div>
 
         <div class="login-content login-AZauth" style="display: none;">
@@ -44,10 +39,6 @@
 
             <button class="login-btn connect connect-AZauth">
                 <span>Connexion</span>
-            </button>
-            
-            <button class="login-btn cancel cancel-AZauth" style="display: none;">
-                <span>Annuler</span>
             </button>
 
             <div class="login-register">

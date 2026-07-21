@@ -33,10 +33,9 @@ Store.initRenderer();
 app.setName('PatateLand');
 app.setAppUserModelId('fr.patateland.launcher');
 
-// Démarrage automatique avec Windows/macOS
 function setAutoLaunch(enabled) {
     if (process.platform === 'darwin') {
-        // Sur Mac, pointer vers le bundle .app et pas le binaire interne
+
         const exePath = app.getPath('exe');
         const appPath = exePath.includes('.app/') 
             ? exePath.split('.app/')[0] + '.app'
@@ -55,7 +54,6 @@ function setAutoLaunch(enabled) {
     }
 }
 
-// Restaure l'auto-launch depuis la DB après une mise à jour
 async function restoreAutoLaunch() {
     try {
         const Store = require('electron-store');
@@ -67,7 +65,6 @@ async function restoreAutoLaunch() {
     } catch(e) {}
 }
 
-// Helper notification Electron natif (son Windows fiable)
 function sendNotification({ title, body, silent = false, onClick = null }) {
     if (!Notification.isSupported()) return;
     const notif = new Notification({
@@ -80,9 +77,9 @@ function sendNotification({ title, body, silent = false, onClick = null }) {
     notif.show();
 }
 
-// ===== SYSTEM TRAY =====
 let tray = null;
 let trayInstances = [];
+let trayRunning = [];
 
 function focusMainWindowAndSend(channel, payload) {
     let win = MainWindow.getWindow();
@@ -120,11 +117,16 @@ function createTray() {
 
 ipcMain.on('update-tray-instances', (_, instanceNames) => {
     trayInstances = Array.isArray(instanceNames) ? instanceNames : [];
-    TrayMenu.updateInstances(trayInstances);
+    TrayMenu.updateInstances(trayInstances, trayRunning);
+});
+
+ipcMain.on('update-tray-running', (_, runningNames) => {
+    trayRunning = Array.isArray(runningNames) ? runningNames : [];
+    TrayMenu.updateInstances(trayInstances, trayRunning);
 });
 
 ipcMain.on('trayPopup-request-instances', (event) => {
-    event.sender.send('trayPopup-instances', trayInstances);
+    event.sender.send('trayPopup-instances', { instances: trayInstances, running: trayRunning });
 });
 
 ipcMain.on('trayPopup-open-launcher', () => {
@@ -155,7 +157,7 @@ ipcMain.on('trayPopup-quit', () => {
     app.isQuitting = true;
     app.quit();
 });
-// ===== FIN SYSTEM TRAY =====
+
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
@@ -171,20 +173,11 @@ else {
         await restoreAutoLaunch();
 
         if (dev) {
-            // ===== MODE TEST MAINTENANCE =====
-            // Temporairement, on passe aussi par UpdateWindow (splash) en dev,
-            // pour pouvoir tester l'écran de maintenance / whitelist / timer
-            // sans avoir à builder l'appli à chaque fois.
-            //
-            // ⚠️ Une fois les tests terminés, remets le comportement normal :
-            //     MainWindow.createWindow();
-            //     createTray();
-            //     scheduleUpdateCheck();
-            //     return;
+
             UpdateWindow.createWindow();
             scheduleUpdateCheck();
             return;
-            // ===== FIN MODE TEST MAINTENANCE =====
+
         }
 
         UpdateWindow.createWindow();
@@ -225,6 +218,16 @@ ipcMain.on('main-window-minimize', () => {
 ipcMain.on('game-notification', (_, { title, body }) => {
     sendNotification({ title, body, silent: false });
 })
+
+ipcMain.on('update-available-notification', (_, { title, body, url }) => {
+    sendNotification({
+        title,
+        body,
+        silent: false,
+        onClick: () => shell.openExternal(url)
+    });
+})
+
 
 ipcMain.on('log-window-open', (_, id, title) => LogWindow.createWindow(id, title))
 ipcMain.on('log-window-close', (_, id) => LogWindow.destroyWindow(id))

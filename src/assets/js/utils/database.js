@@ -34,7 +34,6 @@ class database {
         await this.initStore();
         let tableData = this.store.get(tableName, []);
 
-        // Générer un nouvel ID
         const maxId = tableData.length > 0
             ? Math.max(...tableData.map(item => item.ID || 0))
             : 0;
@@ -50,7 +49,8 @@ class database {
     async readData(tableName, key = 1) {
         await this.initStore();
         let tableData = this.store.get(tableName, []);
-        let data = tableData.find(item => item.ID === key);
+
+        let data = tableData.find(item => String(item.ID) === String(key));
         return data ? data : undefined;
     }
 
@@ -62,10 +62,10 @@ class database {
     async updateData(tableName, data, key = 1) {
         await this.initStore();
         let tableData = this.store.get(tableName, []);
-        const index = tableData.findIndex(item => item.ID === key);
+        const index = tableData.findIndex(item => String(item.ID) === String(key));
 
         if (index !== -1) {
-            data.ID = key;
+            data.ID = tableData[index].ID;
             tableData[index] = data;
             this.store.set(tableName, tableData);
         } else {
@@ -78,7 +78,8 @@ class database {
     async deleteData(tableName, key = 1) {
         await this.initStore();
         let tableData = this.store.get(tableName, []);
-        tableData = tableData.filter(item => item.ID !== key);
+
+        tableData = tableData.filter(item => String(item.ID) !== String(key));
         this.store.set(tableName, tableData);
     }
 

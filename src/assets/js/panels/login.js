@@ -21,8 +21,8 @@ class Login {
             }
         }
 
-        document.querySelector('.cancel-home').addEventListener('click', () => {
-            document.querySelector('.cancel-home').style.display = 'none'
+        document.querySelector('.login-back-btn').addEventListener('click', () => {
+            document.querySelector('.login-back-btn').style.display = 'none'
             changePanel('settings')
         })
     }
@@ -110,7 +110,6 @@ class Login {
         let loginAZauth = document.querySelector('.login-AZauth');
         let loginAZauthA2F = document.querySelector('.login-AZauth-A2F');
 
-        // Reset à chaque fois qu'on revient sur le panel login
         loginAZauth.style.display = 'block';
         loginAZauthA2F.style.display = 'none';
         document.querySelector('.email-AZauth').value = '';
@@ -123,7 +122,6 @@ class Login {
         let AZauthConnectBTN = document.querySelector('.connect-AZauth');
         let AZauthCancelA2F = document.querySelector('.cancel-AZauth-A2F');
 
-        // Lien créer un compte
         document.querySelectorAll('.register-link').forEach(link => {
             link.addEventListener('click', e => {
                 shell.openExternal(e.currentTarget.dataset.url);
@@ -233,7 +231,6 @@ class Login {
     }
 
     // ===== DÉCONNEXION =====
-    // Supprime le compte actuellement sélectionné et renvoie sur le panel login.
     async logout() {
         let db = new database();
         let configClient = await db.readData('configClient');
@@ -249,10 +246,6 @@ class Login {
     // ===== FIN DÉCONNEXION =====
 }
 
-// Listener global : réagit au clic "Se déconnecter" dans le menu du tray
-// (voir main.js -> focusMainWindowAndSend('tray-logout')).
-// Placé ici au niveau du module pour être actif dès le chargement,
-// peu importe le panel actuellement affiché.
 ipcRenderer.on('tray-logout', async () => {
     const login = new Login();
     await login.logout();
