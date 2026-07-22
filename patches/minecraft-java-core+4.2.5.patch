@@ -1,20 +1,20 @@
 diff --git a/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js b/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js
-index a3a6fb5..2888014 100644
+index a3a6fb5..a3642d5 100644
 --- a/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js
 +++ b/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js
-@@ -5,7 +5,14 @@
-  */
- var __importDefault = (this && this.__importDefault) || function (mod) {
-     return (mod && mod.__esModule) ? mod : { "default": mod };
--};
-+};if (versionJson.logging && versionJson.logging.client) {
-+    const logConfig = versionJson.logging.client;
-+    let logConfigPath = `${this.options.path}/assets/log_configs/${logConfig.file.id}`;
-+    if (process.platform === 'win32') {
-+        logConfigPath = `file:///${logConfigPath}`;
-+    }
-+    jvmArgs.push(logConfig.argument.replace('${path}', logConfigPath));
-+}
- Object.defineProperty(exports, "__esModule", { value: true });
- const fs_1 = __importDefault(require("fs"));
- const os_1 = __importDefault(require("os"));
+@@ -178,7 +178,14 @@ class MinecraftArguments {
+         }
+         if (versionJson.logging && versionJson.logging.client) {
+             const logConfig = versionJson.logging.client;
+-            const logConfigPath = `${this.options.path}/assets/log_configs/${logConfig.file.id}`;
++            let logConfigPath = `${this.options.path}/assets/log_configs/${logConfig.file.id}`;
++            // Fix : sous Windows, log4j interprète "C:/..." comme un protocole
++            // d'URI invalide ("unknown protocol: c") s'il n'est pas préfixé
++            // par file:///. Sans ça, log4j échoue à charger sa config et ne
++            // génère jamais de fichier logs/latest.log.
++            if (process.platform === 'win32') {
++                logConfigPath = `file:///${logConfigPath}`;
++            }
+             jvmArgs.push(logConfig.argument.replace('${path}', logConfigPath));
+         }
+         // Append any user-supplied JVM arguments
