@@ -6,6 +6,65 @@ import { config as configModule, database, logger, changePanel, appdata, setStat
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
+const fs = require('fs')
+const path = require('path')
+
+// ===== MINI WRITER NBT (sans dépendance externe) =====
+// prismarine-nbt a été abandonné ici : sa dépendance interne "ajv" utilise
+// eval/new Function pour compiler des schémas, ce qui viole la CSP du
+// renderer Electron (script-src 'self', sans 'unsafe-eval') et provoque un
+// écran blanc au chargement. La structure qu'on écrit (servers.dat) étant
+// très simple, on l'encode ici à la main en NBT big-endian non compressé
+// (format natif attendu par Minecraft pour servers.dat).
+function nbtWriteString(str) {
+    const strBuf = Buffer.from(str, 'utf8')
+    const buf = Buffer.alloc(2 + strBuf.length)
+    buf.writeUInt16BE(strBuf.length, 0)
+    strBuf.copy(buf, 2)
+    return buf
+}
+
+function nbtWriteNamedTag(type, name, payloadBuf) {
+    const nameBuf = Buffer.from(name, 'utf8')
+    const header = Buffer.alloc(3 + nameBuf.length)
+    header.writeUInt8(type, 0)
+    header.writeUInt16BE(nameBuf.length, 1)
+    nameBuf.copy(header, 3)
+    return Buffer.concat([header, payloadBuf])
+}
+
+function buildServersDatBuffer(serverInfo) {
+    const TAG_End = 0
+    const TAG_Byte = 1
+    const TAG_String = 8
+    const TAG_List = 9
+    const TAG_Compound = 10
+
+    // Payload du compound représentant UN serveur (contenu de la liste)
+    const serverCompoundPayload = Buffer.concat([
+        nbtWriteNamedTag(TAG_String, 'name', nbtWriteString(serverInfo.name)),
+        nbtWriteNamedTag(TAG_String, 'ip', nbtWriteString(serverInfo.ip)),
+        nbtWriteNamedTag(TAG_Byte, 'acceptTextures', Buffer.from([1])),
+        Buffer.from([TAG_End])
+    ])
+
+    const countBuf = Buffer.alloc(4)
+    countBuf.writeInt32BE(1, 0) // un seul serveur dans la liste
+
+    const listPayload = Buffer.concat([
+        Buffer.from([TAG_Compound]), // type des éléments de la liste
+        countBuf,
+        serverCompoundPayload
+    ])
+
+    const rootPayload = Buffer.concat([
+        nbtWriteNamedTag(TAG_List, 'servers', listPayload),
+        Buffer.from([TAG_End])
+    ])
+
+    return nbtWriteNamedTag(TAG_Compound, '', rootPayload)
+}
+// ===== FIN mini writer NBT =====
 
 // Descriptions affichées via l'icône "?" pour chaque instance.
 // Les clés doivent correspondre exactement au champ "name" de l'instance.
@@ -20,6 +79,30 @@ const activeLaunches = new Map();
 function notifyTrayRunning() {
     ipcRenderer.send('update-tray-running', Array.from(activeLaunches.keys()));
 }
+
+// ===== INJECTION AUTO DU SERVEUR PAR DÉFAUT =====
+// Crée servers.dat avec le serveur de l'instance UNIQUEMENT si le fichier
+// n'existe pas encore (donc au tout premier lancement de l'instance chez
+// le joueur). Si servers.dat existe déjà (le joueur a peut-être ajouté ses
+// propres serveurs, ou a déjà notre serveur par défaut), on ne touche à
+// RIEN. servers.dat doit rester dans la liste "ignored" de l'instance
+// (déjà le cas dans instances.php) pour que le système de vérification du
+// launcher ne l'écrase jamais après ce premier lancement.
+async function ensureDefaultServer(gameDir, serverInfo) {
+    const serversPath = path.join(gameDir, 'servers.dat')
+
+    if (fs.existsSync(serversPath)) return
+
+    try {
+        const buffer = buildServersDatBuffer(serverInfo)
+        fs.mkdirSync(gameDir, { recursive: true })
+        fs.writeFileSync(serversPath, buffer)
+        console.log(`servers.dat créé automatiquement pour ${gameDir}`)
+    } catch (err) {
+        console.error('Erreur lors de la création automatique de servers.dat :', err)
+    }
+}
+// ===== FIN injection serveur =====
 
 class Home {
     static id = "home";
@@ -544,6 +627,18 @@ class Home {
                     max: `${configClient.java_config.java_memory.max * 1024}M`
                 }
             }
+
+            // ===== Injection auto du serveur par défaut (1er lancement uniquement) =====
+            // Adapte "instances" ci-dessous si la structure réelle de tes dossiers
+            // d'instance est différente (vérifie dans %AppData%/.patateland/).
+            const gameDir = path.join(opt.path, 'instances', options.name)
+            if (options.status?.ip && options.status?.port) {
+                await ensureDefaultServer(gameDir, {
+                    name: options.status.nameServer,
+                    ip: `${options.status.ip}:${options.status.port}`
+                })
+            }
+            // ===== FIN injection serveur =====
 
             launch.Launch(opt);
         } catch (err) {

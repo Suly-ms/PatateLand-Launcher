@@ -1,0 +1,20 @@
+diff --git a/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js b/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js
+index a3a6fb5..2888014 100644
+--- a/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js
++++ b/node_modules/minecraft-java-core/build/Minecraft/Minecraft-Arguments.js
+@@ -5,7 +5,14 @@
+  */
+ var __importDefault = (this && this.__importDefault) || function (mod) {
+     return (mod && mod.__esModule) ? mod : { "default": mod };
+-};
++};if (versionJson.logging && versionJson.logging.client) {
++    const logConfig = versionJson.logging.client;
++    let logConfigPath = `${this.options.path}/assets/log_configs/${logConfig.file.id}`;
++    if (process.platform === 'win32') {
++        logConfigPath = `file:///${logConfigPath}`;
++    }
++    jvmArgs.push(logConfig.argument.replace('${path}', logConfigPath));
++}
+ Object.defineProperty(exports, "__esModule", { value: true });
+ const fs_1 = __importDefault(require("fs"));
+ const os_1 = __importDefault(require("os"));

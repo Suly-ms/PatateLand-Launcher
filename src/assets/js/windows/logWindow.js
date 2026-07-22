@@ -56,6 +56,14 @@ function createWindow(id = 'default', title = 'PatateLand - Console de jeu') {
     win.setMenuBarVisibility(false);
     win.loadFile(path.join(`${app.getAppPath()}/src/log.html`));
 
+    // Le renderer (log.html) ne connaît pas son propre ID d'instance
+    // (Event, Extra...) — on le lui envoie dès le chargement, pour qu'il
+    // puisse l'inclure dans ses appels IPC (minimiser/fermer ciblaient
+    // toujours la fenêtre 'default' sinon, qui n'existe jamais en pratique).
+    win.webContents.on('did-finish-load', () => {
+        win.webContents.send('log-window-id', id);
+    });
+
     win.once('ready-to-show', () => {
         if (dev) win.webContents.openDevTools({ mode: 'detach' });
         win.show();

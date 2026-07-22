@@ -92,6 +92,7 @@ function focusMainWindowAndSend(channel, payload) {
             win.webContents.send(channel, payload);
         });
     } else {
+        if (win.isMinimized()) win.restore();
         win.show();
         win.focus();
         win.webContents.send(channel, payload);
@@ -110,8 +111,10 @@ function createTray() {
     tray.on('right-click', (event, bounds) => TrayMenu.toggleWindow(bounds));
 
     tray.on('double-click', () => {
-        MainWindow.getWindow().show();
-        MainWindow.getWindow().focus();
+        const win = MainWindow.getWindow();
+        if (win.isMinimized()) win.restore();
+        win.show();
+        win.focus();
     });
 }
 
@@ -133,6 +136,7 @@ ipcMain.on('trayPopup-open-launcher', () => {
     TrayMenu.hideWindow();
     const win = MainWindow.getWindow();
     if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) win.restore();
         win.show();
         win.focus();
     }
@@ -164,6 +168,7 @@ else {
     app.on('second-instance', () => {
         const win = MainWindow.getWindow();
         if (win && !win.isDestroyed()) {
+            if (win.isMinimized()) win.restore();
             win.show();
             win.focus();
         }
@@ -199,7 +204,13 @@ ipcMain.on('main-window-progress-load', () => MainWindow.getWindow().setProgress
 let trayNotifShown = false;
 
 ipcMain.on('main-window-minimize', () => {
-    MainWindow.getWindow().hide();
+    const win = MainWindow.getWindow();
+
+    if (process.platform === 'darwin') {
+        win.minimize();
+    } else {
+        win.hide();
+    }
 
     if (!trayNotifShown) {
         trayNotifShown = true;
@@ -208,8 +219,10 @@ ipcMain.on('main-window-minimize', () => {
             body: 'Le launcher tourne en arriere-plan. Cliquez ici ou double-cliquez sur l\'icone pour le rouvrir.',
             silent: false,
             onClick: () => {
-                MainWindow.getWindow().show();
-                MainWindow.getWindow().focus();
+                const win = MainWindow.getWindow();
+                if (win.isMinimized()) win.restore();
+                win.show();
+                win.focus();
             }
         });
     }
@@ -261,7 +274,11 @@ ipcMain.on('main-window-maximize', () => {
 })
 
 ipcMain.on('main-window-hide', () => MainWindow.getWindow().hide())
-ipcMain.on('main-window-show', () => MainWindow.getWindow().show())
+ipcMain.on('main-window-show', () => {
+    const win = MainWindow.getWindow();
+    if (win.isMinimized()) win.restore();
+    win.show();
+})
 
 ipcMain.handle('get-auto-launch', () => {
     return app.getLoginItemSettings().openAtLogin;
@@ -316,6 +333,7 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
     const win = MainWindow.getWindow();
     if (win && !win.isDestroyed()) {
+        if (win.isMinimized()) win.restore();
         win.show();
         win.focus();
     }
