@@ -1,0 +1,38 @@
+<div class="container friends-container">
+    <div class="friends-header">
+        <div class="friends-back-btn">&#8592;</div>
+        <div class="friends-title">Amis</div>
+    </div>
+
+    <div class="friends-add-box">
+        <input type="text" class="friends-add-input" placeholder="Pseudo du joueur à ajouter...">
+        <button class="friends-add-btn">Ajouter</button>
+    </div>
+
+    <div class="friends-tabs">
+        <div class="friends-tab active" data-tab="list">Mes amis</div>
+        <div class="friends-tab" data-tab="requests">
+            Demandes
+            <span class="friends-requests-badge" style="display:none;">0</span>
+        </div>
+        <div class="friends-tab" data-tab="sent">Envoyées</div>
+    </div>
+
+    <div class="friends-tab-content" data-tab-content="list">
+        <div class="friends-list content-scroll">
+            <div class="friends-empty">Chargement...</div>
+        </div>
+    </div>
+
+    <div class="friends-tab-content" data-tab-content="requests" style="display:none;">
+        <div class="friends-requests-list content-scroll">
+            <div class="friends-empty">Chargement...</div>
+        </div>
+    </div>
+
+    <div class="friends-tab-content" data-tab-content="sent" style="display:none;">
+        <div class="friends-sent-list content-scroll">
+            <div class="friends-empty">Chargement...</div>
+        </div>
+    </div>
+</div>

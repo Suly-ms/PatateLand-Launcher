@@ -4,6 +4,17 @@
  */
 import { config as configModule, database, logger, changePanel, appdata, setStatus, pkg, popup } from '../utils.js'
 import { injectServer } from '../utils/serversDat.js'
+// PROTOTYPE test_ (voir test_cosmetics-mod/) : injection du mod de
+// cosmétiques dans les instances Forge avant lancement, pour pouvoir
+// tester directement via "npm start" + clic sur JOUER, sans copier le jar
+// à la main à chaque rebuild. À retirer/refaire proprement une fois le
+// système de cosmétiques validé (téléchargement du jar, pas seulement
+// build local, etc.)
+// NOTE : les chemins relatifs de require() ici se résolvent par rapport à
+// launcher.html (voir utils.js -> require('../package.json')), PAS par
+// rapport à ce fichier home.js — d'où le chemin depuis src/ et non depuis
+// src/assets/js/panels/.
+const { injectCosmeticsMod, findCosmeticsJar } = require('./assets/js/test_cosmeticsInjector.js')
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
@@ -12,29 +23,60 @@ const path = require('path')
 const os = require('os')
 
 // ===== WEBHOOK DISCORD POUR LES CRASH REPORTS (lecture protégée) =====
-// Volontairement PAS un `import` statique vers un module JS ni
-// `import.meta.url` : les deux sont analysés/résolus AVANT l'exécution du
-// code (et `import.meta` peut même être une erreur de syntaxe pure selon le
-// bundler/transpileur utilisé) — dans les deux cas, impossible à protéger
-// avec un try/catch, ça fait planter tout le fichier au chargement (écran
-// blanc). __dirname + require() dynamique, eux, s'exécutent normalement au
-// moment de l'appel de la fonction, donc une erreur (fichier absent,
-// invalide...) est une Error JS ordinaire, capturable normalement.
+// __dirname est la bonne approche ici : le fichier est embarqué dans le
+// build (voir build.js -> Obfuscate(), qui copie tout src/ vers app/ en
+// préservant l'arborescence), donc TOUS les joueurs qui téléchargent le
+// launcher l'ont automatiquement, sans rien à faire de leur côté.
 //
-// Crée un fichier "webhook.config.json" à côté de home.js (même dossier)
-// avec ce contenu pour activer l'envoi Discord :
+// Condition impérative : le fichier doit exister sur le disque, AU MÊME
+// NIVEAU que home.js lui-même (confirmé empiriquement : dans ce build,
+// home.js vit dans app/assets/js/panels/, donc le webhook doit être une
+// copie dans src/assets/js/panels/webhook.config.json — PAS juste à la
+// racine de src/), et ce AVANT de lancer `npm run build`. Le script ne
+// fait que COPIER ce qui existe déjà dans src/ vers app/, il ne peut rien
+// inventer après coup. Un .asar une fois construit est une archive figée,
+// impossible d'y ajouter quoi que ce soit une fois le build terminé.
+//
+// Crée "webhook.config.json" à côté de ce fichier avec ce contenu :
 //   { "CRASH_REPORT_DISCORD_WEBHOOK": "https://discord.com/api/webhooks/..." }
-// Ce fichier JSON réel doit être gitignoré (voir .gitignore) ; seul
-// "webhook.config.example.json" (vide) doit être commité.
+//
+// .replace(/^\uFEFF/, '') : retire un éventuel BOM (Byte Order Mark) en
+// tout début de fichier — certains outils (dont PowerShell avec
+// -Encoding utf8) l'ajoutent silencieusement, invisible à l'oeil nu, mais
+// JSON.parse refuse de le lire ("Unexpected token '\uFEFF'"). Ne change
+// rien si le fichier n'a pas de BOM.
+// __dirname s'est révélé INSTABLE d'un build à l'autre (constaté en
+// conditions réelles : tantôt "app/", tantôt "app/assets/js/panels/" selon
+// le build, sans cause identifiée côté build.js/webpack). Plutôt que de
+// parier sur un seul chemin fixe, on essaie plusieurs emplacements
+// plausibles dans l'ordre, et on prend le premier qui existe.
 function getCrashReportWebhook() {
+    const candidates = [
+        path.join(__dirname, 'webhook.config.json'),
+        path.join(__dirname, '..', '..', 'webhook.config.json'), // remonte de app/assets/js/panels/ vers app/
+        path.join(__dirname, 'assets', 'js', 'panels', 'webhook.config.json'), // si __dirname est déjà app/
+    ];
+
+    let configPath = candidates.find(p => fs.existsSync(p));
+
+    if (!configPath) {
+        console.warn('[CrashReporter] webhook.config.json introuvable. Emplacements essayés :', candidates.join(' | '));
+        console.warn('[CrashReporter] -> Vérifie qu\'il existe bien dans src/ (racine ET/OU src/assets/js/panels/) AVANT de relancer npm run build.');
+        return '';
+    }
+
     try {
-        const configPath = path.join(__dirname, 'webhook.config.json');
-        if (!fs.existsSync(configPath)) return '';
-        const raw = fs.readFileSync(configPath, 'utf-8');
+        const raw = fs.readFileSync(configPath, 'utf-8').replace(/^\uFEFF/, '');
         const parsed = JSON.parse(raw);
-        return parsed?.CRASH_REPORT_DISCORD_WEBHOOK || '';
+        const webhook = parsed?.CRASH_REPORT_DISCORD_WEBHOOK || '';
+        if (webhook) {
+            console.log('[CrashReporter] webhook.config.json trouvé et lu (', configPath, ') — envoi Discord disponible (si activé dans les Paramètres).');
+        } else {
+            console.warn('[CrashReporter] webhook.config.json trouvé (', configPath, ') mais CRASH_REPORT_DISCORD_WEBHOOK est vide ou absent dedans.');
+        }
+        return webhook;
     } catch (err) {
-        console.error('webhook.config.json illisible ou invalide (fonctionnalité optionnelle, désactivée) :', err);
+        console.error('[CrashReporter] webhook.config.json illisible ou invalide (fonctionnalité optionnelle, désactivée) :', err);
         return '';
     }
 }
@@ -50,15 +92,8 @@ const instanceDescriptions = {
     "Opti": "Instance optimisée pour de meilleures performances, idéale pour les configurations modestes."
 }
 
-// Map partagée au niveau module : instanceName -> instance de Launch en cours.
-// Volontairement en dehors de la classe pour que l'état "en cours" reste
-// cohérent même si un nouveau Home() est recréé lors d'un changement de panel
-// (sinon un ancien Home() pouvait garder une Map différente de celui affiché).
 const activeLaunches = new Map();
 
-// Prévient le processus principal (main.js/app.js) de la liste actuelle des
-// instances en cours d'exécution, pour que le popup du tray puisse afficher
-// un badge "En cours" à côté du nom, comme dans le sélecteur d'instance du home.
 function notifyTrayRunning() {
     ipcRenderer.send('update-tray-running', Array.from(activeLaunches.keys()));
 }
@@ -69,10 +104,6 @@ class Home {
     async init(config) {
         this.config = config;
         this.db = new database();
-        // instanceName -> instance de Launch en cours (permet le multi-lancement)
-        // Map partagée au niveau module (et non plus par instance de Home)
-        // pour que le badge "En cours" reste cohérent même si un nouveau
-        // Home() est recréé lors d'un changement de panel.
         this.activeLaunches = activeLaunches;
 
         this.news()
@@ -91,28 +122,20 @@ class Home {
             } catch(e) { console.log("INTERVAL ERR:", e.message) }
         }, 15000)
 
-        // Rafraîchissement automatique des news toutes les 5 minutes
         setInterval(() => {
             this.news();
         }, 3 * 60 * 1000);
 
         document.querySelector('.settings-btn').addEventListener('click', e => changePanel('settings'))
 
-        // Ouvre la page profil du site (Azuriom) où le joueur peut changer
-        // son pseudo, son skin, son mot de passe, etc. — plutôt que les
-        // paramètres du launcher, qui restent accessibles via l'icône ⚙.
         document.querySelector('.player-head').addEventListener('click', () => {
             if (typeof this.config.online === 'string') {
                 shell.openExternal(`${this.config.online}/profile`);
             } else {
-                // Si le launcher n'est pas configuré en mode AZauth (Microsoft/hors-ligne),
-                // il n'y a pas de profil web associé — on retombe sur les paramètres.
                 changePanel('settings');
             }
         });
 
-        // ===== Actions déclenchées depuis le menu contextuel du tray =====
-        // (voir app.js : clic droit sur l'icône dans la barre des tâches)
         ipcRenderer.on('tray-launch-instance', async (_, instanceName) => {
             this.startGame(instanceName)
         })
@@ -122,25 +145,13 @@ class Home {
         })
 
         ipcRenderer.on('tray-logout', async () => {
-            // Déconnecte le compte actuellement sélectionné.
-            // NOTE : adapte cette logique si ta page settings gère la
-            // déconnexion différemment (ex: suppression du compte plutôt
-            // que simple désélection). Ici on se contente de désélectionner
-            // le compte actif et de recharger l'interface.
             let configClient = await this.db.readData('configClient')
             configClient.account_selected = null
             await this.db.updateData('configClient', configClient)
             location.reload()
         })
-        // ===== FIN actions tray =====
-
     }
 
-    // ===== BANDEAU DE MAINTENANCE (visible pour les comptes whitelistés) =====
-    // Si la maintenance est active côté serveur mais que le compte connecté
-    // fait partie de la whitelist (voir index.js), on arrive quand même sur
-    // le home. Ce bandeau rappelle que la maintenance est en cours pour les
-    // joueurs normaux, avec un compte à rebours en direct jusqu'à la fin.
     async checkMaintenanceBanner() {
         try {
             const res = await configModule.GetConfig();
@@ -158,7 +169,6 @@ class Home {
     }
 
     renderMaintenanceBanner(message, endDateISO) {
-        // Évite les doublons si checkMaintenanceBanner est rappelé
         let existing = document.querySelector('.maintenance-banner');
         if (existing) existing.remove();
 
@@ -208,7 +218,6 @@ class Home {
         updateCountdown();
         this.maintenanceBannerInterval = setInterval(updateCountdown, 1000);
     }
-    // ===== FIN BANDEAU DE MAINTENANCE =====
 
     async news() {
         let newsContainer = document.querySelector('.news-list');
@@ -276,11 +285,10 @@ class Home {
                     </div>` : ''}
                 </div>`;
 
-            // Relancer l'animation de la barre de progression
             const fillBar = newsContainer.querySelector('.news-progress-fill');
             if (fillBar) {
                 fillBar.style.animation = 'none';
-                fillBar.offsetHeight; // reflow
+                fillBar.offsetHeight;
                 fillBar.style.animation = 'news-progress 12s linear forwards';
             }
 
@@ -295,20 +303,16 @@ class Home {
                     dot.addEventListener('click', () => { current = i; render(); });
                 });
             }
-
-            // Scroll désactivé pour la navigation des news
         };
 
         render();
 
-        // Auto-slide toutes les 6 secondes avec animation fade
         if (slides.length > 1) {
             let autoSlideTimer = setInterval(() => {
                 const next = (current + 1) % slides.length;
                 const block = newsContainer.querySelector('.news-block');
                 if (!block) return;
 
-                // Animation sortie
                 block.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
                 block.style.opacity = '0';
                 block.style.transform = 'translateX(-20px)';
@@ -317,7 +321,6 @@ class Home {
                     current = next;
                     render();
 
-                    // Animation entrée
                     const newBlock = newsContainer.querySelector('.news-block');
                     if (newBlock) {
                         newBlock.style.opacity = '0';
@@ -334,7 +337,6 @@ class Home {
                 }, 400);
             }, 12000);
 
-            // Reset le timer si l'utilisateur interagit manuellement
             const resetTimer = () => {
                 clearInterval(autoSlideTimer);
                 autoSlideTimer = setInterval(() => {
@@ -379,14 +381,7 @@ class Home {
         });
     }
 
-    // ===== BANDEAU "ÉVALUER LE LAUNCHER" =====
-    // Bandeau visible sur le home, avec un bouton pour fermer définitivement
-    // (état sauvegardé dans configClient, donc ne réapparaît plus une fois fermé).
     async reviewBanner() {
-        // Petit délai : au moment où Home.init() (donc reviewBanner) tourne,
-        // startLauncher() (dans launcher.js) n'a pas encore forcément fini de
-        // rafraîchir/confirmer account_selected. Sans ce délai, on risque de
-        // vérifier le mauvais compte (ou une valeur pas encore à jour).
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         let configClient = await this.db.readData('configClient');
@@ -394,13 +389,8 @@ class Home {
         const currentAccountId = configClient?.account_selected;
         const dismissedAccounts = configClient?.launcher_config?.review_dismissed_accounts || [];
 
-        // L'état "fermé" est lié au compte connecté, pas au launcher en
-        // général — si un joueur laisse un avis avec un compte, ça ne doit
-        // pas cacher le bandeau pour un autre compte connecté plus tard.
         if (currentAccountId && dismissedAccounts.includes(currentAccountId)) return;
 
-        // Si le panel n'est plus dans le DOM (cas improbable) ou si on a
-        // changé de panel entre-temps, on vérifie qu'il existe toujours.
         const homePanel = document.querySelector('.panel.home');
         if (!homePanel) return;
 
@@ -415,11 +405,6 @@ class Home {
 
         homePanel.appendChild(banner);
 
-        // Alignement dynamique sur le bouton ⚙️ (settings), plutôt qu'une
-        // valeur CSS fixe : la barre du bas est dans un container à largeur
-        // limitée qui se centre en plein écran large, donc un simple
-        // "right: Xpx" fixe par rapport au bord de la fenêtre ne colle plus
-        // au bon endroit selon la taille de la fenêtre.
         const alignBannerToSettingsBtn = () => {
             const sidebar = document.querySelector('.sidebar');
             if (!sidebar) return;
@@ -456,19 +441,10 @@ class Home {
             await dismissForCurrentAccount();
         });
     }
-    // ===== FIN BANDEAU "ÉVALUER LE LAUNCHER" =====
 
-    // ===== ENCART PARTENARIAT (ex: MineStrator) =====
-    // Carte affichée sous la liste de news, dans .new-tab. Contrairement au
-    // bandeau d'avis, il est PERMANENT : pas de croix, pas de logique de
-    // masquage. Le contenu (partner) est en dur ici : si tu gères plusieurs
-    // partenaires ou veux changer le texte sans repackager le launcher, tu
-    // peux remplacer ce bloc par un fetch vers ta config/API.
     async partnerBanner() {
         const partner = {
             name: 'MineStrator',
-            // Logo MineStrator, déjà présent dans tes assets existants
-            // (espace encodé en %20 pour éviter tout souci de chemin)
             iconSrc: 'assets/images/svgs/S%20BLANC.svg',
             title: 'Serveur hébergé avec MineStrator !',
             text: `MineStrator, c'est l'hébergeur FR ultra fiable pour tes serveurs Minecraft, moddés, plugins, ou même autres jeux !`,
@@ -480,7 +456,6 @@ class Home {
         const newTab = document.querySelector('.new-tab');
         if (!newTab) return;
 
-        // Évite les doublons si partnerBanner() est rappelé
         let existing = document.querySelector('.partner-banner-card');
         if (existing) existing.remove();
 
@@ -506,7 +481,6 @@ class Home {
             shell.openExternal(partner.url);
         });
     }
-    // ===== FIN ENCART PARTENARIAT =====
 
     async instancesSelect() {
         let configClient = await this.db.readData('configClient')
@@ -514,10 +488,6 @@ class Home {
         let instancesList = await configModule.getInstanceList()
         let instanceSelect = instancesList.find(i => i.name == configClient?.instance_select) ? configClient?.instance_select : null
 
-        // Transmet la liste des instances au processus principal pour qu'il
-        // puisse construire le sous-menu "Jouer" du tray.
-        // "Event" s'affiche toujours en dernier, que ce soit dans le popup
-        // du sélecteur d'instance ou dans le sous-menu "Jouer" du tray.
         const sortedForTray = [...instancesList].sort((a, b) => {
             const aIsEvent = a.name.trim().toLowerCase() === 'event'
             const bIsEvent = b.name.trim().toLowerCase() === 'event'
@@ -565,23 +535,14 @@ class Home {
                 }
         }
 
-        // Bouton JOUER - séparé du sélecteur d'instance
-        // On lance toujours l'instance actuellement sélectionnée dans la config.
-        // Comme this.activeLaunches est vérifié dans startGame(), cliquer sur
-        // JOUER pendant qu'une instance tourne déjà lancera une AUTRE instance
-        // (celle sélectionnée à ce moment-là) sans bloquer la première.
         document.querySelector('.play-btn').addEventListener('click', async () => {
             let configClient = await this.db.readData('configClient')
             this.startGame(configClient.instance_select).catch(err => {
-                // Filet de sécurité ultime : ne devrait plus jamais se déclencher
-                // (toutes les erreurs sont normalement interceptées dans startGame),
-                // mais évite un blocage silencieux si un cas imprévu survient.
                 console.error('Erreur inattendue au lancement :', err)
                 this.activeLaunches.delete(configClient.instance_select); notifyTrayRunning();
             })
         })
 
-        // Sélecteur d'instance - séparé du bouton JOUER
         document.querySelector('.instance-select').addEventListener('click', async e => {
             let configClient = await this.db.readData('configClient')
             let instanceSelect = configClient.instance_select
@@ -606,8 +567,6 @@ class Home {
                 </div>`
         }
 
-        // "Event" s'affiche toujours en dernier dans le popup, peu importe
-        // l'ordre renvoyé par la config.
         const displayList = [...instancesList].sort((a, b) => {
             const aIsEvent = a.name.trim().toLowerCase() === 'event'
             const bIsEvent = b.name.trim().toLowerCase() === 'event'
@@ -637,8 +596,6 @@ class Home {
         }
 
         instancesListPopup.onclick = async (e) => {
-            // Le "?" affiche son info au survol (CSS) ; un clic dessus ou sur
-            // le tooltip ne doit jamais sélectionner l'instance en dessous.
             const icon = e.target.closest('.instance-info-icon')
             const tooltip = e.target.closest('.instance-info-tooltip')
             if (icon || tooltip) {
@@ -673,14 +630,6 @@ class Home {
         })
             }
 
-    // startGame prend désormais le nom de l'instance à lancer en paramètre.
-    // this.activeLaunches (Map) garde une trace des lancements en cours pour
-    // permettre à plusieurs instances de tourner en parallèle sans se marcher
-    // dessus. Chaque instance a son propre objet Launch() et ses propres
-    // événements identifiés par son nom (utilisé aussi pour la fenêtre de logs).
-    // La progression n'est plus affichée dans l'UI (cartes flottantes) mais
-    // via des notifications natives OS (Windows/Linux/Mac), voir
-    // ipcRenderer.send('game-notification', ...) et app.js.
     async startGame(instanceName) {
         if (this.activeLaunches.has(instanceName)) {
             console.log(`${instanceName} est déjà en cours de lancement ou d'exécution.`)
@@ -690,9 +639,6 @@ class Home {
         let launch = new Launch()
         this.activeLaunches.set(instanceName, launch); notifyTrayRunning();
 
-        // Filet de sécurité : si quoi que ce soit plante pendant la
-        // préparation du lancement (config manquante, instance introuvable,
-        // etc.), on nettoie l'état au lieu de bloquer l'instance pour toujours.
         let configClient, instanceListAll, authenticator, options
         try {
             configClient = await this.db.readData('configClient')
@@ -727,7 +673,7 @@ class Home {
                 path: `${await appdata()}/${process.platform == 'darwin' ? this.config.dataDirectory : `.${this.config.dataDirectory}`}`,
                 instance: options.name,
                 version: options.loader.minecraft_version,
-                detached: configClient.launcher_config.closeLauncher == "close-all" ? false : true,
+                detached: false,
                 downloadFileMultiple: configClient.launcher_config.download_multi,
                 intelEnabledMac: configClient.launcher_config.intelEnabledMac,
 
@@ -757,14 +703,74 @@ class Home {
                 },
 
                 memory: {
-                    // Math.round (pas juste * 1024) : un -Xmx/-Xms à virgule
-                    // (ex: 16281.6M au lieu de 16282M) fait planter la JVM
-                    // avec "Could not create the Java Virtual Machine",
-                    // quelle que soit la source de la valeur en Go (slider
-                    // glissé à la main, ancien profil importé, etc.).
                     min: `${Math.round(configClient.java_config.java_memory.min * 1024)}M`,
                     max: `${Math.round(configClient.java_config.java_memory.max * 1024)}M`
                 }
+            }
+
+            // PROTOTYPE test_ : voir l'import en haut du fichier. Best-effort
+            // uniquement — une erreur ici ne doit jamais empêcher le jeu de
+            // se lancer normalement. __dirname varie selon dev ("npm start",
+            // vise directement src/assets/js/panels/) vs build (voir
+            // getCrashReportWebhook plus haut) : on essaie plusieurs racines
+            // candidates plutôt que de parier sur une seule.
+            try {
+                const candidateRoots = [
+                    path.join(__dirname, '..', '..', '..', '..'), // src/assets/js/panels -> racine repo (dev, npm start)
+                    path.join(__dirname, '..', '..', '..'),       // app/assets/js/panels -> app (build)
+                    path.join(__dirname, '..'),                   // app -> app (autre variante de build constatée)
+                ];
+                const buildLibsCandidates = candidateRoots
+                    .map(root => findCosmeticsJar(path.join(root, 'test_cosmetics-mod', 'build', 'libs')));
+                // .exe packagé (electron-builder) : test_cosmetics-mod/ n'est
+                // PAS dans app.asar (seul "app/**/*" y est embarqué, voir
+                // build.js -> files) — le jar est copié à part en tant
+                // qu'extraResource, à plat, dans resources/test_cosmetics-mod/
+                // (voir build.js -> extraResources), donc pas sous build/libs
+                // ici. process.resourcesPath n'existe qu'en Electron packagé
+                // (undefined en dev, d'où le contrôle avant utilisation).
+                const packagedCandidate = process.resourcesPath
+                    ? findCosmeticsJar(path.join(process.resourcesPath, 'test_cosmetics-mod'))
+                    : null;
+                const cosmeticsJar = [...buildLibsCandidates, packagedCandidate].find(Boolean);
+                if (cosmeticsJar) {
+                    const injected = injectCosmeticsMod(
+                        path.join(opt.path, 'instances', options.name),
+                        options.loader.loader_type,
+                        cosmeticsJar
+                    );
+                    if (injected) {
+                        // IMPORTANT : minecraft-java-core fait le ménage des
+                        // fichiers d'instance absents du manifest distant
+                        // (MineStrator) ET absents de `ignored` (voir
+                        // Minecraft-Bundle.js -> checkFiles()) — sans ça,
+                        // notre jar est supprimé juste après avoir été copié,
+                        // avant même que Forge ne le charge.
+                        opt.ignored.push(`mods/${path.basename(cosmeticsJar)}`);
+                    }
+                }
+
+                // UUID "réel" (celui du compte AZauth/site, PAS forcément
+                // celui que Minecraft attribuera en jeu) — sur un serveur
+                // public en mode offline, le serveur calcule lui-même un
+                // UUID à partir du pseudo (formule "OfflinePlayer:<pseudo>"),
+                // qui ne correspond PAS au compte du site. On écrit donc ici
+                // l'UUID connu avec certitude par le launcher (celui utilisé
+                // pour se connecter), pour que le mod puisse s'en servir pour
+                // SES PROPRES cosmétiques au lieu de faire confiance à
+                // l'UUID (potentiellement faux) que le serveur lui attribue.
+                // Ignoré silencieusement si l'auth n'a pas d'UUID exploitable.
+                if (authenticator?.uuid) {
+                    const sessionFile = path.join(opt.path, 'instances', options.name, 'config', 'testcosmetics_session.json');
+                    fs.mkdirSync(path.dirname(sessionFile), { recursive: true });
+                    fs.writeFileSync(sessionFile, JSON.stringify({
+                        uuid: authenticator.uuid,
+                        name: authenticator.name
+                    }));
+                    opt.ignored.push('config/testcosmetics_session.json');
+                }
+            } catch (err) {
+                console.warn('[test_cosmeticsInjector] Injection ignorée :', err);
             }
 
             launch.Launch(opt);
@@ -781,24 +787,11 @@ class Home {
             return
         }
 
-        // Repères pour la détection de crash au 'close' (voir plus bas et
-        // handleCrash()) : l'heure de lancement sert à ignorer d'éventuels
-        // anciens rapports de crash déjà présents dans le dossier, et à ne
-        // considérer que ceux générés PENDANT cette session de jeu.
-        // Chaque instance a son propre dossier de jeu sous
-        // instances/<nomInstance>/ (confirmé par l'arborescence réelle du
-        // launcher), donc crash-reports/ s'y trouve aussi.
         const launchedAt = Date.now();
         const crashReportsDir = path.join(opt.path, 'instances', options.name, 'crash-reports');
 
         ipcRenderer.send('main-window-progress-load')
 
-        // Ouvre la fenêtre de logs pour cette instance si elle n'est pas
-        // déjà ouverte. Respecte show_console pour l'ouverture "normale"
-        // (déclenchée par le premier event 'data', voir plus bas), mais on
-        // la force à s'ouvrir en cas d'ERREUR (voir 'error' ci-dessous) ou
-        // de VRAI crash confirmé (voir handleCrash — pas juste un code de
-        // sortie non-nul, voir NOTE plus bas dans 'close').
         let logWindowOpened = false;
         const ensureLogWindowOpen = () => {
             if (logWindowOpened) return;
@@ -808,7 +801,7 @@ class Home {
 
         launch.on('extract', extract => {
             ipcRenderer.send('main-window-progress-load')
-            console.log(instanceName, extract);
+            console.log(`${instanceName}: ${extract}`);
         });
 
         launch.on('progress', (progress, size) => {
@@ -824,15 +817,15 @@ class Home {
             let hours = Math.floor(time / 3600);
             let minutes = Math.floor((time - hours * 3600) / 60);
             let seconds = Math.floor(time - hours * 3600 - minutes * 60);
-            console.log(instanceName, `${hours}h ${minutes}m ${seconds}s`);
+            console.log(`${instanceName}: ${hours}h ${minutes}m ${seconds}s`);
         })
 
         launch.on('speed', (speed) => {
-            console.log(instanceName, `${(speed / 1067008).toFixed(2)} Mb/s`)
+            console.log(`${instanceName}: ${(speed / 1067008).toFixed(2)} Mb/s`)
         })
 
         launch.on('patch', patch => {
-            console.log(instanceName, patch);
+            console.log(`${instanceName}: ${JSON.stringify(patch)}`);
             ipcRenderer.send('main-window-progress-load')
         });
 
@@ -840,28 +833,12 @@ class Home {
         let serversInjected = false;
         let windowAutoHidden = false;
         launch.on('data', (e) => {
-            // Injecte le serveur PatateLand dans le servers.dat de cette
-            // instance UNE SEULE FOIS, ici plutôt qu'avant launch.Launch(opt) :
-            // le téléchargement/la vérification des fichiers de l'instance
-            // (qui peut inclure un servers.dat livré côté serveur, cf. config
-            // WinSCP) se fait entre l'appel à Launch() et ce premier event
-            // 'data'. Injecter avant Launch() serait donc écrasé par ce
-            // téléchargement. Le jeu ne lit servers.dat qu'à l'ouverture de
-            // l'écran multijoueur, donc l'injecter ici (dès que le process
-            // Minecraft a démarré) reste largement à temps.
             if (!serversInjected) {
                 serversInjected = true;
                 const instancePath = path.join(opt.path, 'instances', options.name);
                 injectServer(instancePath, instanceName);
             }
 
-            // BUG CORRIGÉ : ce bloc tournait sur CHAQUE ligne de log (donc
-            // potentiellement des dizaines de fois par seconde pendant que
-            // le jeu tourne), sans aucun garde-fou. Résultat : si l'utilisateur
-            // rouvrait le launcher manuellement pendant une partie, la ligne
-            // de log suivante le re-masquait immédiatement. Le flag
-            // windowAutoHidden garantit que ça ne se déclenche qu'une seule
-            // fois par lancement, comme readyNotified/serversInjected.
             if (!windowAutoHidden) {
                 windowAutoHidden = true;
                 const closeMode = configClient.launcher_config.closeLauncher;
@@ -873,14 +850,10 @@ class Home {
             }
             new logger('Minecraft', '#36b030');
             ipcRenderer.send('main-window-progress-load')
-            // Ouverture "normale" de la fenêtre de logs, seulement si
-            // activée dans les settings (comportement inchangé).
             if (!logWindowOpened && configClient.game_config?.show_console !== false) {
                 ensureLogWindowOpen();
                 ipcRenderer.send('log-status', instanceName, 'running');
             }
-            // Le jeu a réellement démarré : on prévient une seule fois via
-            // notification native que l'instance est prête.
             if (!readyNotified) {
                 readyNotified = true
                 ipcRenderer.send('game-notification', {
@@ -890,7 +863,7 @@ class Home {
             }
             const line = typeof e === 'string' ? e : JSON.stringify(e);
             ipcRenderer.send('log-send', instanceName, line);
-            console.log(instanceName, e);
+            console.log(`${instanceName}: ${typeof e === 'string' ? e : JSON.stringify(e)}`);
         })
 
         launch.on('close', code => {
@@ -900,40 +873,19 @@ class Home {
             ipcRenderer.send('main-window-progress-reset')
             ipcRenderer.send('log-status', instanceName, 'closed');
             new logger(pkg.name, '#7289da');
-            console.log(instanceName, 'Close - exit code:', code, '(type:', typeof code, ')');
+            console.log(`${instanceName} - Close - exit code: ${code} (type: ${typeof code})`);
             this.activeLaunches.delete(instanceName); notifyTrayRunning();
 
-            // Code de sortie 0 = fermeture normale. Tout le reste (crash,
-            // kill du processus, JVM plantée...) déclenche une recherche du
-            // rapport de crash le plus récent généré depuis le lancement.
-            // NOTE : certains packs/loaders renvoient parfois un code non-nul
-            // même sur une fermeture parfaitement normale (comportement
-            // propre à Forge/JVM selon la config) — on ne force donc PAS
-            // l'ouverture de la console ici sur la simple base du code de
-            // sortie. C'est handleCrash() qui décide, et seulement s'il
-            // trouve un VRAI fichier de crash-report (voir plus bas).
             if (code !== 0) {
-                console.log(instanceName, '[DIAGNOSTIC] code !== 0, entrée dans la détection crash. code =', code);
                 this.handleCrash(instanceName, crashReportsDir, launchedAt, authenticator?.name, authenticator?.uuid, ensureLogWindowOpen);
-            } else {
-                console.log(instanceName, '[DIAGNOSTIC] code === 0, fermeture normale, pas de vérification crash.');
             }
         });
 
         launch.on('error', err => {
-            // Erreur survenant potentiellement AVANT tout event 'data' (ex:
-            // téléchargement échoué, Java introuvable...) : on force donc
-            // l'ouverture de la fenêtre de logs pour que le détail de
-            // l'erreur (envoyé juste après via 'log-send') soit visible
-            // quelque part, et pas seulement dans le popup ci-dessous.
             ensureLogWindowOpen();
 
             let popupError = new popup()
 
-            // err.error n'est pas toujours présent selon la forme exacte de
-            // l'erreur renvoyée par minecraft-java-core (constaté notamment
-            // sur Mac où l'erreur peut arriver sous une autre forme) : sans
-            // ce filet, le popup affichait littéralement le texte "undefined".
             const errorMessage = err?.error
                 || err?.message
                 || (typeof err === 'string' ? err : null)
@@ -959,37 +911,21 @@ class Home {
             ipcRenderer.send('log-status', instanceName, 'error');
             ipcRenderer.send('log-send', instanceName, `ERREUR: ${JSON.stringify(err)}`);
             new logger(pkg.name, '#7289da');
-            console.log(instanceName, err);
+            console.log(`${instanceName} - ${err?.message || err}`);
             this.activeLaunches.delete(instanceName); notifyTrayRunning();
         });
     }
 
-    // ===== DÉTECTION & LECTURE DU RAPPORT DE CRASH =====
-    // Cherche le fichier crash-*.txt le plus récent créé depuis le lancement
-    // (avec 5s de marge pour l'écriture disque), puis l'envoie à la fenêtre
-    // de logs de cette instance via le canal 'log-send' existant, encadré de
-    // marqueurs que log.html sait reconnaître et afficher comme un bloc
-    // dédié (voir processIncomingLine/renderCrashReport dans log.html).
-    // On ne bascule le statut sur "crashed" ET on n'ouvre la console
-    // (ensureLogWindowOpen) QUE si un rapport a bien été trouvé — pas sur la
-    // simple base d'un code de sortie non-nul (certains packs/loaders en
-    // renvoient parfois un même sur une fermeture normale, ce qui ouvrait
-    // la console à tort à chaque fermeture pour certains utilisateurs).
     async handleCrash(instanceName, crashReportsDir, launchedAt, playerName, playerUuid, ensureLogWindowOpen) {
-        console.log(instanceName, '[DIAGNOSTIC] handleCrash appelé. crashReportsDir:', crashReportsDir);
+        console.log(`${instanceName} - [CrashReporter] Crash détecté (code de sortie anormal).`);
         try {
             if (!fs.existsSync(crashReportsDir)) {
-                console.log(instanceName, '[DIAGNOSTIC] Dossier crash-reports introuvable -> pas de crash, aucune action.');
-                // Pas de dossier crash-reports du tout : très probablement
-                // une fermeture normale avec juste un code de sortie
-                // inhabituel, pas un vrai crash. On ne force rien, on ne
-                // log même pas (silence complet pour ne pas polluer une
-                // console qui n'existe peut-être pas).
+                console.log(`${instanceName} - [CrashReporter] Aucun crash report trouvé (dossier introuvable) : ${crashReportsDir}`);
                 return;
             }
 
+            console.log(`${instanceName} - [CrashReporter] Recherche du crash report dans ${crashReportsDir} ...`);
             const allFiles = fs.readdirSync(crashReportsDir);
-            console.log(instanceName, '[DIAGNOSTIC] Fichiers dans crash-reports:', allFiles);
 
             const files = allFiles
                 .filter(f => f.toLowerCase().endsWith('.txt'))
@@ -997,81 +933,57 @@ class Home {
                     const fullPath = path.join(crashReportsDir, f);
                     return { fullPath, mtime: fs.statSync(fullPath).mtimeMs };
                 })
-                // Marge de 5s : l'écriture du fichier peut survenir juste
-                // avant le timestamp exact considéré comme "lancement".
                 .filter(f => f.mtime >= launchedAt - 5000)
                 .sort((a, b) => b.mtime - a.mtime);
 
-            console.log(instanceName, '[DIAGNOSTIC] launchedAt:', launchedAt, new Date(launchedAt).toLocaleTimeString(),
-                '- Fichiers récents trouvés (après filtre 5s):', files.length, files.map(f => f.fullPath));
-
             if (!files.length) {
-                console.log(instanceName, '[DIAGNOSTIC] Aucun fichier récent -> pas de crash, aucune action.');
-                // Toujours aucune preuve concrète de crash -> pareil, on ne
-                // force pas l'ouverture de la console pour un simple code
-                // de sortie inhabituel sans rapport derrière.
+                console.log(`${instanceName} - [CrashReporter] Aucun crash report trouvé (aucun fichier récent parmi ${allFiles.length} fichier(s) présent(s)).`);
                 return;
             }
 
-            console.log(instanceName, '[DIAGNOSTIC] Fichier de crash trouvé -> ouverture de la console.');
+            const report = files[0];
+            console.log(`${instanceName} - [CrashReporter] Crash report trouvé : ${report.fullPath}`);
 
-            // À partir d'ici : un VRAI rapport de crash a été trouvé, donc
-            // c'est un vrai crash. On peut ouvrir la console en confiance.
             ensureLogWindowOpen();
 
-            const report = files[0];
+            console.log(`${instanceName} - [CrashReporter] Lecture du rapport...`);
             const content = fs.readFileSync(report.fullPath, 'utf-8');
+            console.log(`${instanceName} - [CrashReporter] Rapport lu (${content.length} caractères).`);
 
             ipcRenderer.send('log-status', instanceName, 'crashed');
             ipcRenderer.send('log-send', instanceName,
                 `===CRASH_REPORT===\nPATH:${report.fullPath}\n${content}\n===END_CRASH_REPORT===`);
 
-            // Envoi Discord non-bloquant : une erreur réseau ou un webhook
-            // mal configuré ne doit jamais empêcher l'affichage local du
-            // rapport (déjà fait juste au-dessus), d'où le try/catch dédié
-            // à l'intérieur de sendCrashReportToDiscord elle-même.
             this.sendCrashReportToDiscord(instanceName, playerName, playerUuid, report.fullPath, content);
         } catch (err) {
-            console.error('Erreur lors de la lecture du rapport de crash :', err);
+            console.error(`${instanceName} - [CrashReporter] Erreur inattendue lors de la lecture du rapport de crash : ${err?.message || err}`);
         }
     }
 
-    // Envoie le rapport de crash sur Discord via un webhook, avec un embed
-    // (joueur, instance, date) et le fichier .txt en pièce jointe. fetch et
-    // FormData sont utilisés tels quels : ce sont des API du navigateur
-    // (Chromium), disponibles nativement dans le renderer Electron, pas
-    // besoin d'installer de lib supplémentaire (node-fetch, axios...).
     async sendCrashReportToDiscord(instanceName, playerName, playerUuid, reportPath, content) {
-        if (!CRASH_REPORT_DISCORD_WEBHOOK) return;
+        console.log(`${instanceName} - [CrashReporter] Envoi du rapport vers Discord...`);
 
-        // Option désactivée par défaut (voir settings > LAUNCHER > Rapports
-        // de crash) : sans consentement explicite de l'utilisateur, on ne
-        // tente même pas la requête réseau.
+        if (!CRASH_REPORT_DISCORD_WEBHOOK) {
+            console.warn(`${instanceName} - [CrashReporter] Envoi annulé : aucun webhook configuré (CRASH_REPORT_DISCORD_WEBHOOK est vide).`);
+            console.warn(`${instanceName} - [CrashReporter] -> Vérifie que webhook.config.json existait bien, au bon endroit, AVANT le dernier npm run build.`);
+            return;
+        }
+
         const cfg = await this.db.readData('configClient');
-        if (!cfg?.launcher_config?.send_crash_reports) return;
+        if (!cfg?.launcher_config?.send_crash_reports) {
+            console.warn(`${instanceName} - [CrashReporter] Envoi annulé : option désactivée dans les Paramètres > LAUNCHER > Rapports de crash.`);
+            return;
+        }
 
         try {
             const fileName = path.basename(reportPath);
 
-            // Tête du skin via Crafatar (même service déjà utilisé dans
-            // utils.js pour les avatars de comptes) : on lui passe juste
-            // l'UUID, Discord va chercher l'image lui-même via cette URL
-            // publique — pas besoin de télécharger/uploader quoi que ce
-            // soit nous-mêmes. Fallback sur le skin Steve si pas d'UUID
-            // (ex: compte hors-ligne/Microsoft sans profil AZauth).
-            // mc-heads.net plutôt que Crafatar (tombé en panne pendant nos
-            // tests — erreur 521 côté serveur Crafatar lui-même, rien à
-            // voir avec notre code). Format différent : taille dans le
-            // chemin, pas en paramètre de requête. Fallback sur le skin
-            // Steve classique ("MHF_Steve") si pas d'UUID.
-            const cleanUuid = playerUuid ? playerUuid.replace(/-/g, '') : 'MHF_Steve';
-            const skinHeadUrl = `https://mc-heads.net/avatar/${cleanUuid}/128`;
+            // mc-heads.net accepte un pseudo directement (pas que l'UUID) et
+            // fait la résolution Mojang lui-même -> rendu isométrique 3D,
+            // contrairement à la route skin-api du site qui ne fait qu'un
+            // rendu plat 2D. Confirmé fonctionnel avec le vrai pseudo.
+            const skinHeadUrl = `https://mc-heads.net/head/${encodeURIComponent(playerName || 'MHF_Steve')}/128`;
 
-            // ===== INFOS SYSTÈME =====
-            // OS/CPU/RAM viennent du module Node "os" (déjà utilisé ailleurs
-            // dans le launcher pour la RAM, ex: settings.js). Le GPU, lui,
-            // passe par un appel IPC (get-gpu-info dans app.js) car
-            // app.getGPUInfo() n'existe que côté process principal.
             const osNameMap = { win32: 'Windows', darwin: 'macOS', linux: 'Linux' };
             const osLine = `${osNameMap[process.platform] || process.platform} ${os.release()} (${os.arch()})`;
 
@@ -1086,9 +998,8 @@ class Home {
                 const device = gpuInfo?.gpuDevice?.[0];
                 if (device) gpuLine = device.deviceString || device.vendorString || 'Inconnu';
             } catch (err) {
-                console.error('Erreur lors de la récupération des infos GPU pour le crash report :', err);
+                console.error(`${instanceName} - [CrashReporter] Erreur lors de la récupération des infos GPU : ${err?.message || err}`);
             }
-            // ===== FIN INFOS SYSTÈME =====
 
             const payload = {
                 embeds: [{
@@ -1107,23 +1018,37 @@ class Home {
                 }]
             };
 
+            const MAX_ATTACHMENT_CHARS = 900_000;
+            let attachedContent = content;
+            if (Buffer.byteLength(content, 'utf-8') > MAX_ATTACHMENT_CHARS) {
+                console.warn(`${instanceName} - [CrashReporter] Rapport trop volumineux (${content.length} caractères), troncature à ${MAX_ATTACHMENT_CHARS} caractères avant envoi.`);
+                attachedContent = content.slice(0, MAX_ATTACHMENT_CHARS) + '\n\n[...rapport tronqué, trop volumineux pour Discord...]';
+            }
+
             const formData = new FormData();
             formData.append('payload_json', JSON.stringify(payload));
-            formData.append('files[0]', new Blob([content], { type: 'text/plain' }), fileName);
+            formData.append('files[0]', new Blob([attachedContent], { type: 'text/plain' }), fileName);
 
+            console.log(`${instanceName} - [CrashReporter] Webhook appelé...`);
             const res = await fetch(CRASH_REPORT_DISCORD_WEBHOOK, {
                 method: 'POST',
                 body: formData
             });
 
-            if (!res.ok) {
-                console.error('Webhook Discord (crash report) a répondu', res.status, await res.text().catch(() => ''));
+            console.log(`${instanceName} - [CrashReporter] Réponse Discord : ${res.status}`);
+
+            if (res.ok) {
+                console.log(`${instanceName} - [CrashReporter] Rapport envoyé avec succès.`);
+            } else {
+                const bodyText = await res.text().catch(() => '(impossible de lire le corps de la réponse)');
+                console.error(`${instanceName} - [CrashReporter] Échec de l'envoi Discord.`);
+                console.error(`${instanceName} - [CrashReporter] HTTP : ${res.status}`);
+                console.error(`${instanceName} - [CrashReporter] Réponse : ${JSON.stringify(bodyText)}`);
             }
         } catch (err) {
-            console.error('Erreur lors de l\'envoi du crash report sur Discord :', err);
+            console.error(`${instanceName} - [CrashReporter] Erreur réseau/inattendue lors de l'envoi vers Discord : ${err?.message || err}`);
         }
     }
-    // ===== FIN DÉTECTION & LECTURE DU RAPPORT DE CRASH =====
 
     getdate(e) {
         let date = new Date(e)

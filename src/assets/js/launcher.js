@@ -6,6 +6,7 @@
 import Login from './panels/login.js';
 import Home from './panels/home.js';
 import Settings from './panels/settings.js';
+import Friends from './panels/friends.js';
 
 import { logger, config, changePanel, database, popup, setBackground, accountSelect, addAccount, pkg } from './utils.js';
 const { AZauth, Microsoft, Mojang } = require('minecraft-java-core');
@@ -25,7 +26,12 @@ class Launcher {
         if (await this.config.error) return this.errorConnect()
         this.db = new database();
         await this.initConfigClient();
+        // Friends n'est PLUS géré par createPanels() : ce n'est plus une
+        // page plein écran (changePanel), mais un petit flyout autonome
+        // (voir friends.js) qui s'ouvre par-dessus l'écran actuel, donc
+        // instancié à part.
         this.createPanels(Login, Home, Settings);
+        new Friends().init(this.config);
         this.startLauncher();
     }
 
@@ -71,8 +77,7 @@ class Launcher {
         let maximized = false;
         let maximize = document.querySelector(`.${platform} .frame #maximize`);
         maximize.addEventListener('click', () => {
-            if (maximized) ipcRenderer.send('main-window-maximize')
-            else ipcRenderer.send('main-window-maximize');
+            ipcRenderer.send('main-window-maximize');
             maximized = !maximized
             maximize.classList.toggle('icon-maximize')
             maximize.classList.toggle('icon-restore-down')
@@ -81,6 +86,51 @@ class Launcher {
         document.querySelector(`.${platform} .frame #close`).addEventListener('click', () => {
             ipcRenderer.send('main-window-close');
         })
+
+        // Bouton Amis, créé DYNAMIQUEMENT plutôt qu'écrit en dur deux fois
+        // dans launcher.html (une fois pour .darwin, une fois pour .other) :
+        // en dur, il apparaissait en double (un exemplaire mal positionné
+        // en haut à gauche), signe que le bloc .darwin n'est pas totalement
+        // masqué sur Windows par le CSS existant. En le créant uniquement
+        // dans le frame réellement actif pour CETTE plateforme, il n'existe
+        // jamais qu'à un seul endroit dans le DOM, peu importe le CSS.
+        const activeFrame = document.querySelector(`.${platform} .frame`);
+
+        // Wrapper contenant le texte "X/Y" ET l'icône, plutôt qu'une mini-
+        // pastille collée sur l'icône (trop petite pour être lisible).
+        const friendsWrapper = document.createElement('div');
+        friendsWrapper.className = 'friends-frame-wrapper';
+
+        const friendsBadge = document.createElement('span');
+        friendsBadge.className = 'friends-online-badge';
+        friendsBadge.style.display = 'none';
+
+        const friendsBtn = document.createElement('div');
+        friendsBtn.className = 'button-frame friends-frame-btn';
+        friendsBtn.title = 'Amis';
+        friendsBtn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg><span class="friends-notif-badge" style="display:none;"></span>`;
+
+        friendsWrapper.appendChild(friendsBadge);
+        friendsWrapper.appendChild(friendsBtn);
+
+        // Sur Windows/Linux, on l'insère en premier (avant minimiser) pour
+        // rester à distance des boutons "destructifs" (fermer) ; sur Mac,
+        // à la fin puisque close/minimize/maximize sont dans cet ordre-là.
+        if (platform === 'other') {
+            activeFrame.insertBefore(friendsWrapper, activeFrame.firstChild);
+        } else {
+            activeFrame.appendChild(friendsWrapper);
+        }
+
+        // PAS de listener changePanel('friends') ici : Friends n'est plus
+        // un panel plein écran, c'est un flyout autonome (voir friends.js,
+        // wireOpenClose()) qui attache lui-même son propre clic sur ce
+        // bouton pour s'ouvrir/se fermer. En avoir un ici EN PLUS causait
+        // un crash (.panel.friends n'existe plus dans le DOM), qui lui-même
+        // cassait l'affichage du home (la classe .active était retirée du
+        // panel courant avant que le crash n'empêche de la remettre).
     }
 
     async initConfigClient() {

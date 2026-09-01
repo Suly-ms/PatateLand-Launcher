@@ -3,6 +3,7 @@
 @import 'panels/login.css';
 @import 'panels/home.css';
 @import 'panels/settings.css';
+@import 'panels/friends.css';
 
 body {
     margin: 0;
@@ -156,4 +157,11 @@ img {
 
 .popup-button:active {
     transform: scale(0.95);
+}
+/* Bouton Amis dans la barre de contrôle de fenêtre (à côté de
+   minimiser/agrandir/fermer). Cache derrière l'icône générique
+   .button-frame déjà stylée (taille, hover, no-drag), on ajoute juste le
+   rendu de l'emoji lui-même. */
+.friends-frame-icon {
+    font-size: 15px;
 }

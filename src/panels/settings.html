@@ -146,13 +146,12 @@
             <div id="jeu" class="nav-settings-btn">JEU</div>
             <div id="launcher" class="nav-settings-btn">LAUNCHER</div>
             <div id="stockage" class="nav-settings-btn">STOCKAGE</div>
-            <div id="resourcepacks" class="nav-settings-btn">RESOURCE PACKS</div>
-            <div id="shaderpacks" class="nav-settings-btn">SHADERS</div>
+            <div id="personnalisation" class="nav-settings-btn">PERSONNALISATION</div>
             <div id="save" class="nav-settings-btn">ACCUEIL</div>
         </div>
     </div>
 
-    <div id="account-tab" class="container-settings active-container-settings">
+    <div id="account-tab" class="container-settings active-container-settings content-scroll">
         <div class="titre-tab">Comptes joueurs</div>
         <div class="accounts-list content-scroll">
             <div class="account" id="add">
@@ -160,6 +159,31 @@
                     <div class="icon-account-add"></div>
                 </div>
                 <div class="add-text-profile">Ajouter un compte</div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Notifications sociales</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Choisissez quelles notifications de bureau vous souhaitez recevoir pour le système d'amis.
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="friend-request-notif-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Me notifier des nouvelles demandes d'ami</span>
+                </label>
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="friend-message-notif-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Me notifier des nouveaux messages</span>
+                </label>
             </div>
         </div>
     </div>
@@ -271,6 +295,21 @@
                     </div>
                     <span class="toggle-text">Lancer au démarrage</span>
                 </label>
+            </div>
+
+            <div id="start-minimized-box" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                <div class="setting-text">
+                    Ouvrir le launcher réduit dans la barre des tâches. Utile surtout avec le démarrage automatique.
+                </div>
+                <div class="settings-elements content-center" style="margin-top: 10px;">
+                    <label class="fullscreen-toggle-label">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="start-minimized-toggle" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                        </div>
+                        <span class="toggle-text">Démarrer le launcher en mode réduit</span>
+                    </label>
+                </div>
             </div>
         </div>
 
@@ -386,8 +425,9 @@
             </div>
         </div>
     </div>
-    <!-- ===== ONGLET RESOURCE PACKS ===== -->
-    <div id="resourcepacks-tab" class="container-settings content-scroll">
+
+    <!-- ===== ONGLET PERSONNALISATION (fusion Resource Packs + Shaders) ===== -->
+    <div id="personnalisation-tab" class="container-settings content-scroll">
         <div class="titre-tab">Resource Packs</div>
         <div class="settings-elements-box">
             <div class="setting-text">
@@ -407,10 +447,7 @@
                 <div class="rp-empty-msg">Aucun resource pack installé.</div>
             </div>
         </div>
-    </div>
 
-    <!-- ===== ONGLET SHADERPACKS ===== -->
-    <div id="shaderpacks-tab" class="container-settings content-scroll">
         <div class="titre-tab">Shaders</div>
         <div class="settings-elements-box">
             <div class="setting-text">

@@ -439,83 +439,73 @@ class Settings {
         let themeBox = document.querySelector(".theme-box");
         let theme = configClient?.launcher_config?.theme || "auto";
 
-        if (theme == "auto") {
-            document.querySelector('.theme-btn-auto').classList.add('active-theme');
-        } else if (theme == "dark") {
-            document.querySelector('.theme-btn-sombre').classList.add('active-theme');
-        } else if (theme == "light") {
-            document.querySelector('.theme-btn-clair').classList.add('active-theme');
-        }
+        // Table de correspondance theme <-> classe du bouton, réutilisée à
+        // la fois pour l'état initial et pour le clic (au lieu de deux
+        // chaînes if/else if séparées à garder synchronisées).
+        const THEME_BTN_CLASS = { auto: 'theme-btn-auto', dark: 'theme-btn-sombre', light: 'theme-btn-clair' };
+
+        const initialBtnClass = THEME_BTN_CLASS[theme];
+        if (initialBtnClass) document.querySelector(`.${initialBtnClass}`)?.classList.add('active-theme');
 
         themeBox.addEventListener("click", async e => {
-            if (e.target.classList.contains('theme-btn')) {
-                let activeTheme = document.querySelector('.active-theme');
-                if (e.target.classList.contains('active-theme')) return
-                activeTheme?.classList.remove('active-theme');
+            if (!e.target.classList.contains('theme-btn')) return;
+            if (e.target.classList.contains('active-theme')) return;
 
-                if (e.target.classList.contains('theme-btn-auto')) {
-                    setBackground();
-                    theme = "auto";
-                    e.target.classList.add('active-theme');
-                } else if (e.target.classList.contains('theme-btn-sombre')) {
-                    setBackground(true);
-                    theme = "dark";
-                    e.target.classList.add('active-theme');
-                } else if (e.target.classList.contains('theme-btn-clair')) {
-                    setBackground(false);
-                    theme = "light";
-                    e.target.classList.add('active-theme');
-                }
+            const matchedTheme = Object.keys(THEME_BTN_CLASS).find(key => e.target.classList.contains(THEME_BTN_CLASS[key]));
+            if (!matchedTheme) return;
 
-                let configClient = await this.db.readData('configClient')
-                configClient.launcher_config.theme = theme;
-                await this.db.updateData('configClient', configClient);
-            }
+            document.querySelector('.active-theme')?.classList.remove('active-theme');
+            e.target.classList.add('active-theme');
+
+            theme = matchedTheme;
+            setBackground(theme === 'auto' ? undefined : theme === 'dark');
+
+            let configClient = await this.db.readData('configClient')
+            configClient.launcher_config.theme = theme;
+            await this.db.updateData('configClient', configClient);
         })
 
         let closeBox = document.querySelector(".close-box");
         let closeLauncher = configClient?.launcher_config?.closeLauncher || "close-launcher";
 
-        if (closeLauncher == "close-launcher") {
-            document.querySelector('.close-launcher')?.classList.add('active-close');
+        // Table de correspondance classe -> action : les classes du bouton
+        // sont déjà nommées comme les valeurs de closeLauncher, seul
+        // tray_on_launch varie en plus (absent pour close-none, comme dans
+        // le code d'origine).
+        const CLOSE_ACTIONS = {
+            'close-none': { closeLauncher: 'close-none' },
+            'close-launcher': { closeLauncher: 'close-launcher', trayOnLaunch: true }, // réduire dans le tray
+            'close-window': { closeLauncher: 'close-window', trayOnLaunch: false },
+        };
 
-        } else if (closeLauncher == "close-window") {
-            document.querySelector('.close-window')?.classList.add('active-close');
-        } else if (closeLauncher == "close-none") {
-            document.querySelector('.close-none')?.classList.add('active-close');
-        }
+        document.querySelector(`.${closeLauncher}`)?.classList.add('active-close');
 
         closeBox.addEventListener("click", async e => {
-            if (e.target.closest('.close-btn')) {
-                const btn = e.target.closest('.close-btn');
-                let activeClose = document.querySelector('.active-close');
-                if (btn.classList.contains('active-close')) return;
-                activeClose?.classList.remove('active-close');
+            const btn = e.target.closest('.close-btn');
+            if (!btn) return;
+            if (btn.classList.contains('active-close')) return;
 
-                let configClient = await this.db.readData('configClient');
+            const matchedClass = Object.keys(CLOSE_ACTIONS).find(cls => btn.classList.contains(cls));
+            if (!matchedClass) return;
 
-                if (btn.classList.contains('close-none')) {
-                    btn.classList.add('active-close');
-                    configClient.launcher_config.closeLauncher = "close-none";
-                } else if (btn.classList.contains('close-launcher')) {
-                    // Réduire dans le tray
-                    btn.classList.add('active-close');
-                    configClient.launcher_config.closeLauncher = "close-launcher";
-                    configClient.game_config.tray_on_launch = true;
-                } else if (btn.classList.contains('close-window')) {
-                    btn.classList.add('active-close');
-                    configClient.launcher_config.closeLauncher = "close-window";
-                    configClient.game_config.tray_on_launch = false;
-}
-                await this.db.updateData('configClient', configClient);
-            }
+            document.querySelector('.active-close')?.classList.remove('active-close');
+            btn.classList.add('active-close');
+
+            let configClient = await this.db.readData('configClient');
+            const action = CLOSE_ACTIONS[matchedClass];
+            configClient.launcher_config.closeLauncher = action.closeLauncher;
+            if ('trayOnLaunch' in action) configClient.game_config.tray_on_launch = action.trayOnLaunch;
+            await this.db.updateData('configClient', configClient);
         })
 
         // ===== AUTO LAUNCH =====
         let autoLaunchToggle = document.getElementById('autolaunch-toggle');
+        let startMinimizedBox = document.getElementById('start-minimized-box');
+        let startMinimizedToggle = document.getElementById('start-minimized-toggle');
         if (process.platform === 'linux') {
             autoLaunchToggle.closest('.settings-elements-box')?.previousElementSibling?.remove();
             autoLaunchToggle.closest('.settings-elements-box')?.remove();
+            startMinimizedBox?.remove();
         } else {
             // On se base sur l'état RÉEL de Windows/macOS (get-auto-launch,
             // qui lit app.getLoginItemSettings() côté main process), pas sur
@@ -535,11 +525,21 @@ class Settings {
                 await this.db.updateData('configClient', cfgForAutoLaunch);
             }
 
+            // ===== DÉMARRER MINIMISÉ (n'a de sens qu'avec l'auto-launch) =====
+            startMinimizedBox.style.display = realAutoLaunch ? '' : 'none';
+            startMinimizedToggle.checked = cfgForAutoLaunch?.launcher_config?.start_minimized ?? false;
+            startMinimizedToggle.addEventListener('change', async () => {
+                let cfg = await this.db.readData('configClient');
+                cfg.launcher_config.start_minimized = startMinimizedToggle.checked;
+                await this.db.updateData('configClient', cfg);
+            });
+
             autoLaunchToggle.addEventListener('change', async () => {
                 ipcRenderer.send('set-auto-launch', autoLaunchToggle.checked);
                 let cfg = await this.db.readData('configClient');
                 cfg.launcher_config.auto_launch = autoLaunchToggle.checked;
                 await this.db.updateData('configClient', cfg);
+                startMinimizedBox.style.display = autoLaunchToggle.checked ? '' : 'none';
             });
         }
 
@@ -548,12 +548,29 @@ class Settings {
         // (undefined -> false par défaut) de "explicitement mis à false"
         // par l'utilisateur, même si le résultat final est le même ici.
         let crashReportToggle = document.getElementById('crash-report-toggle');
-        let sendCrashReports = configClient?.launcher_config?.send_crash_reports ?? false;
-        crashReportToggle.checked = sendCrashReports;
+        crashReportToggle.checked = configClient?.launcher_config?.send_crash_reports ?? false;
+        this.bindConfigToggle(crashReportToggle, 'send_crash_reports');
 
-        crashReportToggle.addEventListener('change', async () => {
+        // ===== NOTIFICATIONS SOCIALES =====
+        let friendRequestNotifToggle = document.getElementById('friend-request-notif-toggle');
+        let friendMessageNotifToggle = document.getElementById('friend-message-notif-toggle');
+
+        let cfgForSocialNotif = await this.db.readData('configClient');
+        friendRequestNotifToggle.checked = cfgForSocialNotif?.launcher_config?.friend_request_notifications ?? true;
+        friendMessageNotifToggle.checked = cfgForSocialNotif?.launcher_config?.friend_message_notifications ?? true;
+
+        this.bindConfigToggle(friendRequestNotifToggle, 'friend_request_notifications');
+        this.bindConfigToggle(friendMessageNotifToggle, 'friend_message_notifications');
+    }
+
+    // Relit configClient, met à jour launcher_config[key] avec l'état de la
+    // checkbox, puis réenregistre — factorise le pattern répété par les
+    // toggles de préférences ci-dessus (send_crash_reports,
+    // friend_request_notifications, friend_message_notifications, ...).
+    bindConfigToggle(toggleEl, key) {
+        toggleEl.addEventListener('change', async () => {
             let cfg = await this.db.readData('configClient');
-            cfg.launcher_config.send_crash_reports = crashReportToggle.checked;
+            cfg.launcher_config[key] = toggleEl.checked;
             await this.db.updateData('configClient', cfg);
         });
     }
@@ -761,7 +778,7 @@ class Settings {
 
         this.rpFolder = await getRpFolder();
 
-        document.querySelector('#resourcepacks').addEventListener('click', async () => {
+        document.querySelector('#personnalisation').addEventListener('click', async () => {
             this.rpFolder = await getRpFolder();
             this.loadResourcePacksList();
         });
@@ -831,7 +848,7 @@ class Settings {
 
         this.spFolder = await getSpFolder();
 
-        document.querySelector('#shaderpacks').addEventListener('click', async () => {
+        document.querySelector('#personnalisation').addEventListener('click', async () => {
             this.spFolder = await getSpFolder();
             this.loadShaderPacksList();
         });

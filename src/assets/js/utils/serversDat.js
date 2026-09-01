@@ -24,8 +24,8 @@ const path = require('path');
 // serveur multijoueur différent. Une instance absente de cette table est
 // simplement ignorée (aucune injection).
 const SERVERS_CONFIG = {
-    'Opti':  { ip: 'patateland.minesr.com',      name: 'PatateLand' },
-    'Extra': { ip: 'patateland.minesr.com',      name: 'PatateLand' },
+    'Opti':  { ip: 'play.patateland.fr',      name: 'PatateLand' },
+    'Extra': { ip: 'play.patateland.fr',      name: 'PatateLand' },
     'Event': { ip: 'patateland-event.mine.fun',  name: 'PatateLand - Event' }
 };
 

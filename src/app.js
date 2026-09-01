@@ -45,13 +45,14 @@ function setAutoLaunch(enabled) {
         if (process.platform === 'darwin') {
 
             const exePath = app.getPath('exe');
-            const appPath = exePath.includes('.app/') 
+            const appPath = exePath.includes('.app/')
                 ? exePath.split('.app/')[0] + '.app'
                 : exePath;
             app.setLoginItemSettings({
                 openAtLogin: enabled,
                 name: 'PatateLand',
-                path: appPath
+                path: appPath,
+                args: ['--autostart']
             });
             console.log('[AutoLaunch] setLoginItemSettings (darwin) appelé, enabled =', enabled, 'path =', appPath);
         } else {
@@ -59,7 +60,12 @@ function setAutoLaunch(enabled) {
             app.setLoginItemSettings({
                 openAtLogin: enabled,
                 name: 'PatateLand',
-                path: process.execPath
+                path: process.execPath,
+                // Marqueur passé en ligne de commande pour distinguer un
+                // lancement automatique au démarrage de Windows d'un lancement
+                // manuel par l'utilisateur (voir shouldStartMinimized() plus
+                // bas), utilisé pour l'option "démarrer minimisé".
+                args: ['--autostart']
             });
         }
 
@@ -86,6 +92,26 @@ async function restoreAutoLaunch() {
         }
     } catch(e) {
         console.error('[AutoLaunch] Erreur dans restoreAutoLaunch :', e);
+    }
+}
+
+// Vrai uniquement si (a) le launcher a été ouvert automatiquement au
+// démarrage de l'OS (--autostart passé via setLoginItemSettings ci-dessus,
+// ou wasOpenedAtLogin sur macOS) ET (b) l'utilisateur a coché l'option
+// "démarrer minimisé" dans les réglages. Un lancement manuel (double-clic,
+// raccourci) n'est jamais minimisé, même si l'option est cochée.
+function shouldStartMinimized() {
+    try {
+        const openedAtLogin = process.argv.includes('--autostart')
+            || app.getLoginItemSettings().wasOpenedAtLogin === true;
+        if (!openedAtLogin) return false;
+
+        const store = new Store({ name: 'configClient' });
+        const configClient = store.get('data');
+        return configClient?.launcher_config?.start_minimized === true;
+    } catch (e) {
+        console.error('[AutoLaunch] Erreur dans shouldStartMinimized :', e);
+        return false;
     }
 }
 
@@ -187,8 +213,9 @@ ipcMain.on('trayPopup-quit', () => {
 });
 
 
-if (!app.requestSingleInstanceLock()) app.quit();
-else {
+if (!app.requestSingleInstanceLock()) {
+    app.quit();
+} else {
     app.on('second-instance', () => {
         const win = MainWindow.getWindow();
         if (win && !win.isDestroyed()) {
@@ -213,7 +240,7 @@ else {
     });
 
 ipcMain.on('main-window-open', () => {
-    MainWindow.createWindow();
+    MainWindow.createWindow(shouldStartMinimized());
     if (!tray) createTray();
     scheduleUpdateCheck();
 })
@@ -398,16 +425,11 @@ function scheduleUpdateCheck() {
 }
 
 ipcMain.handle('update-app', async () => {
-    return await new Promise(async (resolve, reject) => {
-        autoUpdater.checkForUpdates().then(res => {
-            resolve(res);
-        }).catch(error => {
-            reject({
-                error: true,
-                message: error
-            })
-        })
-    })
+    try {
+        return await autoUpdater.checkForUpdates();
+    } catch (error) {
+        throw { error: true, message: error };
+    }
 })
 
 autoUpdater.on('update-available', (info) => {

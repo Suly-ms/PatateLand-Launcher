@@ -7,3 +7,4 @@ node-v*
 data
 .DS_Store
 src/assets/js/panels/webhook.config.json
+src/webhook.config.json

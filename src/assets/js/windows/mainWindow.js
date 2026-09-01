@@ -20,7 +20,7 @@ function destroyWindow() {
     mainWindow = undefined;
 }
 
-function createWindow() {
+function createWindow(startMinimized = false) {
     destroyWindow();
     const isMac = os.platform() === 'darwin';
     mainWindow = new BrowserWindow({
@@ -37,7 +37,18 @@ function createWindow() {
         show: false,
         webPreferences: {
             contextIsolation: false,
-            nodeIntegration: true
+            nodeIntegration: true,
+            // BUG CORRIGÉ : par défaut, Chromium ralentit fortement les
+            // timers JS (setInterval/setTimeout) d'une fenêtre qui n'est
+            // pas au premier plan ou minimisée (économie de ressources).
+            // Ça touchait directement le heartbeat, le sondage des messages
+            // non lus et du chat (voir friends.js), qui tournent tous en
+            // tâche de fond — d'où les notifs qui n'arrivaient qu'en
+            // rouvrant/mettant la fenêtre au premier plan (ce qui "réveille"
+            // les timers et déclenche un rechargement immédiat). Désactivé
+            // ici pour que ces sondages tournent à leur cadence normale même
+            // fenêtre minimisée/dans le tray.
+            backgroundThrottling: false
         },
     });
     Menu.setApplicationMenu(null);
@@ -52,10 +63,37 @@ function createWindow() {
         }
     });
 
+    // ===== SIGNAL DE VISIBILITÉ VERS LE RENDERER =====
+    // Le renderer (friends.js) a besoin de savoir si la fenêtre est
+    // vraiment VISIBLE à l'écran ou cachée/minimisée dans le tray, pour
+    // décider s'il faut envoyer une notification native pour un nouveau
+    // message reçu dans une conversation restée "ouverte" (au sens de
+    // l'état JS) mais invisible pour l'utilisateur.
+    //
+    // Écouter directement les événements natifs de la fenêtre (plutôt que
+    // d'intercepter chaque canal IPC qui pourrait la cacher/montrer :
+    // main-window-minimize, main-window-hide, main-window-show, clic sur
+    // le tray...) capture TOUS les cas de façon fiable en un seul endroit,
+    // y compris d'éventuels futurs chemins de code qu'on ajouterait plus
+    // tard sans penser à les répercuter ici.
+    const broadcastVisibility = () => {
+        if (!mainWindow || mainWindow.isDestroyed()) return;
+        const visible = mainWindow.isVisible() && !mainWindow.isMinimized();
+        mainWindow.webContents.send('window-visibility-changed', visible);
+    };
+
+    ['show', 'hide', 'minimize', 'restore'].forEach(evt => mainWindow.on(evt, broadcastVisibility));
+    // ===== FIN SIGNAL DE VISIBILITÉ =====
+
     mainWindow.once('ready-to-show', () => {
         if (mainWindow) {
             if (dev) mainWindow.webContents.openDevTools({ mode: 'detach' })
             mainWindow.show()
+            // Démarrage au lancement de Windows + option "démarrer minimisé" :
+            // on affiche quand même la fenêtre (pour qu'elle apparaisse dans la
+            // barre des tâches) puis on la minimise aussitôt, plutôt que de ne
+            // jamais l'afficher.
+            if (startMinimized) mainWindow.minimize();
         }
     });
 }

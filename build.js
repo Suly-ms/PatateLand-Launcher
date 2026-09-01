@@ -52,6 +52,7 @@ class Index {
                     fs.writeFileSync(`${folder}/${fileName}`, code, { encoding: "utf-8" });
                 }
             } else {
+                console.log(`[BUILD DEBUG] Copie de : ${path} -> ${folder}/${fileName}`);
                 fs.copyFileSync(path, `${folder}/${fileName}`);
             }
         }
@@ -68,6 +69,19 @@ class Index {
                 artifactName: "${productName}-${os}-${arch}.${ext}",
                 extraMetadata: { main: 'app/app.js' },
                 files: ["app/**/*", "package.json", "LICENSE.md"],
+                // Le jar du mod cosmétiques (test_cosmetics-mod/, un projet
+                // Gradle séparé à la racine) n'est PAS du code du launcher —
+                // il n'est donc pas concerné par "files"/app.asar ci-dessus.
+                // On le copie à part, à plat, dans resources/test_cosmetics-mod/
+                // (voir home.js -> process.resourcesPath) sinon le .exe
+                // packagé ne trouve jamais le jar et le mod n'est jamais
+                // injecté dans les instances (constaté : "j'ai pas le mod"
+                // uniquement sur le .exe buildé, jamais en "npm start").
+                extraResources: [{
+                    from: "test_cosmetics-mod/build/libs",
+                    to: "test_cosmetics-mod",
+                    filter: ["testcosmetics-*.jar"]
+                }],
                 directories: {
                     "output": "dist"
                 },
