@@ -37,7 +37,8 @@ function createWindow() {
     });
     Menu.setApplicationMenu(null);
     updateWindow.setMenuBarVisibility(false);
-    updateWindow.loadFile(path.join(`${app.getAppPath()}/src/index.html`));
+    updateWindow.loadFile(
+    path.join(app.getAppPath(), 'app', 'index.html'));
     updateWindow.once('ready-to-show', () => {
         if (updateWindow) {
             if (dev) updateWindow.webContents.openDevTools({ mode: 'detach' })

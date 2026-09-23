@@ -53,7 +53,8 @@ function createWindow(startMinimized = false) {
     });
     Menu.setApplicationMenu(null);
     mainWindow.setMenuBarVisibility(false);
-    mainWindow.loadFile(path.join(`${app.getAppPath()}/src/launcher.html`));
+    mainWindow.loadFile(
+    path.join(app.getAppPath(), 'app', 'launcher.html'));
     // Sur Mac : la croix cache la fenêtre au lieu de la détruire
     // sauf si on force le quit (menu tray ou Cmd+Q)
     mainWindow.on('close', (e) => {
