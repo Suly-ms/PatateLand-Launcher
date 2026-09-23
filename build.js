@@ -29,34 +29,69 @@ class Index {
     }
 
     async Obfuscate() {
-        if (fs.existsSync("./app")) fs.rmSync("./app", { recursive: true })
+    if (fs.existsSync("./app")) {
+        fs.rmSync("./app", { recursive: true });
+    }
 
-        for (let path of this.Fileslist) {
-            let fileName = path.split('/').pop()
-            let extFile = fileName.split(".").pop()
-            let folder = path.replace(`/${fileName}`, '').replace('src', 'app')
+    for (let path of this.Fileslist) {
+        let fileName = path.split('/').pop();
+        let extFile = fileName.split(".").pop();
+        let folder = path
+            .replace(`/${fileName}`, '')
+            .replace('src', 'app');
 
-            if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true })
+        if (!fs.existsSync(folder)) {
+            fs.mkdirSync(folder, { recursive: true });
+        }
 
-            if (extFile == 'js') {
-                let code = fs.readFileSync(path, "utf8");
-                code = code.replace(/src\//g, 'app/');
-                if (this.obf) {
-                    await new Promise((resolve) => {
-                        console.log(`Obfuscate ${path}`);
-                        let obf = JavaScriptObfuscator.obfuscate(code, { optionsPreset: 'medium-obfuscation', disableConsoleOutput: false });
-                        resolve(fs.writeFileSync(`${folder}/${fileName}`, obf.getObfuscatedCode(), { encoding: "utf-8" }));
-                    })
-                } else {
-                    console.log(`Copy ${path}`);
-                    fs.writeFileSync(`${folder}/${fileName}`, code, { encoding: "utf-8" });
-                }
+        if (extFile == 'js') {
+            let code = fs.readFileSync(path, "utf8");
+
+            // Adapte les chemins éventuels qui utilisent src/
+            code = code.replace(/src\//g, 'app/');
+
+            // friends.js reste volontairement non obfusqué
+            // pour vérifier si l'obfuscateur est responsable
+            // de l'écran blanc.
+            const normalizedPath = path.replace(/\\/g, '/');
+            const shouldObfuscate =
+                this.obf &&
+                !normalizedPath.endsWith('/panels/friends.js');
+
+            if (shouldObfuscate) {
+                console.log(`Obfuscate ${path}`);
+
+                const obf = JavaScriptObfuscator.obfuscate(code, {
+                    optionsPreset: 'medium-obfuscation',
+                    disableConsoleOutput: false
+                });
+
+                fs.writeFileSync(
+                    `${folder}/${fileName}`,
+                    obf.getObfuscatedCode(),
+                    { encoding: "utf-8" }
+                );
             } else {
-                console.log(`[BUILD DEBUG] Copie de : ${path} -> ${folder}/${fileName}`);
-                fs.copyFileSync(path, `${folder}/${fileName}`);
+                console.log(`Copy without obfuscation ${path}`);
+
+                fs.writeFileSync(
+                    `${folder}/${fileName}`,
+                    code,
+                    { encoding: "utf-8" }
+                );
             }
+        } else {
+            console.log(
+                `[BUILD DEBUG] Copie de : ${path} -> ${folder}/${fileName}`
+            );
+
+            fs.copyFileSync(
+                path,
+                `${folder}/${fileName}`
+            );
         }
     }
+}
 
     async buildPlatform() {
         await this.Obfuscate();
