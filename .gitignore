@@ -8,3 +8,7 @@ data
 .DS_Store
 src/assets/js/panels/webhook.config.json
 src/webhook.config.json
+
+# Cosmétiques (prototype, non versionné pour le moment)
+test_cosmetics-mod/
+src/assets/js/test_cosmeticsInjector.js

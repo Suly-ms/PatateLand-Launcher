@@ -14,7 +14,15 @@ import { injectServer } from '../utils/serversDat.js'
 // launcher.html (voir utils.js -> require('../package.json')), PAS par
 // rapport à ce fichier home.js — d'où le chemin depuis src/ et non depuis
 // src/assets/js/panels/.
-const { injectCosmeticsMod, findCosmeticsJar } = require('./assets/js/test_cosmeticsInjector.js')
+// Optionnel : le fichier n'est pas versionné (voir .gitignore). S'il est
+// absent, on désactive simplement l'injection au lieu de faire planter tout
+// le panneau (= écran blanc au lancement).
+let cosmeticsInjector = null;
+try {
+    cosmeticsInjector = require('./assets/js/test_cosmeticsInjector.js');
+} catch (err) {
+    console.warn('[test_cosmeticsInjector] Module absent, injection désactivée.');
+}
 
 const { Launch } = require('minecraft-java-core')
 const { shell, ipcRenderer } = require('electron')
@@ -714,7 +722,8 @@ class Home {
             // vise directement src/assets/js/panels/) vs build (voir
             // getCrashReportWebhook plus haut) : on essaie plusieurs racines
             // candidates plutôt que de parier sur une seule.
-            try {
+            if (cosmeticsInjector) try {
+                const { injectCosmeticsMod, findCosmeticsJar } = cosmeticsInjector;
                 const candidateRoots = [
                     path.join(__dirname, '..', '..', '..', '..'), // src/assets/js/panels -> racine repo (dev, npm start)
                     path.join(__dirname, '..', '..', '..'),       // app/assets/js/panels -> app (build)

@@ -112,11 +112,12 @@ class Index {
                 // packagé ne trouve jamais le jar et le mod n'est jamais
                 // injecté dans les instances (constaté : "j'ai pas le mod"
                 // uniquement sur le .exe buildé, jamais en "npm start").
-                extraResources: [{
+                // Seulement si le dossier existe (non versionné, voir .gitignore).
+                extraResources: fs.existsSync("test_cosmetics-mod/build/libs") ? [{
                     from: "test_cosmetics-mod/build/libs",
                     to: "test_cosmetics-mod",
                     filter: ["testcosmetics-*.jar"]
-                }],
+                }] : [],
                 directories: {
                     "output": "dist"
                 },
