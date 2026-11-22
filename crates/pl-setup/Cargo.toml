@@ -1,0 +1,40 @@
+[package]
+name = "pl-setup"
+description = "Installateur PatateLand : interface Tauri aux couleurs du launcher"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+default-run = "pl-setup"
+
+# Programme d'installation (et de désinstallation, avec --uninstall).
+[[bin]]
+name = "pl-setup"
+path = "src/main.rs"
+
+# Outil de fabrication : ajoute le launcher compressé à la fin de l'installateur.
+[[bin]]
+name = "pl-pack"
+path = "src/bin/pl-pack.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+zstd = { version = "0.13", default-features = false, features = ["zstdmt"] }
+sha2 = "0.10"
+mslnk = "0.1"
+windows-registry = "0.6"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,159 @@
+# Compilation automatique du launcher PatateLand (Windows, Mac, Linux).
+#
+# Déclenchée à chaque envoi (push) sur la branche « nouveau-launcher », ou à
+# la main (onglet Actions > Run workflow).
+#
+# Résultat : une release en BROUILLON. Un brouillon est invisible pour les
+# joueurs et pour les launchers (ancien comme nouveau) : rien n'est diffusé
+# tant que quelqu'un ne clique pas sur « Publish release » sur GitHub.
+#
+# Secret nécessaire (Settings > Secrets and variables > Actions) :
+#   UPDATE_SIGNING_KEY : clé privée de signature des mises à jour.
+# Voir docs/11-publication.md.
+
+name: Compilation du launcher
+
+on:
+  push:
+    branches: [nouveau-launcher]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch == 'arm64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target-msvc"
+          key: windows-${{ matrix.arch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @tauri-apps/cli@2
+      - name: Tests
+        if: matrix.arch == 'x64'
+        run: cargo test --release --workspace
+      - name: Installateur
+        shell: pwsh
+        run: ./build-setup.ps1 -Arch ${{ matrix.arch }} -DownloadWebView2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: dist/PatateLand-win-${{ matrix.arch }}-setup.exe
+          if-no-files-found: error
+
+  macos:
+    name: Mac (Intel + Apple Silicon)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target-msvc"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @tauri-apps/cli@2
+      - name: Tests
+        run: cargo test --release -p pl-engine
+      - name: Application
+        working-directory: crates/pl-app
+        run: tauri build --target universal-apple-darwin --bundles dmg
+      - name: Nom final
+        run: |
+          mkdir -p dist
+          cp target-msvc/universal-apple-darwin/release/bundle/dmg/*.dmg dist/PatateLand-mac-universal.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: dist/PatateLand-mac-universal.dmg
+          if-no-files-found: error
+
+  linux:
+    name: Linux
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bibliothèques système
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
+            libssl-dev libdbus-1-dev libxdo-dev patchelf build-essential file
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target-msvc"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @tauri-apps/cli@2
+      - name: Tests
+        run: cargo test --release -p pl-engine
+      - name: Application
+        working-directory: crates/pl-app
+        run: tauri build --bundles appimage
+      - name: Nom final
+        run: |
+          mkdir -p dist
+          cp target-msvc/release/bundle/appimage/*.AppImage dist/PatateLand-linux-x64.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: dist/PatateLand-linux-x64.AppImage
+          if-no-files-found: error
+
+  release:
+    name: Release brouillon
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Manifeste signé et latest.yml
+        env:
+          PL_UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: node tools/release/prepare.mjs dist
+      - name: Brouillon sur GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=$(node -p "require('./crates/pl-app/tauri.conf.json').version")
+          if gh release view "$VERSION" --json isDraft -q .isDraft > state.txt 2>/dev/null; then
+            if [ "$(cat state.txt)" != "true" ]; then
+              echo "La version $VERSION est déjà publiée : augmente la version dans crates/pl-app/tauri.conf.json." >&2
+              exit 1
+            fi
+            gh release upload "$VERSION" dist/* --clobber
+          else
+            gh release create "$VERSION" dist/* --draft --target "$GITHUB_SHA" \
+              --title "PatateLand $VERSION" \
+              --notes "Brouillon créé par la compilation automatique. À tester avant publication."
+          fi

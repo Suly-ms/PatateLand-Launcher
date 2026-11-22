@@ -1,0 +1,489 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="assets/css/launcher.css">
+</head>
+<!-- Reconstitution statique de l'accueil de l'ancien launcher (mêmes CSS,
+     même balisage que home.html + ce que home.js insère). -->
+<body class="dark global" style="background-image: linear-gradient(#00000080, #00000080), url(assets/images/background/dark/4.png); background-size: cover;">
+    <div class="dragbar"></div>
+    <div class="other">
+        <div class="frame hide">
+            <div class="button-frame icon-minimize"></div>
+            <div class="button-frame icon-maximize"></div>
+            <div class="button-frame icon-close"></div>
+        </div>
+    </div>
+    <div class="panels"><div class="panel settings active"><style>
+    /* ===== ENCART RECOMMANDATION RAM ===== */
+    .ram-recommendation-box {
+        margin-top: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--background-element);
+        border: 1px solid var(--element-color);
+        border-radius: 12px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 14px var(--shadow);
+    }
+
+    .ram-recommendation-icon {
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .ram-recommendation-text {
+        flex: 1;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .ram-recommendation-text #recommended-ram {
+        font-weight: 700;
+        color: var(--element-color);
+    }
+
+    .ram-recommendation-btn {
+        background: linear-gradient(90deg, var(--element-color), var(--button-gradient-end));
+        color: #fff;
+        border: none;
+        font-weight: 700;
+        font-size: 0.85rem;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: transform 0.15s, filter 0.15s;
+    }
+
+    .ram-recommendation-btn:hover {
+        transform: scale(1.05);
+        filter: brightness(1.05);
+    }
+
+    .ram-low-warning-box {
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--delete-button-bg, rgba(231,76,60,0.1));
+        border: 1px solid var(--delete-button-color, #e74c3c);
+        border-radius: 12px;
+        padding: 12px 16px;
+    }
+
+    .ram-low-warning-box .ram-recommendation-icon {
+        color: var(--delete-button-color, #e74c3c);
+    }
+
+    .ram-low-warning-box .ram-recommendation-text {
+        font-size: 0.85rem;
+    }
+    /* ===== FIN ENCART RECOMMANDATION RAM ===== */
+
+    /* ===== APERÇU DU STOCKAGE ===== */
+    .storage-bar {
+        margin-top: 14px;
+        display: flex;
+        width: 100%;
+        height: 14px;
+        border-radius: 8px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.06);
+    }
+
+    .storage-bar-segment {
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .storage-legend {
+        margin-top: 14px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 20px;
+    }
+
+    .storage-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+    }
+
+    .storage-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .storage-total {
+        margin-top: 14px;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .storage-btn-box {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .storage-btn {
+        background: var(--background-element);
+        border: 1px solid var(--border-color);
+        color: var(--color);
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 10px 16px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .storage-btn:hover {
+        transform: scale(1.03);
+        border-color: var(--element-color);
+    }
+
+    .storage-btn-danger:hover {
+        border-color: var(--delete-button-color, #e74c3c);
+        color: var(--delete-button-color, #e74c3c);
+    }
+    /* ===== FIN APERÇU DU STOCKAGE ===== */
+</style>
+<div class="container">
+    <div class="nav-settings">
+        <p>Paramètres</p>
+        <div class="nav-box">
+            <div id="account" class="nav-settings-btn active-settings-BTN">COMPTES</div>
+            <div id="jeu" class="nav-settings-btn">JEU</div>
+            <div id="launcher" class="nav-settings-btn">LAUNCHER</div>
+            <div id="stockage" class="nav-settings-btn">STOCKAGE</div>
+            <div id="personnalisation" class="nav-settings-btn">PERSONNALISATION</div>
+            <div id="save" class="nav-settings-btn">ACCUEIL</div>
+        </div>
+    </div>
+
+    <div id="account-tab" class="container-settings active-container-settings content-scroll">
+        <div class="titre-tab">Comptes joueurs</div>
+        <div class="accounts-list content-scroll">
+            <div class="account" id="add">
+                <div class="add-profile">
+                    <div class="icon-account-add"></div>
+                </div>
+                <div class="add-text-profile">Ajouter un compte</div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Notifications sociales</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Choisissez quelles notifications de bureau vous souhaitez recevoir pour le système d'amis.
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="friend-request-notif-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Me notifier des nouvelles demandes d'ami</span>
+                </label>
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="friend-message-notif-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Me notifier des nouveaux messages</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div id="jeu-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Mémoire RAM</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Définition de la RAM allouée à votre jeu. Une quantité plus importante augmentera les performances.<br>
+                Attention à ne pas allouer toute votre RAM (laissez-en pour le système).<br><br>
+                <b>- RAM Maximale:</b> Total alloué au jeu (recommandé: 50% de votre RAM totale).<br>
+                <b>- RAM Minimale:</b> Alloué au démarrage (recommandé: 2-4 Go max).
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="memory-slider" min="0.5" max="8" step="0.5">
+                    <div class="slider-touch-left">
+                        <span value="0 Go"></span>
+                    </div>
+                    <div class="slider-touch-right">
+                        <span value="0 Go"></span>
+                    </div>
+                    <div class="slider-line">
+                        <span></span>
+                    </div>
+                </div>
+                <div class="ram-info-block">
+                    <b>Total système : <span id="total-ram">0 Go</span> RAM.</b><br>
+                    <b>Disponible : <span id="free-ram">0 Go</span> RAM.</b>
+                </div>
+            </div>
+            <div class="ram-recommendation-box">
+                <div class="ram-recommendation-icon">💡</div>
+                <div class="ram-recommendation-text">
+                    Recommandé pour votre PC : <span id="recommended-ram">0 Go</span>
+                </div>
+                <button class="ram-recommendation-btn" id="apply-recommended-ram" type="button">Appliquer</button>
+            </div>
+            <div class="ram-low-warning-box" id="ram-low-warning" style="display:none;">
+                <div class="ram-recommendation-icon">⚠</div>
+                <div class="ram-recommendation-text">
+                    Ta RAM totale est un peu juste pour notre pack moddé, quelle que soit la valeur choisie ici. L'instance <b>Opti</b> est justement pensée pour les configurations modestes.
+                </div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Résolution du jeu</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Définissez la taille de la fenêtre de jeu.<br>
+                Par défaut : 1280 x 720.<br>
+                En mode plein écran, la résolution ci-dessous est ignorée.
+            </div>
+            <div class="settings-elements content-center">
+                <div class="input-size-element">
+                    <div class="number-input-wrapper">
+                        <button class="number-btn minus" data-target="width-size">−</button>
+                        <input type="number" class="width-size input-resolution" placeholder="Largeur">
+                        <button class="number-btn plus" data-target="width-size">+</button>
+                    </div>
+                    <div class="size-cross">X</div>
+                    <div class="number-input-wrapper">
+                        <button class="number-btn minus" data-target="height-size">−</button>
+                        <input type="number" class="height-size input-resolution" placeholder="Hauteur">
+                        <button class="number-btn plus" data-target="height-size">+</button>
+                    </div>
+                </div>
+                <div class="size-reset size-btn">Par defaut</div>
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 20px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="fullscreen-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Lancer le jeu en plein écran</span>
+                </label>
+            </div>
+
+        </div>
+
+        <div class="titre-tab">Emplacement de Java</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Version Java utilisée : <br><span class="java-path-txt" style="font-weight:bold; color:var(--element-color);"></span><br>
+                Vous pouvez sélectionner un exécutable spécifique (java.exe / javaw.exe) si nécessaire.
+            </div>
+            <div class="settings-elements content-evenly">
+                <input type="text" class="java-path-input-text" disabled>
+                <input type="file" class="java-path-input-file" accept="application/octet-stream" style="display:none;" />
+                <div class="java-path-box">
+                    <div class="java-path-set java-path-btn">Changer</div>
+                    <div class="java-path-reset java-path-btn">Par defaut</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="launcher-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Démarrage automatique</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Lancer automatiquement le launcher au démarrage de votre ordinateur.
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="autolaunch-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Lancer au démarrage</span>
+                </label>
+            </div>
+
+            <div id="start-minimized-box" style="display: none; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                <div class="setting-text">
+                    Ouvrir le launcher réduit dans la barre des tâches. Utile surtout avec le démarrage automatique.
+                </div>
+                <div class="settings-elements content-center" style="margin-top: 10px;">
+                    <label class="fullscreen-toggle-label">
+                        <div class="toggle-switch">
+                            <input type="checkbox" id="start-minimized-toggle" class="toggle-input">
+                            <span class="toggle-slider"></span>
+                        </div>
+                        <span class="toggle-text">Démarrer le launcher en mode réduit</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Rapports de crash</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                En cas de crash du jeu, envoyer automatiquement le rapport de crash à l'équipe PatateLand (avec votre pseudo, l'instance et le fichier de crash) pour nous aider à corriger les bugs plus rapidement.<br>
+                <b>Désactivé par défaut.</b>
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 10px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="crash-report-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Envoyer automatiquement mes rapports de crash</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="titre-tab">Comportement au lancement du jeu</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Choisissez ce qui se passe avec le launcher quand vous lancez Minecraft.
+            </div>
+            <div class="settings-elements content-evenly close-box" style="margin-top: 10px;">
+                <div class="close-none close-btn" title="Le launcher reste visible à l'écran">
+                    <span class="close-btn-icon">👁</span> Garder ouvert
+                </div>
+                <div class="close-launcher close-btn" title="Le launcher se cache dans la barre des tâches">
+                    <span class="close-btn-icon">📥</span> Réduire dans le tray
+                </div>
+                <div class="close-window close-btn" title="La fenêtre du launcher se ferme, le jeu continue">
+                    <span class="close-btn-icon">✕</span> Fermer la fenêtre
+                </div>
+
+            </div>
+            <div class="settings-elements content-center" style="margin-top: 15px;">
+                <label class="fullscreen-toggle-label">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="console-toggle" class="toggle-input">
+                        <span class="toggle-slider"></span>
+                    </div>
+                    <span class="toggle-text">Afficher la console de jeu au lancement</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="titre-tab">Téléchargements</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Nombre de fichiers téléchargés simultanément.<br>
+                Augmentez cette valeur si vous avez une très bonne connexion (Fibre).
+            </div>
+            <div class="settings-elements content-center">
+                <div class="number-input-wrapper">
+                    <button class="number-btn minus" data-target="max-files">−</button>
+                    <input type="number" class="max-files input-max-files">
+                    <button class="number-btn plus" data-target="max-files">+</button>
+                </div>
+                <p style="margin-left:10px;">Fichiers</p>
+                <div class="max-files-reset max-files-btn">Par defaut</div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Thème</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Personnalisez l'apparence du launcher.
+            </div>
+            <div class="settings-elements content-center theme-box">
+                <div class="theme-btn theme-btn-clair">Clair</div>
+                <div class="theme-btn theme-btn-sombre">Sombre</div>
+                <div class="theme-btn theme-btn-auto">Auto</div>
+            </div>
+        </div>
+
+
+    </div>
+    <!-- ===== ONGLET STOCKAGE ===== -->
+    <div id="stockage-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Aperçu du stockage</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Répartition de l'espace disque utilisé par le launcher et le jeu.
+            </div>
+            <div class="storage-bar" id="storage-bar"></div>
+            <div class="storage-legend" id="storage-legend"></div>
+            <div class="storage-total" id="storage-total">Total : —</div>
+        </div>
+
+        <div class="titre-tab">Logs</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Parcourez ou videz les logs de l'instance actuellement sélectionnée.
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="storage-btn-box">
+                    <div class="storage-open-logs-btn storage-btn" id="storage-open-logs">📂 Ouvrir les logs</div>
+                    <div class="storage-clear-logs-btn storage-btn storage-btn-danger" id="storage-clear-logs">🗑 Vider les logs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Cache Minecraft</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Supprime les fichiers de jeu partagés (assets, bibliothèques, versions) téléchargés en cache.<br>
+                <b>Le prochain lancement sera plus long</b>, ces fichiers seront ré-téléchargés automatiquement.
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="storage-clear-cache-btn storage-btn storage-btn-danger" id="storage-clear-cache">🗑 Vider le cache</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ONGLET PERSONNALISATION (fusion Resource Packs + Shaders) ===== -->
+    <div id="personnalisation-tab" class="container-settings content-scroll">
+        <div class="titre-tab">Resource Packs</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Gérez vos resource packs. Ajoutez des fichiers .zip ou ouvrez directement le dossier.<br>
+                Les resource packs sont liés à l'instance actuellement sélectionnée.
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="rp-btn-box">
+                    <div class="rp-add-btn">+ Ajouter un Resource Pack</div>
+                    <div class="rp-open-folder-btn">Ouvrir le dossier</div>
+                </div>
+            </div>
+        </div>
+        <div class="titre-tab">Resource Packs installés</div>
+        <div class="settings-elements-box">
+            <div class="resourcepacks-list content-scroll">
+                <div class="rp-empty-msg">Aucun resource pack installé.</div>
+            </div>
+        </div>
+
+        <div class="titre-tab">Shaders</div>
+        <div class="settings-elements-box">
+            <div class="setting-text">
+                Gérez vos shaderpacks. Ajoutez des fichiers .zip ou ouvrez directement le dossier.<br>
+                Les shaders sont liés à l'instance actuellement sélectionnée.<br>
+                <b>Note :</b> un mod de shaders (Optifine, Iris...) doit être installé dans votre modpack.
+            </div>
+            <div class="settings-elements content-evenly">
+                <div class="sp-btn-box">
+                    <div class="sp-add-btn">+ Ajouter un Shader</div>
+                    <div class="sp-open-folder-btn">Ouvrir le dossier</div>
+                </div>
+            </div>
+        </div>
+        <div class="titre-tab">Shaders installés</div>
+        <div class="settings-elements-box">
+            <div class="shaderpacks-list content-scroll">
+                <div class="sp-empty-msg">Aucun shader installé.</div>
+            </div>
+        </div>
+    </div>
+
+</div></div></div></body></html>

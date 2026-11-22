@@ -1,0 +1,15 @@
+{
+  "stub": true,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/old/h-settings.html", "wait": 2000 },
+    { "eval": "document.querySelectorAll('.nav-settings-btn').forEach(b=>b.classList.toggle('active-settings-BTN', b.id==='jeu')); document.querySelectorAll('.container-settings').forEach(c=>c.classList.toggle('active-container-settings', c.id==='jeu-tab'));", "wait": 400 },
+    { "shot": "old-settings-jeu" },
+    { "eval": "document.querySelectorAll('.nav-settings-btn').forEach(b=>b.classList.toggle('active-settings-BTN', b.id==='launcher')); document.querySelectorAll('.container-settings').forEach(c=>c.classList.toggle('active-container-settings', c.id==='launcher-tab'));", "wait": 400 },
+    { "shot": "old-settings-launcher" },
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('open-settings').click(); document.querySelector('[data-tab=\"jeu\"]').click();", "wait": 800 },
+    { "shot": "new-settings-jeu" },
+    { "eval": "document.querySelector('[data-tab=\"launcher\"]').click();", "wait": 500 },
+    { "shot": "new-settings-launcher" }
+  ]
+}

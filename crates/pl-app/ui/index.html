@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PatateLand</title>
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="stylesheet" href="css/classic.css">
+    <link rel="stylesheet" href="css/friends.css">
+    <script type="module" src="js/app.js"></script>
+</head>
+<body class="dark">
+    <div id="background" class="background"></div>
+
+    <!-- Écran de démarrage (comme la fenêtre d'accueil de l'ancien launcher) -->
+    <div id="splash" class="splash" data-tauri-drag-region>
+        <img src="img/icon.png" alt="" draggable="false">
+        <div id="splash-quote" class="splash-quote"></div>
+        <div id="splash-loading" class="splash-loading">Démarrage du launcher…</div>
+    </div>
+
+    <!-- Maintenance : bloque le jeu sauf pour les pseudos autorisés -->
+    <div id="maintenance" class="maintenance hidden">
+        <div class="modal-box glass">
+            <h3>Maintenance en cours</h3>
+            <p id="maintenance-message" class="maintenance-message"></p>
+            <p id="maintenance-countdown" class="maintenance-countdown"></p>
+        </div>
+    </div>
+
+    <header class="titlebar" data-tauri-drag-region>
+        <div class="brand" data-tauri-drag-region>
+            <img src="img/icon.png" alt="" draggable="false" data-tauri-drag-region>
+            <span data-tauri-drag-region>PatateLand</span>
+        </div>
+        <div class="window-buttons">
+            <!-- Amis (comptes du site) : en ligne / total, et pastille rouge demandes + non-lus -->
+            <div id="friends-frame" class="friends-frame-wrapper hidden">
+                <span id="friends-online-badge" class="friends-online-badge hidden"></span>
+                <button id="friends-btn" class="friends-frame-btn" title="Amis" aria-label="Amis">
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    <span id="friends-notif-badge" class="friends-notif-badge hidden"></span>
+                </button>
+            </div>
+            <button id="win-min" title="Réduire" aria-label="Réduire">
+                <svg viewBox="0 0 10 10"><path d="M1 5h8"/></svg>
+            </button>
+            <button id="win-max" title="Agrandir" aria-label="Agrandir">
+                <svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7"/></svg>
+            </button>
+            <button id="win-close" class="close" title="Fermer" aria-label="Fermer">
+                <svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <div id="banner" class="banner hidden"></div>
+
+    <main>
+        <!-- ===== Accueil ===== -->
+        <section id="panel-home" class="panel active">
+            <div class="status-pill">
+                <img src="img/icon.png" alt="" draggable="false">
+                <div class="status-infos">
+                    <div id="status-name" class="status-name">PatateLand</div>
+                    <div id="status-text" class="status-text">Connexion…</div>
+                </div>
+                <div id="status-players" class="status-players offline">
+                    <span id="players-count">0</span><span class="dot"></span>
+                </div>
+            </div>
+
+            <div class="news">
+                <div class="section-title">Actualités</div>
+                <!-- Même présentation que l'ancien launcher : date jour / mois à
+                     droite, auteur sous le texte, commandes sous la carte. -->
+                <article id="news-card" class="news-card">
+                    <header>
+                        <img src="img/icon.png" alt="" draggable="false">
+                        <div id="news-headline" class="news-headline">Chargement…</div>
+                        <div id="news-date" class="news-date"><div id="news-day"></div><div id="news-month"></div></div>
+                    </header>
+                    <div id="news-body" class="news-body"></div>
+                </article>
+                <div id="news-nav" class="news-nav hidden">
+                    <button id="news-prev" class="news-arrow" aria-label="Actualité précédente">‹</button>
+                    <div class="news-dots-wrap">
+                        <div id="news-dots" class="news-dots"></div>
+                        <div class="news-progress-bar"><div id="news-progress" class="news-progress-fill"></div></div>
+                    </div>
+                    <button id="news-next" class="news-arrow" aria-label="Actualité suivante">›</button>
+                </div>
+
+                <!-- Encart partenaire, identique à l'ancien launcher -->
+                <div class="partner-banner-card">
+                    <img class="partner-banner-icon" src="img/social/minestrator.svg" alt="MineStrator" draggable="false">
+                    <div class="partner-banner-body">
+                        <div class="partner-banner-title">Serveur hébergé avec MineStrator !</div>
+                        <div class="partner-banner-text">
+                            MineStrator, c'est l'hébergeur FR ultra fiable pour tes serveurs Minecraft, moddés, plugins, ou même autres jeux !
+                            <span class="partner-banner-code-inline">Profite de <b>-10%</b> avec le code <span class="partner-banner-code">LACRIMO</span></span>
+                        </div>
+                    </div>
+                    <div class="partner-banner-actions">
+                        <span class="partner-banner-btn" data-url="https://minestrator.com/a/LACRIMO">Découvrir MineStrator →</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bandeau d'avis, identique à l'ancien launcher -->
+            <div id="review" class="review-banner hidden">
+                <span class="review-banner-icon">⭐</span>
+                <span class="review-banner-text">Vous appréciez le launcher ? Laissez un avis sur le site !</span>
+                <span id="review-open" class="review-banner-btn">Évaluer</span>
+                <span id="review-close" class="review-banner-close">✕</span>
+            </div>
+
+            <div id="bar" class="bar">
+                <button id="player" class="player" title="Comptes">
+                    <img id="player-head" alt="" draggable="false">
+                    <span id="player-name">Se connecter</span>
+                </button>
+
+                <div class="play-zone">
+                    <div id="play-title" class="play-title">Choisissez votre instance</div>
+                    <div id="play-buttons" class="play-buttons">
+                        <button id="play" class="play-btn">Jouer</button>
+                        <button id="instance-btn" class="instance-btn">…</button>
+                    </div>
+                    <div id="progress" class="progress hidden">
+                        <div class="progress-text">
+                            <span id="progress-label">Préparation…</span>
+                            <span id="progress-value"></span>
+                        </div>
+                        <div class="progress-track"><div id="progress-fill" class="progress-fill"></div></div>
+                    </div>
+                </div>
+
+                <div class="bar-right">
+                    <div class="socials">
+                        <button data-url="https://dsc.gg/lacrimo" title="Discord"><img src="img/social/discord.svg" alt="Discord" draggable="false"></button>
+                        <button data-url="https://www.youtube.com/@Patate_Land" title="YouTube"><img src="img/social/youtube.svg" alt="YouTube" draggable="false"></button>
+                        <button data-url="https://www.twitch.tv/lacrimo_1" title="Twitch"><img src="img/social/twitch.svg" alt="Twitch" draggable="false"></button>
+                        <button data-url="https://github.com/Suly-ms" title="GitHub"><img src="img/social/github.svg" alt="GitHub" draggable="false"></button>
+                        <button data-url="https://minestrator.com/a/LACRIMO" title="MineStrator"><img src="img/social/minestrator.svg" alt="MineStrator" draggable="false"></button>
+                    </div>
+                    <button id="open-settings" class="gear" title="Réglages" aria-label="Réglages">
+                        <svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1L11 21h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5zM13 15.5A3.5 3.5 0 1 1 13 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== Connexion (identique à l'ancien launcher) ===== -->
+        <section id="panel-login" class="panel">
+            <div class="login-card">
+                <div id="login-back" class="login-back-btn hidden">&#10005;</div>
+
+                <div id="login-microsoft" class="login-content hidden">
+                    <div class="login-icon icon-microsoft"></div>
+                    <div class="login-title">Connexion</div>
+                    <div class="login-subtitle">Veuillez vous identifier pour jouer.</div>
+                    <button id="ms-submit" class="login-btn connect"><span>Connexion Microsoft</span></button>
+                </div>
+
+                <div id="login-offline" class="login-content hidden">
+                    <div class="login-icon icon-user"></div>
+                    <div class="login-title">Mode Hors-ligne</div>
+                    <div class="login-subtitle">Entrez un pseudo pour commencer.</div>
+                    <div class="input-group">
+                        <input id="offline-name" type="text" class="input-field" placeholder="Pseudo" maxlength="32">
+                    </div>
+                    <button id="offline-submit" class="login-btn connect"><span>Connexion</span></button>
+                </div>
+
+                <div id="login-azauth" class="login-content hidden">
+                    <div class="login-title">Authentification</div>
+                    <div class="login-subtitle">Entrez vos identifiants.</div>
+                    <div class="input-group">
+                        <input id="az-email" type="text" class="input-field" placeholder="Email" autocomplete="username">
+                        <input id="az-password" type="password" class="input-field" placeholder="Mot de passe" autocomplete="current-password">
+                    </div>
+                    <button id="az-submit" class="login-btn connect"><span>Connexion</span></button>
+                    <div class="login-register">
+                        Pas encore de compte ?
+                        <span class="register-link" data-url="https://patateland.wstr.fr/user/register">Créer un compte</span>
+                    </div>
+                    <div class="login-register">
+                        <span class="register-link" data-url="https://patateland.wstr.fr/user/password/reset">Mot de passe oublié ?</span>
+                    </div>
+                </div>
+
+                <div id="login-a2f" class="login-content hidden">
+                    <div class="login-icon icon-shield"></div>
+                    <div class="login-title">Sécurité</div>
+                    <div class="login-subtitle">Code de vérification requis.</div>
+                    <div class="input-group">
+                        <input id="az-code" type="text" class="input-field" placeholder="Code A2F" inputmode="numeric" autocomplete="one-time-code">
+                    </div>
+                    <button id="a2f-submit" class="login-btn connect"><span>Valider</span></button>
+                    <button id="a2f-cancel" class="login-btn cancel"><span>Retour</span></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== Paramètres (identiques à l'ancien launcher) ===== -->
+        <section id="panel-settings" class="panel">
+            <div class="container">
+                <div class="nav-settings">
+                    <p>Paramètres</p>
+                    <div class="nav-box">
+                        <div data-tab="account" class="nav-settings-btn active-settings-BTN">COMPTES</div>
+                        <div data-tab="jeu" class="nav-settings-btn">JEU</div>
+                        <div data-tab="launcher" class="nav-settings-btn">LAUNCHER</div>
+                        <div data-tab="stockage" class="nav-settings-btn">STOCKAGE</div>
+                        <div data-tab="personnalisation" class="nav-settings-btn">PERSONNALISATION</div>
+                        <div id="save" class="nav-settings-btn">ACCUEIL</div>
+                    </div>
+                </div>
+
+                <!-- COMPTES -->
+                <div id="account-tab" class="container-settings active-container-settings content-scroll">
+                    <div class="titre-tab">Comptes joueurs</div>
+                    <div id="accounts-list" class="accounts-list"></div>
+
+                    <div class="titre-tab">Notifications sociales</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Choisissez quelles notifications de bureau vous souhaitez recevoir pour le système d'amis.</div>
+                        <div class="settings-elements content-center">
+                            <label class="fullscreen-toggle-label">
+                                <div class="toggle-switch"><input type="checkbox" id="friend-request-notif-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                <span class="toggle-text">Me notifier des nouvelles demandes d'ami</span>
+                            </label>
+                        </div>
+                        <div class="settings-elements content-center mt10">
+                            <label class="fullscreen-toggle-label">
+                                <div class="toggle-switch"><input type="checkbox" id="friend-message-notif-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                <span class="toggle-text">Me notifier des nouveaux messages</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JEU -->
+                <div id="jeu-tab" class="container-settings content-scroll">
+                    <div class="titre-tab">Mémoire RAM</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Définition de la RAM allouée à votre jeu. Une quantité plus importante augmentera les performances.<br>
+                            Attention à ne pas allouer toute votre RAM (laissez-en pour le système).<br><br>
+                            <b>- RAM Maximale:</b> Total alloué au jeu (recommandé: 50% de votre RAM totale).<br>
+                            <b>- RAM Minimale:</b> Alloué au démarrage (recommandé: 2-4 Go max).
+                        </div>
+                        <div class="settings-elements content-evenly">
+                            <div id="memory-slider" class="memory-slider">
+                                <div class="slider-touch-left"><span value="0 Go"></span></div>
+                                <div class="slider-touch-right"><span value="0 Go"></span></div>
+                                <div class="slider-line"><span></span></div>
+                            </div>
+                            <div class="ram-info-block">
+                                <b>Total système : <span id="total-ram">0 Go</span> RAM.</b><br>
+                                <b>Disponible : <span id="free-ram">0 Go</span> RAM.</b>
+                            </div>
+                        </div>
+                        <div class="ram-recommendation-box">
+                            <div class="ram-recommendation-icon">💡</div>
+                            <div class="ram-recommendation-text">Recommandé pour votre PC : <span id="recommended-ram">0 Go</span></div>
+                            <button class="ram-recommendation-btn" id="apply-recommended-ram" type="button">Appliquer</button>
+                        </div>
+                        <div class="ram-low-warning-box hidden" id="ram-low-warning">
+                            <div class="ram-recommendation-icon">⚠</div>
+                            <div class="ram-recommendation-text">Ta RAM totale est un peu juste pour notre pack moddé, quelle que soit la valeur choisie ici. L'instance <b>Opti</b> est justement pensée pour les configurations modestes.</div>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Résolution du jeu</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Définissez la taille de la fenêtre de jeu.<br>
+                            Par défaut : 1280 x 720.<br>
+                            En mode plein écran, la résolution ci-dessous est ignorée.
+                        </div>
+                        <div class="settings-elements content-center">
+                            <div class="input-size-element">
+                                <div class="number-input-wrapper">
+                                    <button class="number-btn minus" data-target="width">−</button>
+                                    <input id="width" type="number" class="input-resolution" placeholder="Largeur" min="320" max="7680" step="1">
+                                    <button class="number-btn plus" data-target="width">+</button>
+                                </div>
+                                <div class="size-cross">X</div>
+                                <div class="number-input-wrapper">
+                                    <button class="number-btn minus" data-target="height">−</button>
+                                    <input id="height" type="number" class="input-resolution" placeholder="Hauteur" min="240" max="4320" step="1">
+                                    <button class="number-btn plus" data-target="height">+</button>
+                                </div>
+                            </div>
+                            <div id="size-reset" class="size-btn">Par defaut</div>
+                        </div>
+                        <div class="settings-elements content-center mt20">
+                            <label class="fullscreen-toggle-label">
+                                <div class="toggle-switch"><input type="checkbox" id="fullscreen-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                <span class="toggle-text">Lancer le jeu en plein écran</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Emplacement de Java</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Version Java utilisée : <br><span id="java-path-txt" class="java-path-txt"></span><br>
+                            Vous pouvez sélectionner un exécutable spécifique (java.exe / javaw.exe) si nécessaire.
+                        </div>
+                        <div class="settings-elements content-evenly">
+                            <input type="text" id="java-path-input" class="java-path-input-text" disabled>
+                            <div class="java-path-box">
+                                <div id="java-path-set" class="java-path-btn">Changer</div>
+                                <div id="java-path-reset" class="java-path-btn">Par defaut</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LAUNCHER -->
+                <div id="launcher-tab" class="container-settings content-scroll">
+                    <div class="titre-tab">Démarrage automatique</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Lancer automatiquement le launcher au démarrage de votre ordinateur.</div>
+                        <div class="settings-elements content-center">
+                            <label class="fullscreen-toggle-label">
+                                <div class="toggle-switch"><input type="checkbox" id="autolaunch-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                <span class="toggle-text">Lancer au démarrage</span>
+                            </label>
+                        </div>
+                        <div id="start-minimized-box" class="minimized-box hidden">
+                            <div class="setting-text">Ouvrir le launcher réduit dans la barre des tâches. Utile surtout avec le démarrage automatique.</div>
+                            <div class="settings-elements content-center">
+                                <label class="fullscreen-toggle-label">
+                                    <div class="toggle-switch"><input type="checkbox" id="start-minimized-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                    <span class="toggle-text">Démarrer le launcher en mode réduit</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Rapports de crash</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            En cas de crash du jeu, envoyer automatiquement le rapport de crash à l'équipe PatateLand (avec votre pseudo, l'instance et le fichier de crash) pour nous aider à corriger les bugs plus rapidement.<br>
+                            <b>Désactivé par défaut.</b><br>
+                            Les rapports restent sur votre PC tant que le service sécurisé du site n'est pas en place.
+                        </div>
+                        <div class="settings-elements content-center">
+                            <label class="fullscreen-toggle-label">
+                                <div class="toggle-switch"><input type="checkbox" id="crash-report-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                <span class="toggle-text">Envoyer automatiquement mes rapports de crash</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Comportement au lancement du jeu</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Choisissez ce qui se passe avec le launcher quand vous lancez Minecraft.</div>
+                        <div class="settings-elements content-evenly close-box mt10">
+                            <div data-close="close-none" class="close-btn" title="Le launcher reste visible à l'écran"><span class="close-btn-icon">👁</span> Garder ouvert</div>
+                            <div data-close="close-launcher" class="close-btn" title="Le launcher se cache près de l'horloge et libère sa mémoire"><span class="close-btn-icon">📥</span> Réduire dans le tray</div>
+                            <div data-close="close-window" class="close-btn" title="La fenêtre du launcher se ferme, le jeu continue"><span class="close-btn-icon">✕</span> Fermer la fenêtre</div>
+                        </div>
+                        <div class="settings-elements content-center mt15">
+                            <label class="fullscreen-toggle-label">
+                                <div class="toggle-switch"><input type="checkbox" id="console-toggle" class="toggle-input"><span class="toggle-slider"></span></div>
+                                <span class="toggle-text">Afficher la console de jeu au lancement</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Téléchargements</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Nombre de fichiers téléchargés simultanément.<br>
+                            Augmentez cette valeur si vous avez une très bonne connexion (Fibre).
+                        </div>
+                        <div class="settings-elements content-center">
+                            <div class="number-input-wrapper">
+                                <button class="number-btn minus" data-target="max-files">−</button>
+                                <input id="max-files" type="number" class="input-max-files" min="1" max="32" step="1">
+                                <button class="number-btn plus" data-target="max-files">+</button>
+                            </div>
+                            <p class="ml10">Fichiers</p>
+                            <div id="max-files-reset" class="max-files-btn">Par defaut</div>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Thème</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Personnalisez l'apparence du launcher.</div>
+                        <div class="settings-elements content-center theme-box">
+                            <div data-theme="light" class="theme-btn">Clair</div>
+                            <div data-theme="dark" class="theme-btn">Sombre</div>
+                            <div data-theme="auto" class="theme-btn">Auto</div>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Mode d'affichage</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            <b>Normal</b> : l'affichage passe par la carte graphique (processus graphique de WebView2), avec le flou et les animations. Environ 230 Mo de mémoire fenêtre ouverte.<br>
+                            <b>Léger</b> (PC modestes) : l'affichage est calculé par le processeur, sans processus graphique WebView2, sans flou ni animations. Environ 120 Mo de mémoire fenêtre ouverte.<br>
+                            Le changement est complet au prochain démarrage du launcher.
+                        </div>
+                        <div class="settings-elements content-center display-box">
+                            <div data-display="normal" class="display-btn">Normal</div>
+                            <div data-display="lite" class="display-btn">Léger</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STOCKAGE -->
+                <div id="stockage-tab" class="container-settings content-scroll">
+                    <div class="titre-tab">Aperçu du stockage</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Répartition de l'espace disque utilisé par le launcher et le jeu.</div>
+                        <div class="storage-bar" id="storage-bar"></div>
+                        <div class="storage-legend" id="storage-legend"></div>
+                        <div class="storage-total" id="storage-total">Total : —</div>
+                    </div>
+
+                    <div class="titre-tab">Logs</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Parcourez ou videz les logs de l'instance actuellement sélectionnée.</div>
+                        <div class="settings-elements content-evenly">
+                            <div class="storage-btn-box">
+                                <div class="storage-btn" data-open-folder="logs">📂 Ouvrir les logs</div>
+                                <div id="storage-clear-logs" class="storage-btn storage-btn-danger">🗑 Vider les logs</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Cache Minecraft</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Supprime les fichiers de jeu partagés (assets, bibliothèques, versions) téléchargés en cache.<br>
+                            <b>Le prochain lancement sera plus long</b>, ces fichiers seront ré-téléchargés automatiquement.
+                        </div>
+                        <div class="settings-elements content-evenly">
+                            <div id="storage-clear-cache" class="storage-btn storage-btn-danger">🗑 Vider le cache</div>
+                        </div>
+                    </div>
+
+                    <div class="titre-tab">Fichiers en quarantaine</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">Archives invalides (par exemple une page d'erreur enregistrée à la place d'un pack) mises de côté au lieu d'être supprimées. Vous pouvez les remettre à leur place.</div>
+                        <div id="quarantine" class="quarantine-list"></div>
+                    </div>
+                </div>
+
+                <!-- PERSONNALISATION -->
+                <div id="personnalisation-tab" class="container-settings content-scroll">
+                    <div class="titre-tab">Resource Packs</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Gérez vos resource packs. Ajoutez des fichiers .zip ou ouvrez directement le dossier.<br>
+                            Les resource packs sont liés à l'instance actuellement sélectionnée.
+                        </div>
+                        <div class="settings-elements content-evenly">
+                            <div class="rp-btn-box">
+                                <div class="rp-add-btn" data-pack-add="resource">+ Ajouter un Resource Pack</div>
+                                <div class="rp-open-folder-btn" data-open-folder="resourcepacks">Ouvrir le dossier</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="titre-tab">Resource Packs installés</div>
+                    <div class="settings-elements-box">
+                        <div id="packs-resource" class="resourcepacks-list content-scroll"></div>
+                    </div>
+
+                    <div class="titre-tab">Shaders</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Gérez vos shaderpacks. Ajoutez des fichiers .zip ou ouvrez directement le dossier.<br>
+                            Les shaders sont liés à l'instance actuellement sélectionnée.<br>
+                            <b>Note :</b> un mod de shaders (Optifine, Iris...) doit être installé dans votre modpack.
+                        </div>
+                        <div class="settings-elements content-evenly">
+                            <div class="sp-btn-box">
+                                <div class="sp-add-btn" data-pack-add="shader">+ Ajouter un Shader</div>
+                                <div class="sp-open-folder-btn" data-open-folder="shaderpacks">Ouvrir le dossier</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="titre-tab">Shaders installés</div>
+                    <div class="settings-elements-box">
+                        <div id="packs-shader" class="shaderpacks-list content-scroll"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="instance-modal" class="modal hidden">
+        <div class="modal-box glass">
+            <button class="modal-close" data-close-modal aria-label="Fermer">×</button>
+            <h3>Choisissez votre instance</h3>
+            <div id="instance-list" class="instance-list"></div>
+        </div>
+    </div>
+
+    <div id="dialog" class="modal hidden">
+        <div class="modal-box glass">
+            <h3 id="dialog-title"></h3>
+            <div id="dialog-body" class="dialog-body"></div>
+            <div id="dialog-actions" class="modal-actions"></div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Compilation par défaut : MSVC (rustup default dans .toolchain), dans
+# target-msvc/ pour ne pas écraser la compilation GNU de secours (target/).
+# Retour à GNU : voir docs/05, section « Revenir à GNU ».
+[build]
+target-dir = "target-msvc"
+
+# Exécutables MSVC autonomes : la bibliothèque C de Microsoft (vcruntime) est
+# intégrée à l'exe, les joueurs n'ont pas besoin du « Visual C++
+# Redistributable ». Recommandé aussi par Tauri pour Windows.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
+
+# Même chose pour les PC Windows ARM (Snapdragon…).
+[target.aarch64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

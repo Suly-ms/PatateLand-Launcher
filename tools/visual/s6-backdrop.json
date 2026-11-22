@@ -1,0 +1,17 @@
+{
+  "stub": true,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('open-settings').click(); 'ok'", "wait": 1200 },
+    { "eval": "document.querySelector('[data-tab=\"launcher\"]').click(); 'ok'", "wait": 60 },
+    { "shot": "tab-60ms" },
+    { "sleep": 140 },
+    { "shot": "tab-200ms" },
+    { "sleep": 600 },
+    { "shot": "tab-800ms" },
+    { "eval": "document.getElementById('save').click(); 'ok'", "wait": 120 },
+    { "shot": "panel-120ms" },
+    { "sleep": 700 },
+    { "shot": "panel-820ms" }
+  ]
+}
