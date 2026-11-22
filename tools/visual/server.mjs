@@ -10,6 +10,7 @@ const ROOTS = {
     // Ancien launcher : lu seulement (jamais modifié). Dossier voisin par défaut.
     old: path.resolve(process.env.PL_OLD_LAUNCHER ?? path.join(HERE, '../../../PatateLand-Launcher/src')),
     new: path.resolve(HERE, '../../crates/pl-app/ui'),
+    setup: path.resolve(HERE, '../../crates/pl-setup/ui'),
     h: HERE,
 };
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.mjs': 'text/javascript', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.json': 'application/json' };

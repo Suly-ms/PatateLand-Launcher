@@ -1,0 +1,18 @@
+{
+  "stub": "stub-setup.js",
+  "width": 760,
+  "height": 520,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/setup/index.html", "wait": 1500 },
+    { "shot": "setup-1-welcome" },
+    { "eval": "document.querySelector('[data-go=\"options\"]').click()", "wait": 600 },
+    { "shot": "setup-2-options" },
+    { "eval": "document.getElementById('opt-remove-old').click(); document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-progress'));", "wait": 600 },
+    { "shot": "setup-3-progress" },
+    { "eval": "document.getElementById('error').classList.remove('hidden'); document.getElementById('error-text').textContent = \"PatateLand est ouvert. Ferme-le (pense à l'icône près de l'horloge), puis clique sur Réessayer.\";", "wait": 300 },
+    { "shot": "setup-3b-error" },
+    { "eval": "document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-done'));", "wait": 700 },
+    { "shot": "setup-4-done" },
+    { "eval": "JSON.stringify(['screen-welcome','screen-options','screen-progress','screen-done'].map(id => { document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id)); const side = document.querySelector('.side'); const brand = document.querySelector('.art .brand').getBoundingClientRect(); return [id, side.scrollHeight - side.clientHeight, Math.round(brand.bottom), document.documentElement.scrollHeight]; }))", "save": "overflow" }
+  ]
+}

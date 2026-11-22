@@ -46,7 +46,10 @@ const send = (method, params = {}) =>
 await send('Page.enable');
 await send('Runtime.enable');
 await send('Emulation.setDeviceMetricsOverride', { width: scenario.width ?? 1280, height: scenario.height ?? 720, deviceScaleFactor: 1, mobile: false });
-if (scenario.stub) await send('Page.addScriptToEvaluateOnNewDocument', { source: fs.readFileSync(path.join(HERE, 'stub.js'), 'utf8') });
+if (scenario.stub) {
+    const stubFile = typeof scenario.stub === 'string' ? scenario.stub : 'stub.js';
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: fs.readFileSync(path.join(HERE, stubFile), 'utf8') });
+}
 
 const out = {};
 for (const step of scenario.steps) {
