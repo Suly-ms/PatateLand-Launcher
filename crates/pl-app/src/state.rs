@@ -30,6 +30,9 @@ pub struct AppState {
     /// Fin de la dernière partie, gardée pour la fenêtre suivante : la
     /// fenêtre est fermée pendant le jeu et ne reçoit donc pas l'événement.
     pub last_exit: Mutex<Option<pl_engine::game::Event>>,
+    /// « Paramètres » choisi dans le menu de l'icône alors que la fenêtre
+    /// était fermée : la page s'ouvre directement sur les paramètres.
+    pub open_settings_on_boot: std::sync::atomic::AtomicBool,
 }
 
 #[derive(Default)]
@@ -67,6 +70,7 @@ impl AppState {
             remote: RwLock::new(Remote::default()),
             running: Mutex::new(HashSet::new()),
             last_exit: Mutex::new(None),
+            open_settings_on_boot: std::sync::atomic::AtomicBool::new(false),
             data_dir,
         })
     }

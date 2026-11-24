@@ -1,0 +1,16 @@
+{
+  "stub": "stub-launch.js",
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('banner').classList.add('hidden'); document.getElementById('play').click(); __emit('game',{type:'step',label:'Minecraft 1.20.1'});", "wait": 500 },
+    { "shot": "launch-1-prep" },
+    { "eval": "__emit('progress',{done:0,total:0,checked_done:2610,checked_total:3300,files_done:0,files_total:0})", "wait": 400 },
+    { "shot": "launch-2-verify" },
+    { "eval": "__emit('progress',{done:30000000,total:126000000,checked_done:3300,checked_total:3300}); setTimeout(()=>__emit('progress',{done:31500000,total:126000000,checked_done:3300,checked_total:3300}),250)", "wait": 700 },
+    { "shot": "launch-3-download" },
+    { "eval": "__emit('game',{type:'installed',seconds:12}); __emit('game',{type:'step',label:'Lancement de Opti'}); __emit('game',{type:'java_started',pid:1})", "wait": 500 },
+    { "shot": "launch-4-start" },
+    { "eval": "__emit('game',{type:'menu_reached',seconds:30})", "wait": 500 },
+    { "shot": "launch-5-ok" }
+  ]
+}

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>PatateLand - Menu</title>
+    <link rel="stylesheet" href="css/tray.css">
+    <script type="module" src="js/tray.js"></script>
+</head>
+<!-- Menu de l'icône : repris de l'ancien launcher (trayMenu.html). -->
+<body class="dark">
+    <div class="tray-menu">
+        <div class="tray-menu-header">
+            <img src="img/icon.png" alt="" draggable="false">
+            <span>PatateLand Launcher</span>
+        </div>
+
+        <div class="tray-menu-item" data-action="open">
+            <div>Ouvrir le launcher</div>
+        </div>
+
+        <div class="tray-menu-item" id="toggle-play">
+            <div>Jouer</div>
+            <div class="tray-chevron">&#10148;</div>
+        </div>
+        <div class="tray-submenu" id="instances-list">
+            <div class="tray-empty">Chargement...</div>
+        </div>
+
+        <div class="tray-menu-item" data-action="settings">
+            <div>Paramètres</div>
+        </div>
+
+        <div class="tray-separator"></div>
+
+        <div class="tray-menu-item tray-danger" data-action="logout">
+            <div>Se déconnecter</div>
+        </div>
+
+        <div class="tray-separator"></div>
+
+        <div class="tray-menu-item" data-action="quit">
+            <div>Quitter</div>
+        </div>
+    </div>
+</body>
+</html>

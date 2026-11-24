@@ -2,7 +2,6 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PatateLand",
   "mainBinaryName": "PatateLand",
-  "version": "2.0.0",
   "identifier": "fr.patateland.launcher.rust",
   "build": {
     "frontendDist": "ui"

@@ -99,8 +99,8 @@ demande d'augmenter le numéro de version.
    jeu restent sur le disque et ne sont pas supprimés.
 
 **Mises à jour suivantes**
-1. Augmenter `version` dans `crates/pl-app/tauri.conf.json` et
-   `crates/pl-setup/tauri.conf.json` (par exemple 2.0.1).
+1. Augmenter la version à **un seul endroit** : la ligne `version = "…"`
+   du `Cargo.toml` à la racine (par exemple 2.0.1).
 2. Commit et *Push* sur `nouveau-launcher`.
 3. Vérifier le brouillon, puis *Publish release*.
 
@@ -111,3 +111,21 @@ demande d'augmenter le numéro de version.
   reviennent pas en arrière tout seuls.
 - La correction passe par une nouvelle version (2.0.1) du nouveau launcher,
   qui sera installée automatiquement.
+
+## Notes de version (NOUVEAUTES.txt)
+
+Avant chaque publication, écris les nouveautés dans `NOUVEAUTES.txt`, à la
+racine du projet, une ligne par nouveauté. Elles apparaissent :
+- dans la fenêtre « Mise à jour disponible ! » des joueurs (elles font partie
+  du manifeste signé) ;
+- sur la page de la release GitHub.
+
+Ce que voit un joueur Windows lors d'une mise à jour :
+1. Au démarrage : « Mise à jour disponible ! », puis le téléchargement en Mo et
+   en %, puis « Installation de la mise à jour… ».
+   Launcher déjà ouvert : une notification et une fenêtre « Installer
+   maintenant / Plus tard » avec les nouveautés.
+2. L'installateur s'ouvre et se déroule seul, sans clic : « Mise à jour… »,
+   puis « PatateLand est à jour ! », puis « Relance du launcher… ».
+3. Le launcher redémarre et affiche « PatateLand a été mis à jour en version
+   X ».

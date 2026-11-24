@@ -1,0 +1,10 @@
+{
+  "stub": "stub-update-ui.js",
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 2500 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('banner').classList.add('hidden')", "wait": 300 },
+    { "shot": "updated-toast" },
+    { "eval": "__emit('update-available',{version:'2.0.2',notes:'Écran de lancement amélioré\\nMenu de l icône corrigé\\nNotifications au clic',size_mb:14.1,install:true})", "wait": 500 },
+    { "shot": "update-dialog" }
+  ]
+}

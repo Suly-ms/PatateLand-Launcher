@@ -9,8 +9,10 @@
 mod commands;
 mod extras;
 mod friends;
+mod notify;
 mod play;
 mod state;
+mod tray;
 mod updater;
 mod window;
 
@@ -19,13 +21,29 @@ use tauri::{Manager, RunEvent};
 /// Argument ajouté quand Windows lance le launcher à l'ouverture de session.
 const AUTOSTART_ARG: &str = "--autostart";
 
+/// Journal du launcher : `<dossier du launcher>/logs/launcher.log`, réécrit à
+/// chaque démarrage (taille limitée). Sert à diagnostiquer un problème chez
+/// un joueur sans avoir accès à son écran. Aucun jeton n'y est écrit.
+fn log_file() -> Option<std::fs::File> {
+    let dir = std::env::var_os("PL_DATA").map(std::path::PathBuf::from).unwrap_or_else(pl_engine::paths::launcher_data_dir).join("logs");
+    std::fs::create_dir_all(&dir).ok()?;
+    std::fs::File::create(dir.join("launcher.log")).ok()
+}
+
 fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info,reqwest=warn,hyper=warn".into()),
-        )
-        .with_target(false)
-        .init();
+    let filter = || {
+        tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info,reqwest=warn,hyper=warn".into())
+    };
+    match log_file() {
+        Some(file) => tracing_subscriber::fmt()
+            .with_env_filter(filter())
+            .with_target(false)
+            .with_ansi(false)
+            .with_writer(std::sync::Mutex::new(file))
+            .init(),
+        None => tracing_subscriber::fmt().with_env_filter(filter()).with_target(false).init(),
+    }
+    tracing::info!("PatateLand {} démarré", env!("CARGO_PKG_VERSION"));
 
     let state = match state::AppState::new() {
         Ok(state) => state,
@@ -39,7 +57,7 @@ fn main() {
 
     tauri::Builder::default()
         // Un second lancement remet simplement la fenêtre existante au premier plan.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| window::show_main(app)))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| window::show_main_later(app)))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
@@ -102,9 +120,16 @@ fn main() {
             extras::clear_logs,
             extras::clear_cache,
             extras::quarantine_restore,
+            extras::crash_report_read,
+            extras::crash_report_open,
             friends::friends,
             friends::friends_notify,
             updater::check_update,
+            tray::tray_state,
+            notify::test_notification,
+            tray::tray_resize,
+            tray::tray_action,
+            tray::tray_hide,
             updater::apply_update,
         ])
         .build(tauri::generate_context!())

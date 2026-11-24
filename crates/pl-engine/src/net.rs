@@ -54,6 +54,9 @@ pub struct Progress {
     pub done_bytes: AtomicU64,
     pub total_files: AtomicU64,
     pub done_files: AtomicU64,
+    /// Vérification des fichiers déjà présents (écran de chargement).
+    pub checked_total: AtomicU64,
+    pub checked_done: AtomicU64,
 }
 
 pub async fn download_all(

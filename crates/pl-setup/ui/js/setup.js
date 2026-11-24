@@ -9,6 +9,14 @@ const SCREENS = ['welcome', 'options', 'progress', 'done'];
 
 const options = { dir: '', desktop: true, start_menu: true, autostart: false, lite: false, remove_old: true };
 let autoMode = false;
+/// Textes selon le cas : première installation, mise à jour (launcher déjà
+/// installé), ou bascule depuis l'ancien launcher (lancé par sa mise à jour).
+let mode = 'install';
+const TEXTS = {
+    install: { progress: 'Installation…', failed: "L'installation n'a pas abouti" },
+    update: { progress: 'Mise à jour…', failed: "La mise à jour n'a pas abouti" },
+    switch: { progress: 'Installation du nouveau launcher…', failed: "L'installation n'a pas abouti" },
+};
 let installing = false;
 
 function go(name) {
@@ -42,7 +50,12 @@ function showProgress({ step, ratio }) {
     $('fill').style.width = `${percent}%`;
     $('pct').textContent = `${percent} %`;
     const tasks = TASKS();
-    tasks.forEach((li, n) => (li.className = n < step || ratio >= 1 ? 'done' : n === step ? 'doing' : ''));
+    // classList et non className : la ligne « ancien launcher » garde son « hidden ».
+    tasks.forEach((li, n) => {
+        li.classList.toggle('done', n < step || ratio >= 1);
+        li.classList.toggle('doing', n === step && ratio < 1);
+        li.classList.remove('failed');
+    });
     $('task').textContent = tasks[step]?.textContent ?? '';
 }
 
@@ -53,7 +66,7 @@ async function install() {
     $('error').classList.add('hidden');
     $('tip').classList.remove('hidden');
     $('fill').classList.remove('failed');
-    $('progress-title').textContent = 'Installation…';
+    $('progress-title').textContent = TEXTS[mode].progress;
     showProgress({ step: 0, ratio: 0 });
     go('progress');
     try {
@@ -61,12 +74,15 @@ async function install() {
         showProgress({ step: 4, ratio: 1 });
         setTimeout(() => go('done'), 600);
         // Mise à jour automatique : le launcher est relancé tout seul.
-        if (autoMode) setTimeout(() => invoke('finish', { launch: true }), 1800);
+        if (autoMode) setTimeout(() => invoke('finish', { launch: true }), 2200);
     } catch (error) {
-        const failed = TASKS().find((li) => li.className === 'doing');
-        if (failed) failed.className = 'failed';
+        const failed = TASKS().find((li) => li.classList.contains('doing'));
+        if (failed) {
+            failed.classList.remove('doing');
+            failed.classList.add('failed');
+        }
         $('fill').classList.add('failed');
-        $('progress-title').textContent = "L'installation n'a pas abouti";
+        $('progress-title').textContent = TEXTS[mode].failed;
         $('task').textContent = 'Erreur';
         $('error-text').textContent = String(error);
         $('error').classList.remove('hidden');
@@ -93,6 +109,7 @@ async function start() {
         has_old: !!info.old_launcher,
     });
     autoMode = info.auto;
+    mode = info.update ? 'update' : info.auto ? 'switch' : 'install';
     if (info.old_launcher) {
         // L'ancien launcher est remplacé : on le dit plutôt que « indépendant ».
         $('fact-old').textContent = 'Remplace';
@@ -109,6 +126,19 @@ async function start() {
         $('welcome-lead').textContent = `PatateLand est déjà installé sur ce PC${from}. Il va être mis à jour en version ${info.version}. Tes comptes et tes réglages sont conservés.`;
         document.querySelectorAll('.install-btn').forEach((b) => (b.textContent = 'Mettre à jour'));
         $('done-title').textContent = 'PatateLand est à jour !';
+        $('done-lead').textContent = `La version ${info.version} est installée. Tes comptes, tes réglages et tes mondes sont conservés.`;
+        $('tip').textContent = 'Tes comptes, tes réglages et tes mondes sont conservés.';
+    } else if (mode === 'switch') {
+        // Bascule depuis l'ancien launcher : rien n'est repris, on le dit.
+        $('done-title').textContent = 'Bienvenue sur le nouveau launcher !';
+        $('done-lead').textContent = "Plus léger et plus rapide. Connecte-toi avec ton compte, puis choisis ton instance : ses fichiers seront téléchargés au premier lancement.";
+        $('tip').textContent = "L'ancien launcher est désinstallé automatiquement. Tes anciens mondes restent sur ton PC.";
+    }
+    // Mise à jour automatique : pas de choix à faire sur le dernier écran.
+    if (autoMode) {
+        $('opt-launch').classList.add('hidden');
+        $('finish').classList.add('hidden');
+        $('relaunch').classList.remove('hidden');
     }
     if (!info.complete) {
         $('incomplete').classList.remove('hidden');

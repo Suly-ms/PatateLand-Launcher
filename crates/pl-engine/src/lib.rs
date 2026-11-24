@@ -104,6 +104,7 @@ impl Ctx {
             self.integrity.clone(),
             self.verify_mode,
             self.hash_parallelism,
+            Some(self.progress.clone()),
         )
         .await?;
         let check_time = started.elapsed();

@@ -567,3 +567,179 @@ body.lite .partner-banner-card { backdrop-filter: none; background: var(--panel-
 #panel-settings .mt20 { margin-top: 20px; }
 #panel-settings .ml10 { margin-left: 10px; }
 #panel-settings .minimized-box { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+
+/* ======================= CHOIX DE L'INSTANCE =======================
+   Copie de l'ancien launcher (panels/home.css, .instance-popup).
+   Comme dans l'ancien, la carte est affichée à 90 % de sa taille. */
+@font-face { font-family: 'Icons'; src: url('../fonts/Icons.woff2') format('woff2'); font-weight: normal; font-style: normal; }
+.icon-close:before { font-family: "Icons"; content: "\e90e"; font-style: normal; }
+
+.instance-popup {
+    position: fixed;
+    inset: 36px 0 0 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    isolation: isolate;
+}
+.popup-blur { position: absolute; inset: 0; backdrop-filter: blur(30px); z-index: 0; }
+.instances-tab {
+    box-sizing: content-box;
+    position: relative;
+    z-index: 1;
+    width: 450px;
+    max-height: 80%;
+    display: flex;
+    flex-direction: column;
+    background: var(--background-element);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    border-radius: 25px;
+    padding: 30px;
+    text-align: center;
+    color: var(--color);
+    transform: scale(0.9);
+    animation: instances-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+@keyframes instances-pop { from { transform: scale(0.8); } to { transform: scale(0.9); } }
+.instances-tab p {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 25px 0;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--element-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+/* Comme l'ancien : pas de défilement, pour que la lueur et l'info-bulle débordent. */
+.instances-List { width: 100%; max-height: 400px; overflow: visible; position: relative; padding-right: 5px; }
+.instances-List::-webkit-scrollbar { width: 6px; }
+.instances-List::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
+.instances-List::-webkit-scrollbar-thumb { background: var(--element-color); border-radius: 10px; }
+.instances-empty { opacity: 0.7; font-size: 0.95rem; }
+
+.instance-elements {
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color);
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    border-radius: 15px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.instance-elements:hover { background: rgba(255, 255, 255, 0.12); transform: translateY(-1px); }
+/* Hors connexion et pas encore installée (ajout du nouveau launcher). */
+.instance-elements.locked { opacity: 0.45; cursor: not-allowed; }
+.instance-elements.locked:hover { background: rgba(255, 255, 255, 0.05); transform: none; }
+.instance-running-badge {
+    margin-left: 10px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--online);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 20px;
+    vertical-align: middle;
+}
+.active-instance {
+    background: linear-gradient(135deg, var(--element-color), var(--button-gradient-end)) !important;
+    color: #fff !important;
+    box-shadow: 0 0 18px var(--button-gradient-end) !important;
+    transform: none !important;
+    z-index: 1;
+}
+.active-instance:before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
+}
+.instance-info-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--color);
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: default;
+    transition: background 0.2s, transform 0.2s;
+    z-index: 5;
+}
+.instance-info-icon:hover { background: var(--element-color); color: #fff; transform: translateY(-50%) scale(1.15); }
+.active-instance .instance-info-icon { background: rgba(255, 255, 255, 0.25); color: #fff; }
+.active-instance .instance-info-icon:hover { background: #fff; color: var(--element-color); }
+.instance-info-tooltip {
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 16px);
+    transform: translateY(-50%);
+    width: 220px;
+    background: var(--background-element);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    text-align: left;
+    z-index: 999;
+    line-height: 1.4;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+.instance-info-tooltip:before {
+    content: '';
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: var(--border-color);
+}
+.instance-elements:has(.instance-info-icon:hover) .instance-info-tooltip { opacity: 1; }
+.close-popup {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    z-index: 10;
+}
+.close-popup:hover { background: rgba(255, 0, 0, 0.25); box-shadow: 0 0 20px rgba(255, 0, 0, 0.9); transform: scale(1.12); }
+body.lite .instance-popup, body.lite .popup-blur { backdrop-filter: none; }
+body.lite .instance-popup { background: rgba(0, 0, 0, 0.8); }

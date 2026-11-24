@@ -2,19 +2,45 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <title>Console de jeu - PatateLand</title>
+    <title>PatateLand - Console</title>
     <link rel="stylesheet" href="css/console.css">
     <script type="module" src="js/console.js"></script>
 </head>
+<!-- Console de jeu : reprise de l'ancien launcher (log.html). -->
 <body>
-    <header class="titlebar" data-tauri-drag-region>
-        <div class="title" data-tauri-drag-region><img src="img/icon.png" alt="" data-tauri-drag-region> <span id="title" data-tauri-drag-region>Console</span> <span id="status" class="status">en cours</span></div>
-        <div class="actions">
-            <button id="copy">Copier</button>
-            <button id="clear">Effacer</button>
-            <button id="close" class="close" aria-label="Fermer">✕</button>
+<div class="layout">
+    <div class="titlebar" data-tauri-drag-region>
+        <div class="titlebar-left" data-tauri-drag-region>
+            <img class="titlebar-logo" src="img/icon.png" alt="" draggable="false">
+            <div class="titlebar-title" id="title" data-tauri-drag-region>PatateLand — Console</div>
+            <div class="status-pill" data-tauri-drag-region>
+                <div class="status-dot" id="status-dot"></div>
+                <span id="status-text">Démarrage</span>
+            </div>
         </div>
-    </header>
-    <pre id="log" class="log"></pre>
+        <div class="titlebar-controls">
+            <button class="ctrl-btn" id="btn-minimize" title="Réduire">−</button>
+            <button class="ctrl-btn close" id="btn-close" title="Fermer">×</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stat-item">Lignes <span class="value" id="stat-lines">0</span></div>
+        <div class="stat-item">Erreurs <span class="value" id="stat-errors">0</span></div>
+        <div class="stat-item">Warnings <span class="value" id="stat-warns">0</span></div>
+        <div class="stat-sep"></div>
+        <button class="btn-clear" id="btn-copy">Copier</button>
+        <button class="btn-clear" id="btn-clear">Effacer</button>
+    </div>
+
+    <div class="console-wrapper">
+        <div class="console" id="console"></div>
+        <button class="scroll-btn" id="scroll-btn" title="Revenir en bas">↓</button>
+    </div>
+
+    <div class="bottom-bar">
+        Total : <span id="log-count">0</span> entrées
+    </div>
+</div>
 </body>
 </html>

@@ -17,7 +17,9 @@ const $ = (id) => document.getElementById(id);
 
 const BACKGROUNDS = { dark: 7, light: 8 };
 const NEWS_DELAY_MS = 12000;
-const STATUS_DELAY_MS = 30000;
+const STATUS_DELAY_MS = 15000;
+/// Actualités rechargées toutes les 3 minutes (ancien launcher).
+const NEWS_REFRESH_MS = 3 * 60 * 1000;
 
 const state = {
     boot: null,
@@ -67,17 +69,20 @@ async function call(command, args = {}) {
     try {
         return await invoke(command, args);
     } catch (error) {
-        toast(String(error), 'error');
+        dialog('Erreur', [String(error)]);
         throw error;
     }
 }
 
-function dialog(title, paragraphs, actions = [{ label: 'OK' }]) {
+/// Pop-up de l'ancien launcher : message en rouge pour les erreurs (comme
+/// `color: 'red'`), sinon dans la couleur du texte.
+function dialog(title, paragraphs, actions = [{ label: 'OK' }], { error = /^(Erreur|Crash)/.test(title) } = {}) {
     $('dialog-title').textContent = title;
+    $('dialog-body').classList.toggle('error', error);
     $('dialog-body').replaceChildren(...paragraphs.map((p) => el('p', '', p)));
     $('dialog-actions').replaceChildren(
         ...actions.map((action) => {
-            const button = el('button', action.primary === false ? 'ghost' : 'primary', action.label);
+            const button = el('button', action.primary === false ? 'popup-button secondary' : 'popup-button', action.label);
             button.addEventListener('click', () => {
                 $('dialog').classList.add('hidden');
                 action.run?.();
@@ -291,33 +296,50 @@ async function reloadInstances() {
     renderInstance();
 }
 
+/// Description affichée dans l'info-bulle « ? » (textes de l'ancien launcher
+/// quand le serveur n'en donne pas).
+const INSTANCE_DESCRIPTIONS = {
+    event: 'Instance dédiée aux événements spéciaux et temporaires.',
+    extra: 'Instance avec des fonctionnalités et du contenu supplémentaire.',
+    opti: 'Instance optimisée pour de meilleures performances, idéale pour les configurations modestes.',
+};
+
+/// Instances visibles par ce joueur : comme l'ancien launcher, celles
+/// réservées à d'autres joueurs ne sont pas affichées.
+function visibleInstances() {
+    return state.instances.filter((i) => i.allowed);
+}
+
 function renderInstance() {
     const instance = selectedInstance();
     $('instance-btn').textContent = instance ? instance.name : (state.boot?.remote_ok ? 'Aucune' : 'Indisponible');
+    // Une seule instance : pas de bouton de choix (comme l'ancien).
+    $('instance-btn').classList.toggle('hidden', visibleInstances().length === 1);
     $('status-name').textContent = instance ? `PatateLand · ${instance.name}` : 'PatateLand';
     refreshStatus();
 }
 
 function openInstancePicker() {
     const list = $('instance-list');
-    if (!state.instances.length) {
-        list.replaceChildren(el('div', 'empty', "Aucune instance : le serveur PatateLand n'a pas pu être joint."));
+    const instances = visibleInstances();
+    if (!instances.length) {
+        list.replaceChildren(el('div', 'instances-empty', "Aucune instance : le serveur PatateLand n'a pas pu être joint."));
     } else {
         list.replaceChildren(
-            ...state.instances.map((i) => {
+            ...instances.map((i) => {
                 // Hors connexion, seule une instance déjà installée est jouable.
                 const offline = !state.boot.remote_ok && !i.installed;
-                const usable = i.allowed && !offline;
-                const item = el('button', `instance-item${i.name === state.settings.selected_instance ? ' active' : ''}${usable ? '' : ' locked'}`);
-                const desc = !i.allowed
-                    ? 'Réservée à certains joueurs.'
-                    : offline
-                      ? 'Pas encore installée sur ce PC : connexion au serveur nécessaire.'
-                      : i.description;
-                const title = el('div', 'name', i.name);
-                if (state.running.has(i.name)) title.append(el('span', 'badge', 'En cours'));
-                item.append(title, el('div', 'desc', desc));
-                item.disabled = !usable;
+                const active = i.name === state.settings.selected_instance;
+                const item = el('div', `instance-elements${active ? ' active-instance' : ''}${offline ? ' locked' : ''}`);
+                const name = el('span', 'instance-name', i.name);
+                if (state.running.has(i.name)) name.append(' ', el('span', 'instance-running-badge', 'En cours'));
+                const desc = offline
+                    ? 'Pas encore installée sur ce PC : connexion au serveur nécessaire.'
+                    : i.description || INSTANCE_DESCRIPTIONS[i.name.trim().toLowerCase()] || 'Aucune description disponible pour cette instance.';
+                const info = el('div', 'instance-info-icon', '?');
+                info.addEventListener('click', (e) => e.stopPropagation());
+                item.append(name, info, el('div', 'instance-info-tooltip', desc));
+                if (offline) return item;
                 item.addEventListener('click', async () => {
                     state.settings = await call('select_instance', { name: i.name });
                     $('instance-modal').classList.add('hidden');
@@ -440,7 +462,25 @@ function scheduleNews() {
     }
 }
 
+/// Rechargement périodique : la liste n'est redessinée que si elle a changé
+/// (l'ancien revenait à la première actualité à chaque fois).
+async function refreshNews() {
+    if (document.visibilityState !== 'visible') return;
+    try {
+        const fresh = await invoke('news');
+        if (JSON.stringify(fresh) === JSON.stringify(state.news)) return;
+        state.news = fresh;
+        state.newsIndex = Math.min(state.newsIndex, Math.max(fresh.length - 1, 0));
+        renderNews();
+        scheduleNews();
+    } catch {
+        // Hors connexion : on garde les actualités affichées.
+    }
+}
+
 async function loadNews() {
+    clearInterval(state.newsRefreshTimer);
+    state.newsRefreshTimer = setInterval(refreshNews, NEWS_REFRESH_MS);
     try {
         state.news = await invoke('news');
     } catch {
@@ -460,7 +500,7 @@ async function saveSettings(patch) {
         state.settings = await invoke('update_settings', { patch });
         applyAppearance();
     } catch (error) {
-        toast(String(error), 'error');
+        dialog('Erreur', [String(error)]);
     }
     renderSettings();
 }
@@ -675,8 +715,42 @@ async function dismissReview(openSite) {
 
 // ---------- Maintenance (liste blanche et compte à rebours) ----------
 
+/// « 2 jours et 05h 03min 10s » (format de l'ancien launcher).
+function maintenanceDelay(left) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const days = Math.floor(left / 86400);
+    const time = `${pad(Math.floor((left % 86400) / 3600))}h ${pad(Math.floor((left % 3600) / 60))}min ${pad(left % 60)}s`;
+    return `${days > 0 ? `${days} jour${days > 1 ? 's' : ''} et ` : ''}${time}`;
+}
+
+/// Joueur autorisé pendant une maintenance : bandeau avec le message et
+/// « Fin dans … » (comme l'ancien launcher).
+function showMaintenanceBanner(m, end) {
+    clearInterval(state.maintenanceBannerTimer);
+    const banner = $('maintenance-banner');
+    $('maintenance-banner-text').textContent = (m.message || 'Maintenance en cours.').replace(/<br\s*\/?>/gi, ' ');
+    const countdown = $('maintenance-banner-countdown');
+    banner.classList.remove('hidden');
+    if (!end || Number.isNaN(end.getTime())) {
+        countdown.textContent = '';
+        return;
+    }
+    const tick = () => {
+        const left = Math.floor((end - new Date()) / 1000);
+        if (left <= 0) {
+            clearInterval(state.maintenanceBannerTimer);
+            banner.classList.add('hidden');
+            return;
+        }
+        countdown.textContent = `Fin dans ${maintenanceDelay(left)}`;
+    };
+    tick();
+    state.maintenanceBannerTimer = setInterval(tick, 1000);
+}
+
 function checkMaintenance() {
     clearInterval(state.maintenanceTimer);
+    clearInterval(state.maintenanceBannerTimer);
     const m = state.boot?.maintenance;
     const end = m?.end ? new Date(m.end) : null;
     const over = end && !Number.isNaN(end.getTime()) && end <= new Date();
@@ -684,6 +758,8 @@ function checkMaintenance() {
     const whitelisted = !!player && (m?.whitelist ?? []).some((n) => n.toLowerCase() === player);
     const blocked = !!m && !over && !whitelisted;
     $('maintenance').classList.toggle('hidden', !blocked);
+    $('maintenance-banner').classList.add('hidden');
+    if (m && !over && whitelisted) showMaintenanceBanner(m, end);
     if (!blocked) return;
 
     // Le message du serveur peut contenir des <br> : affiché en texte simple.
@@ -700,10 +776,7 @@ function checkMaintenance() {
             location.reload();
             return;
         }
-        const pad = (n) => String(n).padStart(2, '0');
-        const days = Math.floor(left / 86400);
-        const time = `${pad(Math.floor((left % 86400) / 3600))}h ${pad(Math.floor((left % 3600) / 60))}min ${pad(left % 60)}s`;
-        countdown.textContent = `Retour estimé dans ${days > 0 ? `${days} jour${days > 1 ? 's' : ''} et ` : ''}${time}`;
+        countdown.textContent = `Retour estimé dans ${maintenanceDelay(left)}`;
     };
     tick();
     state.maintenanceTimer = setInterval(tick, 1000);
@@ -711,21 +784,64 @@ function checkMaintenance() {
 
 // ---------- JOUER ----------
 
-function setBusy(busy) {
-    state.busy = busy;
-    $('play').disabled = busy;
-    $('play-buttons').classList.toggle('hidden', busy);
-    $('progress').classList.toggle('hidden', !busy);
-    $('play-title').textContent = busy ? 'Lancement en cours' : 'Choisissez votre instance';
-    if (busy) setProgress('Préparation…', null);
+// ---------- Écran de lancement ----------
+//
+// Quatre étapes, comme demandé : Préparation (Java, Minecraft, Forge),
+// Vérification (fichiers déjà présents), Téléchargement (fichiers manquants),
+// Lancement (démarrage de Minecraft jusqu'au menu). Les données viennent du
+// moteur : événements « game » et compteurs « progress » (4 fois par seconde).
+
+const STEPS = { PREPARE: 0, VERIFY: 1, DOWNLOAD: 2, LAUNCH: 3 };
+const launch = { step: 0, pct: [0, 0, 0, 0], lastBytes: 0, lastTime: 0, speed: 0, hideTimer: null };
+
+function renderLaunch() {
+    document.querySelectorAll('#launch-card .launch-step').forEach((el, i) => {
+        const done = i < launch.step || launch.pct[i] >= 100;
+        const active = i === launch.step && !done;
+        el.classList.toggle('done', done);
+        el.classList.toggle('active', active);
+        el.querySelector('b').textContent = active && launch.pct[i] > 0 ? `${Math.floor(launch.pct[i])}%` : '';
+        el.querySelector('.launch-step-bar span').style.width = `${done ? 100 : launch.pct[i]}%`;
+    });
 }
 
-function setProgress(label, ratio, detail = '') {
-    if (label) $('progress-label').textContent = label;
-    $('progress-value').textContent = detail;
-    const fill = $('progress-fill');
-    fill.classList.toggle('indeterminate', ratio === null);
-    fill.style.width = ratio === null ? '' : `${Math.round(ratio * 100)}%`;
+function setLaunch(step, pct, message, detail = '') {
+    if (step !== null) launch.step = step;
+    if (pct !== null) launch.pct[launch.step] = Math.max(0, Math.min(100, pct));
+    if (message) $('launch-message').textContent = message;
+    $('launch-detail').textContent = detail;
+    renderLaunch();
+}
+
+/// État final de la carte : succès (vert) ou erreur (rouge).
+function endLaunch(kind, message) {
+    $('launch-icon').className = kind === 'ok' ? 'launch-icon ok' : 'launch-icon error';
+    $('launch-icon').textContent = kind === 'ok' ? '✓' : '✕';
+    $('launch-message').textContent = message;
+    $('launch-detail').textContent = '';
+    clearTimeout(launch.hideTimer);
+    launch.hideTimer = setTimeout(() => $('launch-card').classList.add('hidden'), kind === 'ok' ? 2500 : 5000);
+}
+
+function showLaunchCard() {
+    clearTimeout(launch.hideTimer);
+    Object.assign(launch, { step: 0, pct: [0, 0, 0, 0], lastBytes: 0, lastTime: 0, speed: 0 });
+    $('launch-icon').className = 'launch-spinner';
+    $('launch-icon').textContent = '';
+    setLaunch(STEPS.PREPARE, 5, 'Préparation du lancement…');
+    $('launch-card').classList.remove('hidden');
+    // Le bandeau d'avis passerait sous la carte.
+    $('review').classList.add('hidden');
+}
+
+/// `running` : fenêtre rouverte pendant une partie (pas d'écran de lancement).
+function setBusy(busy, { running = false } = {}) {
+    state.busy = busy;
+    $('play').disabled = busy;
+    $('instance-btn').disabled = busy;
+    $('play-title').textContent = busy ? (running ? 'En jeu' : 'Lancement en cours') : 'Choisissez votre instance';
+    if (busy && !running) showLaunchCard();
+    if (!busy) renderReview();
 }
 
 async function play() {
@@ -739,26 +855,35 @@ async function play() {
         await invoke('play');
     } catch (error) {
         setBusy(false);
+        $('launch-card').classList.add('hidden');
         dialog('Erreur', [String(error)]);
     }
 }
 
 function onGameEvent(event) {
     switch (event.type) {
-        case 'step':
-            setProgress(event.label, null);
+        case 'step': {
+            const label = event.label;
+            if (label.startsWith('Lancement')) setLaunch(STEPS.LAUNCH, 5, 'Lancement de Minecraft…');
+            else if (label.startsWith('Forge')) setLaunch(null, null, `Installation de ${label}…`);
+            else if (label.startsWith('Fichiers')) setLaunch(null, null, `${label}…`);
+            else setLaunch(null, null, `Préparation de ${label}…`);
             break;
+        }
         case 'offline':
             toast(`Hors connexion : ${event.detail}.`);
             break;
         case 'installed':
-            setProgress('Prêt', 1);
+            // Rien à télécharger : l'étape est simplement validée.
+            launch.pct = [100, 100, 100, launch.pct[3]];
+            setLaunch(STEPS.LAUNCH, 10, 'Fichiers prêts, démarrage de Java…');
             break;
         case 'java_started':
-            setProgress('Démarrage de Minecraft…', null);
+            setLaunch(STEPS.LAUNCH, 50, 'Démarrage de Minecraft…');
             break;
         case 'menu_reached':
-            setProgress('Bon jeu !', 1);
+            setLaunch(STEPS.LAUNCH, 100, 'Bon jeu !');
+            endLaunch('ok', 'Bon jeu !');
             $('play-title').textContent = 'En jeu';
             break;
         case 'exited':
@@ -780,15 +905,34 @@ function onGameEvent(event) {
 }
 
 function onProgress(p) {
-    if (!state.busy || !p.total || p.done >= p.total) return;
-    const mb = (bytes) => (bytes / 1048576).toFixed(0);
-    setProgress(null, p.done / p.total, `${mb(p.done)} / ${mb(p.total)} Mo`);
+    if (!state.busy || launch.step === STEPS.LAUNCH) return;
+    const n = (v) => v.toLocaleString('fr-FR');
+    if (p.total > 0 && p.done < p.total) {
+        // Débit lissé, pour un chiffre lisible.
+        const now = performance.now();
+        if (launch.lastTime) {
+            const instant = ((p.done - launch.lastBytes) / (now - launch.lastTime)) * 1000;
+            launch.speed = launch.speed ? launch.speed * 0.7 + instant * 0.3 : instant;
+        }
+        launch.lastBytes = p.done;
+        launch.lastTime = now;
+        const mb = (b) => (b / 1048576).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+        const speed = launch.speed > 0 ? ` · ${mb(launch.speed)} Mo/s` : '';
+        setLaunch(STEPS.DOWNLOAD, (p.done / p.total) * 100, 'Téléchargement des fichiers…', `${mb(p.done)} / ${mb(p.total)} Mo${speed}`);
+    } else if (p.checked_total > 0 && p.checked_done < p.checked_total) {
+        setLaunch(STEPS.VERIFY, (p.checked_done / p.checked_total) * 100, 'Vérification des fichiers…', `${n(p.checked_done)} / ${n(p.checked_total)} fichiers`);
+    }
 }
 
 function onGameFinished({ instance, error }) {
     state.running.delete(instance);
     setBusy(false);
-    if (error) dialog('Erreur', [error]);
+    if (error) {
+        endLaunch('error', 'Le lancement a échoué.');
+        dialog('Erreur', [error]);
+    } else if (!$('launch-card').classList.contains('hidden') && $('launch-icon').className === 'launch-spinner') {
+        $('launch-card').classList.add('hidden');
+    }
 }
 
 // ---------- Événements ----------
@@ -827,7 +971,7 @@ function bindEvents() {
     $('review-close').addEventListener('click', () => dismissReview(false));
 
     $('instance-btn').addEventListener('click', openInstancePicker);
-    document.querySelectorAll('[data-close-modal]').forEach((b) => b.addEventListener('click', () => b.closest('.modal').classList.add('hidden')));
+    document.querySelectorAll('[data-close-modal]').forEach((b) => b.addEventListener('click', () => b.closest('.modal, .instance-popup').classList.add('hidden')));
     $('play').addEventListener('click', play);
     $('news-prev').addEventListener('click', () => showNews(state.newsIndex - 1));
     $('news-next').addEventListener('click', () => showNews(state.newsIndex + 1));
@@ -887,11 +1031,12 @@ function bindEvents() {
     document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => saveSettings({ close_behavior: b.dataset.close })));
     $('max-files').addEventListener('change', () => saveSettings({ download_concurrency: Number($('max-files').value) }));
     $('max-files-reset').addEventListener('click', () => saveSettings({ download_concurrency: 5 }));
+    $('test-notification').addEventListener('click', () => call('test_notification').then(() => toast('Notification envoyée.')).catch(() => {}));
     document.querySelectorAll('[data-theme]').forEach((b) => b.addEventListener('click', () => saveSettings({ theme: b.dataset.theme })));
     document.querySelectorAll('[data-display]').forEach((b) =>
         b.addEventListener('click', async () => {
             await saveSettings({ lite_mode: b.dataset.display === 'lite' });
-            toast("Mode d'affichage enregistré : complet au prochain démarrage du launcher.");
+            toast(`Mode d'affichage enregistré : ${b.dataset.display === 'lite' ? 'léger' : 'normal'} au prochain démarrage du launcher.`);
         }),
     );
 
@@ -944,8 +1089,10 @@ async function startupUpdate(boot) {
     $('splash-loading').textContent = `Mise à jour disponible ! Téléchargement de la version ${update.version}…`;
     const stop = await listen('update-progress', (e) => {
         const { done, total } = e.payload;
-        const mb = (b) => (b / 1048576).toFixed(1);
-        $('splash-loading').textContent = `Mise à jour ${update.version} : ${mb(done)} / ${mb(total)} Mo`;
+        const mb = (b) => (b / 1048576).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+        $('splash-loading').textContent = done >= total
+            ? 'Installation de la mise à jour…'
+            : `Mise à jour ${update.version} : ${mb(done)} / ${mb(total)} Mo (${Math.floor((done / total) * 100)} %)`;
     });
     try {
         // Le launcher se ferme ici ; l'installateur prend le relais.
@@ -953,16 +1100,22 @@ async function startupUpdate(boot) {
         return true;
     } catch (error) {
         stop();
-        toast(`Mise à jour impossible pour le moment : ${error}`, 'error');
+        dialog('Erreur', [`Mise à jour impossible pour le moment : ${error}`]);
         return false;
     }
 }
 
+/// Notes de version (fichier NOUVEAUTES.txt à la publication), en texte.
+function updateLines(update, first) {
+    const notes = (update.notes || '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 12);
+    return notes.length ? [first, 'Nouveautés :', ...notes.map((l) => (l.startsWith('-') ? l : `- ${l}`))] : [first];
+}
+
 /// Mac et Linux : téléchargement manuel, comme l'ancien launcher.
 function offerDownload(update) {
-    dialog('Mise à jour disponible !', [`La version ${update.version} du launcher est disponible.`], [
+    dialog('Mise à jour disponible !', updateLines(update, `La version ${update.version} du launcher est disponible.`), [
         { label: 'Plus tard', primary: false },
-        { label: 'Télécharger', run: () => invoke('apply_update').catch((e) => toast(String(e), 'error')) },
+        { label: 'Télécharger', run: () => invoke('apply_update').catch((e) => dialog('Erreur', [String(e)])) },
     ]);
 }
 
@@ -971,13 +1124,21 @@ function onUpdateAvailable(update) {
     if (state.updateOffered === update.version) return;
     state.updateOffered = update.version;
     if (!update.install) return offerDownload(update);
-    dialog('Mise à jour disponible !', [`La version ${update.version} du launcher est prête (${update.size_mb} Mo).`], [
+    dialog('Mise à jour disponible !', updateLines(update, `La version ${update.version} du launcher est prête (${update.size_mb.toLocaleString('fr-FR')} Mo).`), [
         { label: 'Plus tard', primary: false },
         {
             label: 'Installer maintenant',
             run: async () => {
                 toast('Téléchargement de la mise à jour…');
-                await invoke('apply_update').catch((e) => toast(String(e), 'error'));
+                // Progression dans le message (le launcher se ferme ensuite).
+                const stop = await listen('update-progress', (e) => {
+                    const { done, total } = e.payload;
+                    toast(done >= total ? 'Installation de la mise à jour…' : `Téléchargement de la mise à jour : ${Math.floor((done / total) * 100)} %`);
+                });
+                await invoke('apply_update').catch((e) => {
+                    stop();
+                    dialog('Erreur', [String(e)]);
+                });
             },
         },
     ]);
@@ -1026,19 +1187,21 @@ async function start() {
 
     // Fenêtre rouverte pendant une partie, ou après un crash survenu fenêtre fermée.
     if (boot.running.length) {
-        setBusy(true);
-        setProgress('En jeu', 1);
+        setBusy(true, { running: true });
         $('play-title').textContent = `En jeu · ${boot.running.join(', ')}`;
     }
     const lastExit = await invoke('take_last_exit').catch(() => null);
     if (lastExit) onGameEvent(lastExit);
     $('splash').classList.add('done');
+    if (boot.updated_to) toast(`PatateLand a été mis à jour en version ${boot.updated_to}.`);
 
     loadNews();
     if (boot.accounts.length) {
         // Vérification des comptes en arrière-plan, sans bloquer l'écran.
         const refreshed = call('refresh_accounts').then(setAccounts).then(reloadInstances).catch(() => {});
         if (boot.autoplay) refreshed.then(play);
+        // « Paramètres » choisi dans le menu de l'icône, fenêtre fermée.
+        if (boot.open_settings) openSettings('jeu');
     } else {
         // Comme l'ancien launcher : sans compte, on arrive sur la connexion.
         openLogin(false);

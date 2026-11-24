@@ -666,7 +666,7 @@ async fn verify_bench(ctx: &Ctx, plan: Plan) -> Result<()> {
         ("Index (nouveau launcher)", VerifyMode::Fast, cpus),
     ] {
         let t = Instant::now();
-        let missing = integrity::filter_missing(items.clone(), ctx.integrity.clone(), mode, parallelism).await?;
+        let missing = integrity::filter_missing(items.clone(), ctx.integrity.clone(), mode, parallelism, None).await?;
         let elapsed = t.elapsed();
         println!("  {label:<38} {:>7.2} s  ({} à télécharger)", elapsed.as_secs_f64(), missing.len());
     }

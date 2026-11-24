@@ -5,11 +5,12 @@
 //! cachée) : le moteur web WebView2 libère sa mémoire et seul le moteur Rust
 //! reste actif. Elle est recréée à la fin de la partie ou depuis l'icône.
 
-use tauri::{
-    AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder,
-    menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-};
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder, tray::TrayIconBuilder};
+// Linux : menu natif. Ailleurs : menu personnalisé (tray.rs), ouvert au clic.
+#[cfg(target_os = "linux")]
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+#[cfg(not(target_os = "linux"))]
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 
 use crate::state::AppState;
 
@@ -23,7 +24,9 @@ const BROWSER_ARGS: &str = "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreen
 /// Mode léger : sans processus graphique, WebView2 utilise environ 150 Mo
 /// de moins (mesuré : 266 → 117 Mo privés, fenêtre ouverte). L'interface est
 /// assez simple pour un rendu par le processeur.
-fn browser_args(app: &AppHandle) -> String {
+/// Réglages WebView2 communs à **toutes** les fenêtres : WebView2 refuse de
+/// créer une fenêtre dont les réglages diffèrent de ceux des autres.
+pub(crate) fn browser_args(app: &AppHandle) -> String {
     let lite = app.state::<AppState>().settings.lock().unwrap().lite_mode;
     if lite { format!("{BROWSER_ARGS} --disable-gpu") } else { BROWSER_ARGS.to_owned() }
 }
@@ -146,10 +149,21 @@ pub async fn microsoft_login(app: &AppHandle, authorize_url: &str, redirect_pref
     Ok(redirect)
 }
 
+/// Comme [`show_main`], mais depuis un fil séparé. Obligatoire dans les
+/// gestionnaires d'événements (clic sur l'icône, notification, second
+/// lancement) : sous Windows, y créer une fenêtre bloque tout le launcher
+/// (limite connue de WebView2, documentée par Tauri).
+pub fn show_main_later(app: &AppHandle) {
+    let app = app.clone();
+    tauri::async_runtime::spawn(async move { show_main(&app) });
+}
+
 // ---------- Icône de la zone de notification ----------
 
-/// Menu de l'icône, comme celui de l'ancien launcher : ouvrir, jouer à une
-/// instance (celles en cours sont signalées), réglages, déconnexion, quitter.
+/// Linux : menu natif (les clics sur l'icône n'y sont pas transmis). Mêmes
+/// actions que le menu personnalisé (tray.rs) : ouvrir, jouer, paramètres,
+/// déconnexion, quitter.
+#[cfg(target_os = "linux")]
 async fn tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let state = app.state::<AppState>();
     let instances: Vec<String> = {
@@ -169,9 +183,9 @@ async fn tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     Menu::with_items(
         app,
         &[
-            &MenuItem::with_id(app, "open", "Ouvrir PatateLand", true, None::<&str>)?,
+            &MenuItem::with_id(app, "open", "Ouvrir le launcher", true, None::<&str>)?,
             &play,
-            &MenuItem::with_id(app, "settings", "Réglages", true, None::<&str>)?,
+            &MenuItem::with_id(app, "settings", "Paramètres", true, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "logout", "Se déconnecter", true, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
@@ -182,21 +196,44 @@ async fn tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
 
 /// Met à jour le menu (liste des instances, parties en cours).
 pub async fn refresh_tray(app: &AppHandle) {
-    let Some(tray) = app.tray_by_id(TRAY) else { return };
-    match tray_menu(app).await {
-        Ok(menu) => {
-            let _ = tray.set_menu(Some(menu));
+    #[cfg(target_os = "linux")]
+    {
+        let Some(tray) = app.tray_by_id(TRAY) else { return };
+        match tray_menu(app).await {
+            Ok(menu) => {
+                let _ = tray.set_menu(Some(menu));
+            }
+            Err(e) => tracing::warn!("menu de l'icône : {e}"),
         }
-        Err(e) => tracing::warn!("menu de l'icône : {e}"),
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        // Menu ouvert : il se redessine avec la nouvelle liste.
+        if let Some(popup) = app.get_webview_window(crate::tray::POPUP) {
+            if popup.is_visible().unwrap_or(false) {
+                let _ = popup.emit("tray-refresh", ());
+            }
+        }
     }
 }
 
-fn on_tray_menu(app: &AppHandle, id: &str) {
+/// Action du menu de l'icône : « open », « settings », « logout », « quit »
+/// ou « play:<instance> ».
+pub fn tray_action(app: &AppHandle, id: &str) {
     match id {
-        "open" => show_main(app),
+        "open" => show_main_later(app),
         "settings" => {
-            show_main(app);
-            let _ = app.emit("open-settings", ());
+            let app = app.clone();
+            tauri::async_runtime::spawn(async move {
+                if app.get_webview_window(MAIN).is_some() {
+                    show_main(&app);
+                    let _ = app.emit("open-settings", ());
+                } else {
+                    // Fenêtre à recréer : la page lira ce choix à son ouverture.
+                    app.state::<AppState>().open_settings_on_boot.store(true, std::sync::atomic::Ordering::Relaxed);
+                    show_main(&app);
+                }
+            });
         }
         "logout" => {
             let app = app.clone();
@@ -229,17 +266,26 @@ fn on_tray_menu(app: &AppHandle, id: &str) {
 }
 
 pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
-    let menu = Menu::with_items(app, &[&MenuItem::with_id(app, "open", "Ouvrir PatateLand", true, None::<&str>)?])?;
-    let mut builder = TrayIconBuilder::with_id(TRAY)
-        .tooltip("PatateLand")
-        .menu(&menu)
-        .show_menu_on_left_click(false)
-        .on_menu_event(|app, event| on_tray_menu(app, event.id.as_ref()))
-        .on_tray_icon_event(|tray, event| {
-            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = event {
-                show_main(tray.app_handle());
+    let mut builder = TrayIconBuilder::with_id(TRAY).tooltip("PatateLand Launcher");
+    #[cfg(target_os = "linux")]
+    {
+        let menu = Menu::with_items(app, &[&MenuItem::with_id(app, "open", "Ouvrir le launcher", true, None::<&str>)?])?;
+        builder = builder.menu(&menu).on_menu_event(|app, event| tray_action(app, event.id.as_ref()));
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        // Comme l'ancien : clic gauche ou droit = menu, double-clic = launcher.
+        builder = builder.on_tray_icon_event(|tray, event| match event {
+            TrayIconEvent::Click { button: MouseButton::Left | MouseButton::Right, button_state: MouseButtonState::Up, rect, .. } => {
+                crate::tray::toggle(tray.app_handle(), &rect);
             }
+            TrayIconEvent::DoubleClick { button: MouseButton::Left, .. } => {
+                crate::tray::hide(tray.app_handle());
+                show_main_later(tray.app_handle());
+            }
+            _ => {}
         });
+    }
     if let Some(icon) = app.default_window_icon() {
         builder = builder.icon(icon.clone());
     }

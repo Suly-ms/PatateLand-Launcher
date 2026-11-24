@@ -1,0 +1,13 @@
+{
+  "stub": "stub-maint.js",
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'", "wait": 600 },
+    { "shot": "maint-banner" },
+    { "eval": "document.getElementById('open-settings').click(); document.querySelector('[data-tab=\"launcher\"]').click(); document.querySelector('[data-display=\"lite\"]').click();", "wait": 900 },
+    { "shot": "toast" },
+    { "eval": "document.querySelector('.add-text-profile') ? 0 : 0; document.querySelector('[data-tab=\"account\"]').click(); document.querySelector('.add-text-profile').parentElement.click();", "wait": 700 },
+    { "eval": "document.getElementById('az-submit').click()", "wait": 600 },
+    { "shot": "popup-error" }
+  ]
+}

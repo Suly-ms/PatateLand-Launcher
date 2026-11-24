@@ -13,7 +13,6 @@ use pl_engine::{
 };
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, window::ProgressBarState, window::ProgressBarStatus};
-use tauri_plugin_notification::NotificationExt;
 
 use crate::{state::{AppState, allowed}, window};
 
@@ -21,8 +20,17 @@ use crate::{state::{AppState, allowed}, window};
 struct ProgressView {
     done: u64,
     total: u64,
+    /// Fichiers déjà vérifiés / à vérifier (étape « Vérification »).
+    checked_done: u64,
+    checked_total: u64,
     files_done: u64,
     files_total: u64,
+}
+
+#[derive(Clone, Serialize)]
+struct ConsoleEvent {
+    instance: String,
+    event: Event,
 }
 
 #[derive(Clone, Serialize)]
@@ -31,10 +39,9 @@ struct GameLog {
     line: String,
 }
 
+/// Notification du système ; un clic rouvre le launcher (voir notify.rs).
 pub fn notify(app: &AppHandle, title: &str, body: &str) {
-    if let Err(e) = app.notification().builder().title(title).body(body).show() {
-        tracing::warn!("notification impossible : {e}");
-    }
+    crate::notify::show(app, title, body, crate::notify::OnClick::Open);
 }
 
 fn set_taskbar_progress(app: &AppHandle, progress: Option<u64>) {
@@ -81,7 +88,14 @@ pub async fn start(app: AppHandle, instance: Option<String>) -> Result<(), Strin
 
     let memory = settings.effective_memory(settings::total_memory_gb());
     let progress = &state.ctx.progress;
-    for counter in [&progress.done_bytes, &progress.total_bytes, &progress.done_files, &progress.total_files] {
+    for counter in [
+        &progress.done_bytes,
+        &progress.total_bytes,
+        &progress.done_files,
+        &progress.total_files,
+        &progress.checked_done,
+        &progress.checked_total,
+    ] {
         counter.store(0, Ordering::Relaxed);
     }
 
@@ -99,6 +113,8 @@ pub async fn start(app: AppHandle, instance: Option<String>) -> Result<(), Strin
                     let view = ProgressView {
                         done: p.done_bytes.load(Ordering::Relaxed),
                         total: p.total_bytes.load(Ordering::Relaxed),
+                        checked_done: p.checked_done.load(Ordering::Relaxed),
+                        checked_total: p.checked_total.load(Ordering::Relaxed),
                         files_done: p.done_files.load(Ordering::Relaxed),
                         files_total: p.total_files.load(Ordering::Relaxed),
                     };
@@ -129,6 +145,14 @@ pub async fn start(app: AppHandle, instance: Option<String>) -> Result<(), Strin
                     }
                 }
                 Event::MenuReached { .. } => notify(&emitter, "PatateLand", &format!("{instance} a démarré !")),
+                // Fin d'un téléchargement (seulement s'il y en a eu un).
+                Event::Installed { .. } => {
+                    let bytes = emitter.state::<AppState>().ctx.progress.done_bytes.load(Ordering::Relaxed);
+                    if bytes > 0 {
+                        let mb = bytes as f64 / 1_048_576.0;
+                        notify(&emitter, "PatateLand", &format!("Téléchargement terminé : {mb:.0} Mo pour {instance}."));
+                    }
+                }
                 Event::Log { line } => {
                     let _ = emitter.emit("game-log", GameLog { instance: instance.clone(), line: line.clone() });
                 }
@@ -137,6 +161,11 @@ pub async fn start(app: AppHandle, instance: Option<String>) -> Result<(), Strin
                     window::show_main(&emitter);
                 }
                 _ => {}
+            }
+            // Consoles : le même événement avec le nom de l'instance (plusieurs
+            // parties peuvent tourner en même temps).
+            if matches!(event, Event::MenuReached { .. } | Event::Exited { .. }) {
+                let _ = emitter.emit("console-event", ConsoleEvent { instance: instance.clone(), event: event.clone() });
             }
             let _ = emitter.emit("game", &event);
         };
@@ -177,10 +206,7 @@ struct Finished {
 }
 
 /// Comme l'ancien launcher : une seule fois par session, on rappelle que le
-/// launcher reste disponible près de l'horloge.
+/// launcher reste disponible près de l'horloge (même message qu'en réduisant).
 fn notify_background_once(app: &AppHandle) {
-    static SHOWN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
-    if !SHOWN.swap(true, Ordering::Relaxed) {
-        notify(app, "PatateLand", "Le launcher reste disponible près de l'horloge pendant que tu joues.");
-    }
+    crate::notify::background_once(app);
 }

@@ -15,7 +15,7 @@ use pl_engine::update::{self, Update};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
 
-use crate::{play::notify, state::AppState};
+use crate::state::AppState;
 
 const CHECK_EVERY: Duration = Duration::from_secs(10 * 60);
 
@@ -123,7 +123,14 @@ pub async fn watch(app: AppHandle) {
         let us = app.state::<UpdaterState>();
         let first_time = us.notified.lock().unwrap().replace(found.version.clone()).as_deref() != Some(found.version.as_str());
         if first_time {
-            notify(&app, "PatateLand - Mise à jour disponible !", &format!("La version {} est prête. Relance le launcher pour l'installer.", found.version));
+            // Comme l'ancien : sur Mac/Linux, le clic ouvre le téléchargement.
+            let click = if cfg!(windows) { crate::notify::OnClick::Open } else { crate::notify::OnClick::Url(found.url.clone()) };
+            let body = if cfg!(windows) {
+                format!("La version {} est prête. Relance le launcher pour l'installer.", found.version)
+            } else {
+                "Cliquez ici pour télécharger la dernière version.".to_owned()
+            };
+            crate::notify::show(&app, "PatateLand - Mise à jour disponible !", &body, click);
         }
         let _ = app.emit("update-available", view(&found));
     }

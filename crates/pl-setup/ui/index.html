@@ -76,7 +76,7 @@
                 <li>Copie du launcher</li>
                 <li id="task-old" class="hidden">Désinstallation de l'ancien launcher</li>
                 <li>Création des raccourcis</li>
-                <li>Enregistrement de la désinstallation</li>
+                <li>Finalisation</li>
             </ul>
             <div class="error hidden" id="error">
                 <p id="error-text"></p>
@@ -92,8 +92,9 @@
         <section class="screen" id="screen-done">
             <div class="done-mark">✓</div>
             <h2 id="done-title">PatateLand est prêt !</h2>
-            <p class="lead">Le launcher est installé. Tu n'as plus qu'à te connecter et choisir ton instance.</p>
+            <p class="lead" id="done-lead">Le launcher est installé. Tu n'as plus qu'à te connecter et choisir ton instance.</p>
             <button class="check on" id="opt-launch"><i></i>Lancer PatateLand maintenant</button>
+            <p class="relaunch hidden" id="relaunch"><span class="spinner"></span>Relance du launcher…</p>
             <div class="actions mtauto">
                 <span></span>
                 <button class="primary" id="finish">Jouer</button>

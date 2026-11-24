@@ -58,7 +58,8 @@ try { Invoke-Tauri (@('build', '--no-bundle') + $targetArgs + @('--', '--profile
 cargo build --profile setup -p pl-setup --bin pl-pack
 if ($LASTEXITCODE -ne 0) { throw "la compilation de pl-pack a échoué" }
 
-$version = (Get-Content "$root\crates\pl-app\tauri.conf.json" -Raw | ConvertFrom-Json).version
+# Version : Cargo.toml à la racine (seul endroit où elle est écrite).
+$version = node "$root\tools\release\version.mjs"
 New-Item -ItemType Directory -Force "$root\dist" | Out-Null
 $installer = "$root\dist\PatateLand-win-$Arch-setup.exe"
 

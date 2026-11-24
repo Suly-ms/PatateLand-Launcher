@@ -83,6 +83,8 @@ h2 { margin: 0 0 6px; font-size: 1.35rem; }
 .tip { font-size: .8rem; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; }
 .done-mark { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; font-size: 2rem; background: linear-gradient(135deg, var(--accent), var(--accent-end)); box-shadow: 0 0 30px rgba(253,142,57,.5); margin: 6px 0 16px; animation: pop .5s ease; }
 @keyframes pop { from { transform: scale(.5); opacity: 0; } }
+.relaunch { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .88rem; margin: 6px 0 0; }
+.spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent); border-top-color: transparent; animation: spin .8s linear infinite; }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }

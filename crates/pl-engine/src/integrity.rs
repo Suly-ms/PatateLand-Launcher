@@ -166,14 +166,22 @@ pub async fn filter_missing(
     integrity: Arc<Integrity>,
     mode: VerifyMode,
     parallelism: usize,
+    progress: Option<Arc<crate::net::Progress>>,
 ) -> Result<Vec<DownloadItem>> {
+    if let Some(p) = &progress {
+        p.checked_total.fetch_add(items.len() as u64, std::sync::atomic::Ordering::Relaxed);
+    }
     let checked: Vec<Option<DownloadItem>> = stream::iter(items)
         .map(|item| {
             let integrity = integrity.clone();
+            let progress = progress.clone();
             async move {
                 let ok = integrity
                     .is_valid(&item.path, item.sha1.as_deref(), item.size, mode)
                     .await?;
+                if let Some(p) = &progress {
+                    p.checked_done.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                }
                 anyhow::Ok(if ok { None } else { Some(item) })
             }
         })

@@ -145,15 +145,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          VERSION=$(node -p "require('./crates/pl-app/tauri.conf.json').version")
+          VERSION=$(node tools/release/version.mjs)
           if gh release view "$VERSION" --json isDraft -q .isDraft > state.txt 2>/dev/null; then
             if [ "$(cat state.txt)" != "true" ]; then
-              echo "La version $VERSION est déjà publiée : augmente la version dans crates/pl-app/tauri.conf.json." >&2
+              echo "La version $VERSION est déjà publiée : augmente la version dans le Cargo.toml (racine)." >&2
               exit 1
             fi
             gh release upload "$VERSION" dist/* --clobber
+            if [ -s NOUVEAUTES.txt ]; then gh release edit "$VERSION" --notes-file NOUVEAUTES.txt; fi
           else
+            NOTES="Brouillon créé par la compilation automatique. À tester avant publication."
+            if [ -s NOUVEAUTES.txt ]; then NOTES="$(cat NOUVEAUTES.txt)"; fi
             gh release create "$VERSION" dist/* --draft --target "$GITHUB_SHA" \
               --title "PatateLand $VERSION" \
-              --notes "Brouillon créé par la compilation automatique. À tester avant publication."
+              --notes "$NOTES"
           fi

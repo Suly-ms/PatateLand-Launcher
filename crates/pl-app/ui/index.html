@@ -55,6 +55,12 @@
     </header>
 
     <div id="banner" class="banner hidden"></div>
+    <!-- Maintenance en cours pour un joueur autorisé (ancien : .maintenance-banner) -->
+    <div id="maintenance-banner" class="banner maintenance-banner hidden">
+        <span class="maintenance-banner-icon">⚠</span>
+        <span id="maintenance-banner-text"></span>
+        <span id="maintenance-banner-countdown" class="maintenance-banner-countdown"></span>
+    </div>
 
     <main>
         <!-- ===== Accueil ===== -->
@@ -113,6 +119,21 @@
                 <span class="review-banner-text">Vous appréciez le launcher ? Laissez un avis sur le site !</span>
                 <span id="review-open" class="review-banner-btn">Évaluer</span>
                 <span id="review-close" class="review-banner-close">✕</span>
+            </div>
+
+            <!-- Écran de lancement : étapes, progression et ce que fait le launcher. -->
+            <div id="launch-card" class="launch-card hidden" aria-live="polite">
+                <div class="launch-steps">
+                    <div class="launch-step"><div class="launch-step-head"><span>Préparation</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                    <div class="launch-step"><div class="launch-step-head"><span>Vérification</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                    <div class="launch-step"><div class="launch-step-head"><span>Téléchargement</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                    <div class="launch-step"><div class="launch-step-head"><span>Lancement</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                </div>
+                <div class="launch-status">
+                    <span id="launch-icon" class="launch-spinner"></span>
+                    <span id="launch-message">Préparation du lancement…</span>
+                    <span id="launch-detail" class="launch-detail"></span>
+                </div>
             </div>
 
             <div id="bar" class="bar">
@@ -412,6 +433,17 @@
                             <div data-display="lite" class="display-btn">Léger</div>
                         </div>
                     </div>
+
+                    <div class="titre-tab">Notifications</div>
+                    <div class="settings-elements-box">
+                        <div class="setting-text">
+                            Le launcher prévient avec les notifications Windows : lancement et démarrage du jeu, fin d'un téléchargement, erreur, mise à jour, messages d'amis.<br>
+                            Rien n'apparaît ? Le mode « Ne pas déranger » de Windows (activé automatiquement pendant les jeux) les range dans le centre de notifications (touche Windows + N).
+                        </div>
+                        <div class="settings-elements content-center">
+                            <div id="test-notification" class="max-files-btn">Envoyer une notification de test</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- STOCKAGE -->
@@ -496,19 +528,22 @@
         </section>
     </main>
 
-    <div id="instance-modal" class="modal hidden">
-        <div class="modal-box glass">
-            <button class="modal-close" data-close-modal aria-label="Fermer">×</button>
-            <h3>Choisissez votre instance</h3>
-            <div id="instance-list" class="instance-list"></div>
+    <!-- Choix de l'instance : repris de l'ancien launcher (home.html / home.css). -->
+    <div id="instance-modal" class="instance-popup hidden">
+        <div class="popup-blur"></div>
+        <div class="instances-tab">
+            <div class="close-popup icon-close" data-close-modal title="Fermer"></div>
+            <p>Choisissez votre instance...</p>
+            <div id="instance-list" class="instances-List"></div>
         </div>
     </div>
 
-    <div id="dialog" class="modal hidden">
-        <div class="modal-box glass">
-            <h3 id="dialog-title"></h3>
-            <div id="dialog-body" class="dialog-body"></div>
-            <div id="dialog-actions" class="modal-actions"></div>
+    <!-- Pop-up de l'ancien launcher (utils/popup.js) : titre, message, bouton OK. -->
+    <div id="dialog" class="popup hidden">
+        <div class="popup-tab">
+            <div id="dialog-title" class="popup-title"></div>
+            <div id="dialog-body" class="popup-content"></div>
+            <div id="dialog-actions" class="popup-options"></div>
         </div>
     </div>
 

@@ -20,11 +20,15 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { launcherVersion } from './version.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dir = path.resolve(process.argv[2] ?? 'dist');
-const version = JSON.parse(fs.readFileSync(path.join(ROOT, 'crates/pl-app/tauri.conf.json'), 'utf8')).version;
-const notes = process.env.RELEASE_NOTES ?? '';
+const version = launcherVersion();
+// Notes de version : fichier NOUVEAUTES.txt à la racine (une ligne par
+// nouveauté), affiché aux joueurs dans la fenêtre de mise à jour.
+const notesFile = path.join(ROOT, 'NOUVEAUTES.txt');
+const notes = (process.env.RELEASE_NOTES ?? (fs.existsSync(notesFile) ? fs.readFileSync(notesFile, 'utf8') : '')).trim();
 
 const PLATFORMS = {
     'windows-x86_64': 'PatateLand-win-x64-setup.exe',

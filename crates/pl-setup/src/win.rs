@@ -155,6 +155,8 @@ pub fn register_uninstall(r: &Registration) -> Result<()> {
 pub fn unregister_uninstall() {
     let _ = CURRENT_USER.remove_tree(UNINSTALL_KEY);
     let _ = CURRENT_USER.remove_tree(NSIS_KEY);
+    // Identité des notifications, enregistrée par le launcher (voir pl-app/src/notify.rs).
+    let _ = CURRENT_USER.remove_tree(r"Software\Classes\AppUserModelId\fr.patateland.launcher.rust");
 }
 
 // ---------- Ancien launcher (Electron) ----------

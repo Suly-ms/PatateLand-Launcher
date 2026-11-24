@@ -82,6 +82,23 @@ pub struct Boot {
     /// Tests et mesures uniquement (`PL_AUTOPLAY=1`) : lance la partie dès
     /// l'ouverture.
     autoplay: bool,
+    /// Ouvrir directement les paramètres (menu de l'icône).
+    open_settings: bool,
+    /// Premier démarrage après une mise à jour : la nouvelle version.
+    updated_to: Option<String>,
+}
+
+/// Compare la version lancée à celle du démarrage précédent
+/// (`last-version.txt` dans le dossier du launcher).
+fn version_change(state: &AppState) -> Option<String> {
+    let path = state.data_dir.join("last-version.txt");
+    let current = env!("CARGO_PKG_VERSION");
+    let previous = std::fs::read_to_string(&path).ok().map(|v| v.trim().to_owned());
+    if previous.as_deref() != Some(current) {
+        let _ = std::fs::write(&path, current);
+    }
+    // Première installation (pas de fichier) : rien à annoncer.
+    previous.filter(|p| !p.is_empty() && p != current).map(|_| current.to_owned())
 }
 
 fn system_view() -> SystemView {
@@ -174,6 +191,8 @@ pub async fn bootstrap(app: AppHandle, state: State<'_, AppState>) -> CmdResult<
         // Une seule fois par lancement de l'application, pas à chaque réouverture.
         autoplay: std::env::var("PL_AUTOPLAY").as_deref() == Ok("1")
             && !AUTOPLAY_DONE.swap(true, Ordering::Relaxed),
+        open_settings: state.open_settings_on_boot.swap(false, Ordering::Relaxed),
+        updated_to: version_change(&state),
     };
     drop(remote);
     drop(accounts);
@@ -452,7 +471,13 @@ pub fn open_url(app: AppHandle, url: String) -> CmdResult<()> {
 #[tauri::command]
 pub fn window_minimize(app: AppHandle) {
     if let Some(w) = app.get_webview_window(window::MAIN) {
-        let _ = w.minimize();
+        if cfg!(target_os = "macos") {
+            let _ = w.minimize();
+        } else {
+            // Comme l'ancien launcher : la fenêtre passe dans le tray.
+            let _ = w.hide();
+            crate::notify::background_once(&app);
+        }
     }
 }
 

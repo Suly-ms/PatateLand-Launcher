@@ -123,3 +123,36 @@ pub fn quarantine_restore(state: State<'_, AppState>, id: String) -> CmdResult<(
     let entry = q.list().map_err(|e| format!("{e:#}"))?.into_iter().find(|e| e.id == id).ok_or("entrée inconnue")?;
     q.restore(&id, &state.ctx.paths.instance(&entry.instance)).map(|_| ()).map_err(|e| format!("{e:#}"))
 }
+
+// ---------- Rapport de crash dans la console (comme l'ancien launcher) ----------
+
+/// Seuls les rapports du jeu sont accessibles : un fichier `.txt` situé dans
+/// un dossier `crash-reports` du dossier de jeu du launcher.
+fn crash_report_path(state: &AppState, path: &str) -> CmdResult<std::path::PathBuf> {
+    let path = std::fs::canonicalize(path).map_err(|_| "rapport introuvable".to_owned())?;
+    let root = std::fs::canonicalize(state.ctx.paths.root()).map_err(|e| e.to_string())?;
+    let in_crash_dir = path.parent().and_then(|p| p.file_name()).is_some_and(|n| n == "crash-reports");
+    let is_txt = path.extension().is_some_and(|e| e.eq_ignore_ascii_case("txt"));
+    if !path.starts_with(&root) || !in_crash_dir || !is_txt {
+        return Err("fichier non autorisé".into());
+    }
+    Ok(path)
+}
+
+/// Contenu du rapport, pour l'afficher et le copier depuis la console.
+#[tauri::command]
+pub fn crash_report_read(state: State<'_, AppState>, path: String) -> CmdResult<String> {
+    let path = crash_report_path(&state, &path)?;
+    let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
+    // Un rapport fait quelques dizaines de Ko : au-delà, on tronque.
+    let max = 2 * 1024 * 1024;
+    Ok(String::from_utf8_lossy(&bytes[..bytes.len().min(max)]).into_owned())
+}
+
+/// « Ouvrir le fichier » : le rapport s'ouvre dans l'éditeur de texte du PC.
+#[tauri::command]
+pub fn crash_report_open(app: AppHandle, state: State<'_, AppState>, path: String) -> CmdResult<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let path = crash_report_path(&state, &path)?;
+    app.opener().open_path(path.to_string_lossy(), None::<&str>).map_err(|e| e.to_string())
+}

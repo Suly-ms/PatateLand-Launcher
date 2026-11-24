@@ -27,3 +27,8 @@ tauri-plugin-opener = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-autostart = "2"
+
+# Notifications Windows avec clic (rouvre le launcher) et identité enregistrée.
+[target.'cfg(windows)'.dependencies]
+tauri-winrt-notification = "0.8"
+windows-registry = "0.6"

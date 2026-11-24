@@ -2,7 +2,6 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "PatateLand - Installation",
   "mainBinaryName": "PatateLand - Installation",
-  "version": "2.0.0",
   "identifier": "fr.patateland.launcher.rust.setup",
   "build": {
     "frontendDist": "ui"
@@ -30,7 +29,10 @@
   },
   "bundle": {
     "active": false,
-    "icon": ["icons/icon.png", "icons/icon.ico"],
+    "icon": [
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
     "publisher": "PatateLand",
     "copyright": "PatateLand"
   }
