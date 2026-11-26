@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Installation de PatateLand</title>
+    <link rel="stylesheet" href="css/setup.css">
+    <script type="module" src="js/setup.js"></script>
+</head>
+<body>
+<div class="window">
+    <div class="art" data-tauri-drag-region>
+        <div class="brand" data-tauri-drag-region>
+            <img src="img/icon.png" alt="">
+            <h1>PatateLand</h1>
+            <p>Le launcher du serveur, plus léger et plus rapide.</p>
+        </div>
+    </div>
+
+    <div class="side">
+        <div class="titlebar" data-tauri-drag-region>
+            <button id="minimize" class="win-btn" title="Réduire">—</button>
+            <button id="close" class="win-btn close" title="Fermer">✕</button>
+        </div>
+        <div class="steps" data-tauri-drag-region><span class="on"></span><span></span><span></span><span></span></div>
+
+        <!-- 1. Bienvenue -->
+        <section class="screen active" id="screen-welcome">
+            <h2 id="welcome-title">Bienvenue !</h2>
+            <p class="lead" id="welcome-lead">Tu vas installer le nouveau launcher PatateLand. L'installation prend quelques secondes et ne demande aucun droit administrateur.</p>
+            <div class="facts">
+                <div class="fact"><b id="fact-download">…</b>à télécharger</div>
+                <div class="fact"><b id="fact-disk">…</b>sur le disque</div>
+                <div class="fact"><b>Sans admin</b>installé pour toi seul</div>
+                <div class="fact"><b id="fact-old">Nouveau</b><span id="fact-old-text">launcher PatateLand</span></div>
+            </div>
+            <p class="warn hidden" id="incomplete">Cet installateur ne contient pas le launcher (version de développement) : l'installation est impossible.</p>
+            <div class="actions">
+                <button class="link" data-go="options">Personnaliser l'installation</button>
+                <button class="primary install-btn">Installer</button>
+            </div>
+        </section>
+
+        <!-- 2. Options -->
+        <section class="screen" id="screen-options">
+            <h2>Options</h2>
+            <div class="field">
+                <label for="dir-pick">Dossier d'installation</label>
+                <div class="path"><div id="dir"></div><button id="dir-pick">Modifier</button></div>
+            </div>
+            <button class="check" id="opt-desktop"><i></i>Raccourci sur le bureau</button>
+            <button class="check" id="opt-start-menu"><i></i>Raccourci dans le menu Démarrer</button>
+            <button class="check" id="opt-autostart"><i></i>Lancer PatateLand au démarrage de Windows</button>
+            <button class="check hidden" id="opt-remove-old"><i></i>Désinstaller l'ancien launcher PatateLand</button>
+            <div class="field mt8">
+                <label>Mode d'affichage du launcher</label>
+                <div class="modes">
+                    <button class="mode" data-lite="false"><b>Normal</b>Carte graphique, effets</button>
+                    <button class="mode" data-lite="true"><b>Léger</b>Processeur, ≈ 120 Mo</button>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="link" data-go="welcome">Retour</button>
+                <button class="primary install-btn">Installer</button>
+            </div>
+        </section>
+
+        <!-- 3. Installation -->
+        <section class="screen" id="screen-progress">
+            <h2 id="progress-title">Installation…</h2>
+            <div class="progress">
+                <div class="bar"><div class="fill" id="fill"></div></div>
+                <div class="pct"><span id="task">Préparation</span><span id="pct">0 %</span></div>
+            </div>
+            <ul class="tasks" id="tasks">
+                <li>Vérification du fichier d'installation</li>
+                <li>Copie du launcher</li>
+                <li id="task-old" class="hidden">Désinstallation de l'ancien launcher</li>
+                <li>Création des raccourcis</li>
+                <li>Finalisation</li>
+            </ul>
+            <div class="error hidden" id="error">
+                <p id="error-text"></p>
+                <div class="actions">
+                    <button class="link" data-go="options">Modifier les options</button>
+                    <button class="primary" id="retry">Réessayer</button>
+                </div>
+            </div>
+            <p class="tip" id="tip">Astuce : en mode léger, le launcher utilise environ deux fois moins de mémoire.</p>
+        </section>
+
+        <!-- 4. Terminé -->
+        <section class="screen" id="screen-done">
+            <div class="done-mark">✓</div>
+            <h2 id="done-title">PatateLand est prêt !</h2>
+            <p class="lead" id="done-lead">Le launcher est installé. Tu n'as plus qu'à te connecter et choisir ton instance.</p>
+            <button class="check on" id="opt-launch"><i></i>Lancer PatateLand maintenant</button>
+            <p class="relaunch hidden" id="relaunch"><span class="spinner"></span>Relance du launcher…</p>
+            <div class="actions mtauto">
+                <span></span>
+                <button class="primary" id="finish">Jouer</button>
+            </div>
+        </section>
+    </div>
+</div>
+</body>
+</html>

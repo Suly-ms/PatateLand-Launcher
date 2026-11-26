@@ -1,0 +1,12 @@
+{
+  "stub": "stub-console.js",
+  "width": 760,
+  "height": 480,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/console.html?instance=Opti", "wait": 1200 },
+    { "eval": "const L=(l)=>__emit('game-log',{instance:'Opti',line:l}); L('[12:00:01] [main/INFO]: Loading Minecraft 1.20.1 with Fabric'); L('[12:00:02] [main/WARN]: Missing sound for event: minecraft:item.goat_horn.play'); L('<log4j:Event logger=\"mixin\" timestamp=\"1\" level=\"WARN\" thread=\"main\">'); L('  <log4j:Message><![CDATA[Reference map not found]]></log4j:Message>'); L('</log4j:Event>'); L('[12:00:05] [Render thread/INFO]: Sound engine started'); __emit('console-event',{instance:'Opti',event:{type:'menu_reached'}}); L('[12:01:10] [Server thread/ERROR]: Encountered an unexpected exception'); __emit('console-event',{instance:'Extra',event:{type:'exited',crash:null}}); __emit('console-event',{instance:'Opti',event:{type:'exited',crash:{report:'C:/jeu/crash-reports/crash.txt'}}});", "wait": 600 },
+    { "eval": "document.querySelector('.crash-report-toggle').click()", "wait": 400 },
+    { "shot": "console-new" },
+    { "eval": "JSON.stringify({lines: document.getElementById('stat-lines').textContent, errors: document.getElementById('stat-errors').textContent, warns: document.getElementById('stat-warns').textContent, status: document.getElementById('status-text').textContent})", "save": "stats" }
+  ]
+}

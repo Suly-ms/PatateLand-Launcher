@@ -1,0 +1,12 @@
+{
+  "stub": "stub-setup-update.js",
+  "width": 760,
+  "height": 520,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/setup/index.html", "wait": 1500 },
+    { "eval": "document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-progress'))", "wait": 400 },
+    { "shot": "setup-update-progress" },
+    { "eval": "document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === 'screen-done'))", "wait": 700 },
+    { "shot": "setup-update-done" }
+  ]
+}

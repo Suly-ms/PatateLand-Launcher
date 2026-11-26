@@ -1,0 +1,32 @@
+{
+  "stub": true,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('review').classList.remove('hidden'); window.dispatchEvent(new Event('resize'));", "wait": 800 },
+    { "shot": "after-home-banner" },
+    { "eval": "JSON.stringify(Object.fromEntries(['.status-pill','.section-title','.news-card','.partner-banner-card','#bar','#review','#player-head','main'].map(s=>{const r=document.querySelector(s)?.getBoundingClientRect();return [s,r&&[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]]})))", "save": "withBanner" },
+    { "eval": "document.getElementById('banner').classList.add('hidden'); window.dispatchEvent(new Event('resize'));", "wait": 500 },
+    { "shot": "after-home" },
+    { "eval": "JSON.stringify(Object.fromEntries(['.status-pill','.section-title','.news-card','.partner-banner-card','#bar','#review','#player-head'].map(s=>{const r=document.querySelector(s)?.getBoundingClientRect();return [s,r&&[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]]})))", "save": "noBanner" },
+    { "eval": "window.__bg0 = document.getElementById('background').style.backgroundImage; document.getElementById('open-settings').click(); document.querySelector('[data-tab=\"jeu\"]').click();", "wait": 900 },
+    { "shot": "after-settings-jeu" },
+    { "eval": "document.querySelector('[data-tab=\"launcher\"]').click(); document.getElementById('console-toggle').click();", "wait": 700 },
+    { "shot": "after-settings-launcher" },
+    { "eval": "document.querySelector('[data-tab=\"account\"]').click();", "wait": 700 },
+    { "shot": "after-settings-account" },
+    { "eval": "document.getElementById('save').click(); 'ok'", "wait": 0 },
+    { "shot": "cycle1-home-0ms" },
+    { "sleep": 200 },
+    { "shot": "cycle1-home-200ms" },
+    { "sleep": 600 },
+    { "shot": "cycle1-home-800ms" },
+    { "eval": "document.getElementById('open-settings').click(); 'ok'", "wait": 900 },
+    { "eval": "document.getElementById('save').click(); 'ok'", "wait": 0 },
+    { "shot": "cycle2-home-0ms" },
+    { "sleep": 900 },
+    { "shot": "cycle2-home-900ms" },
+    { "eval": "[window.__bg0, document.getElementById('background').style.backgroundImage].join(' -> ')", "save": "background" },
+    { "eval": "JSON.stringify([...document.querySelectorAll('.panel')].map(p=>[p.id, getComputedStyle(p).opacity, getComputedStyle(p).visibility]))", "save": "panels" },
+    { "eval": "getComputedStyle(document.querySelector('.partner-banner-card')).opacity + ' / review ' + getComputedStyle(document.getElementById('review')).opacity", "save": "partnerOpacity" }
+  ]
+}

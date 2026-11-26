@@ -1,0 +1,18 @@
+{
+  "stub": true,
+  "width": 980,
+  "height": 552,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; window.dispatchEvent(new Event('resize'));", "wait": 600 },
+    { "shot": "min-home-banner" },
+    { "eval": "JSON.stringify(Object.fromEntries(['.status-pill','.news-card','.partner-banner-card','#bar','#review'].map(s=>{const r=document.querySelector(s)?.getBoundingClientRect();return [s,r&&[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]]}))) + ' scrollW=' + document.documentElement.scrollWidth", "save": "minSize" },
+    { "eval": "document.getElementById('friends-btn').click();", "wait": 700 },
+    { "shot": "min-friends" },
+    { "eval": "document.body.click(); document.getElementById('open-settings').click(); document.querySelector('[data-tab=\"account\"]').click();", "wait": 600 },
+    { "eval": "document.querySelector('.add-text-profile').parentElement.click();", "wait": 900 },
+    { "shot": "min-login" },
+    { "eval": "document.body.classList.add('lite'); document.getElementById('login-back').click(); document.getElementById('save').click();", "wait": 300 },
+    { "shot": "min-lite-home" }
+  ]
+}

@@ -1,0 +1,99 @@
+/* Menu de l'icône : copie de l'ancien launcher (theme.css, section
+   « TRAY POPUP », et trayMenu.html). */
+
+@font-face { font-family: 'Poppins'; src: url('../fonts/Poppins-Regular.woff2') format('woff2'); font-weight: 400; }
+@font-face { font-family: 'Poppins'; src: url('../fonts/Poppins-Bold.woff2') format('woff2'); font-weight: 700; }
+
+/* Variables de l'ancien launcher (classe « global » + thème). */
+body {
+    --element-color: #f27312;
+    --transition: all 0.3s ease-in-out;
+    --account-selected-bg: rgba(253, 142, 57, 0.1);
+    --delete-button-bg: rgba(255, 59, 48, 0.2);
+    --delete-button-color: #ff3b30;
+    --online-color: #2ecc71;
+}
+body.dark { --color: #ffffff; --border-color: rgba(255, 255, 255, 0.1); --tray-bg: #1b1d24; }
+body.light { --color: #151515; --border-color: rgba(0, 0, 0, 0.12); --tray-bg: #f2f2f2; }
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--tray-bg, #1b1d24);
+    font-family: 'Segoe UI', 'Poppins', sans-serif;
+    user-select: none;
+    overflow: hidden;
+    cursor: default;
+}
+* { box-sizing: border-box; }
+
+.tray-menu {
+    background: var(--tray-bg);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    padding: 6px;
+    color: var(--color);
+}
+body.light .tray-menu { border-color: rgba(0, 0, 0, 0.1); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); }
+
+.tray-menu-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 4px;
+}
+.tray-menu-header img { width: 20px; height: 20px; border-radius: 4px; }
+.tray-menu-header span { font-weight: 600; font-size: 13px; }
+
+.tray-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.tray-menu-item:hover { background: var(--account-selected-bg); color: var(--element-color); }
+.tray-menu-item .tray-chevron { font-size: 11px; opacity: 0.6; transition: var(--transition); }
+.tray-menu-item.expanded .tray-chevron { transform: rotate(90deg); color: var(--element-color); opacity: 1; }
+
+.tray-submenu { max-height: 0; overflow: hidden; transition: max-height 0.18s ease; }
+.tray-submenu.open { max-height: 180px; overflow-y: auto; }
+
+.tray-submenu-item {
+    padding: 8px 12px 8px 30px;
+    font-size: 12.5px;
+    opacity: 0.75;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.tray-submenu-item:hover { background: var(--account-selected-bg); color: var(--element-color); opacity: 1; }
+
+.tray-separator { height: 1px; background: var(--border-color); margin: 6px 4px; }
+
+.tray-menu-item.tray-danger:hover { background: var(--delete-button-bg); color: var(--delete-button-color); }
+
+.tray-empty { padding: 8px 12px 8px 30px; font-size: 12px; opacity: 0.5; font-style: italic; }
+
+.tray-running-badge {
+    font-size: 10px;
+    color: var(--online-color);
+    border: 1px solid var(--online-color);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--element-color); border-radius: 10px; }
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; }
+}

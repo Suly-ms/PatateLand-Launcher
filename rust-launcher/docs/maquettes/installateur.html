@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Maquette - Installateur PatateLand</title>
+<style>
+@font-face { font-family: 'Poppins'; src: url('../../crates/pl-app/ui/fonts/Poppins-Regular.woff2') format('woff2'); font-weight: 400; }
+@font-face { font-family: 'Poppins'; src: url('../../crates/pl-app/ui/fonts/Poppins-Bold.woff2') format('woff2'); font-weight: 700; }
+:root { --accent: #fd8e39; --accent-end: #f27312; --text: #fff; --muted: rgba(255,255,255,.62); --border: rgba(255,255,255,.1); }
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: #0c0d11; font-family: 'Poppins', 'Segoe UI', sans-serif; color: var(--text); }
+button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
+
+/* Commandes de prévisualisation (ne font pas partie de l'installateur) */
+.preview { display: flex; gap: 8px; align-items: center; font-size: .8rem; color: #888; }
+.preview button { padding: 6px 12px; border-radius: 8px; border: 1px solid #333; color: #bbb; }
+.preview button.on { border-color: var(--accent); color: var(--accent); }
+
+/* ---- Fenêtre de l'installateur : 760 x 460, sans bordure Windows ---- */
+.window { width: 760px; height: 460px; border-radius: 14px; overflow: hidden; display: grid; grid-template-columns: 300px 1fr; background: #14161c; box-shadow: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.06); position: relative; }
+.art { position: relative; background: url('../../crates/pl-app/ui/img/bg/dark/4.jpg') center/cover; }
+.art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,22,28,.15) 0%, rgba(20,22,28,.85) 75%, #14161c 100%); }
+.art .brand { position: absolute; z-index: 1; left: 26px; right: 26px; bottom: 26px; }
+.art img { width: 74px; filter: drop-shadow(0 0 18px rgba(253,142,57,.55)); animation: float 4s ease-in-out infinite; }
+.art h1 { margin: 10px 0 0; font-size: 1.6rem; letter-spacing: .5px; }
+.art p { margin: 2px 0 0; color: var(--muted); font-size: .82rem; }
+@keyframes float { 50% { transform: translateY(-5px); } }
+
+.side { display: flex; flex-direction: column; padding: 18px 28px 22px; position: relative; }
+.close { position: absolute; top: 10px; right: 12px; width: 30px; height: 30px; border-radius: 8px; opacity: .6; }
+.close:hover { opacity: 1; background: #e81123; }
+.steps { display: flex; gap: 6px; margin: 8px 0 18px; }
+.steps span { height: 4px; flex: 1; border-radius: 4px; background: rgba(255,255,255,.12); transition: background .3s; }
+.steps span.on { background: linear-gradient(90deg, var(--accent), var(--accent-end)); }
+.screen { display: none; flex: 1; flex-direction: column; animation: in .35s ease; }
+.screen.active { display: flex; }
+@keyframes in { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+h2 { margin: 0 0 6px; font-size: 1.35rem; }
+.lead { color: var(--muted); font-size: .88rem; line-height: 1.55; margin: 0 0 16px; }
+.facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: auto; }
+.fact { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--border); font-size: .78rem; color: var(--muted); }
+.fact b { display: block; color: var(--text); font-size: .95rem; }
+.actions { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.primary { padding: 12px 30px; border-radius: 13px; font-weight: 700; font-size: 1.05rem; text-transform: uppercase; background: linear-gradient(90deg, var(--accent), var(--accent-end)); box-shadow: 0 6px 18px rgba(253,142,57,.4); transition: transform .2s; }
+.primary:hover { transform: scale(1.04); }
+.link { color: var(--muted); font-size: .85rem; text-decoration: underline; }
+.field { margin-bottom: 12px; }
+.field label { font-size: .78rem; color: var(--muted); }
+.path { display: flex; gap: 8px; margin-top: 4px; }
+.path div { flex: 1; padding: 9px 12px; border-radius: 10px; background: rgba(0,0,0,.3); border: 1px solid var(--border); font-family: Consolas, monospace; font-size: .8rem; }
+.path button { padding: 0 14px; border-radius: 10px; border: 1px solid var(--border); font-size: .8rem; }
+.check { display: flex; align-items: center; gap: 10px; font-size: .86rem; margin: 7px 0; cursor: pointer; }
+.check i { width: 18px; height: 18px; border-radius: 6px; border: 2px solid var(--accent); display: grid; place-items: center; font-style: normal; font-size: .7rem; }
+.check.on i { background: var(--accent); }
+.check.on i::before { content: '✓'; color: #fff; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.mode { padding: 9px 11px; border-radius: 11px; border: 1px solid var(--border); font-size: .76rem; color: var(--muted); text-align: left; }
+.mode b { display: block; color: var(--text); font-size: .85rem; }
+.mode.on { border-color: var(--accent); background: rgba(253,142,57,.1); }
+.progress { margin-top: 10px; }
+.bar { height: 10px; border-radius: 8px; background: rgba(0,0,0,.35); overflow: hidden; }
+.fill { height: 100%; width: 0; border-radius: 8px; background: linear-gradient(90deg, var(--accent), var(--accent-end)); box-shadow: 0 0 12px var(--accent); transition: width .2s linear; }
+.pct { display: flex; justify-content: space-between; font-size: .8rem; color: var(--muted); margin-top: 6px; }
+.tasks { list-style: none; padding: 0; margin: 18px 0 auto; font-size: .86rem; }
+.tasks li { display: flex; gap: 10px; align-items: center; margin: 8px 0; color: var(--muted); }
+.tasks li::before { content: ''; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); }
+.tasks li.doing { color: var(--text); }
+.tasks li.doing::before { border-color: var(--accent); border-top-color: transparent; animation: spin .8s linear infinite; }
+.tasks li.done { color: var(--text); }
+.tasks li.done::before { background: #2ecc71; border-color: #2ecc71; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.tip { font-size: .8rem; color: var(--muted); border-left: 3px solid var(--accent); padding-left: 10px; }
+.done-mark { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; font-size: 2rem; background: linear-gradient(135deg, var(--accent), var(--accent-end)); box-shadow: 0 0 30px rgba(253,142,57,.5); margin: 6px 0 16px; animation: pop .5s ease; }
+@keyframes pop { from { transform: scale(.5); opacity: 0; } }
+.note { position: absolute; left: 0; right: 0; bottom: -64px; text-align: center; font-size: .78rem; color: #777; }
+</style>
+</head>
+<body>
+<div class="preview">Maquette - écran :
+    <button data-go="0" class="on">1. Bienvenue</button>
+    <button data-go="1">2. Options</button>
+    <button data-go="2">3. Installation</button>
+    <button data-go="3">4. Terminé</button>
+</div>
+
+<div class="window">
+    <div class="art">
+        <div class="brand">
+            <img src="../../crates/pl-app/ui/img/icon.png" alt="">
+            <h1>PatateLand</h1>
+            <p>Le launcher du serveur, plus léger et plus rapide.</p>
+        </div>
+    </div>
+
+    <div class="side">
+        <button class="close" title="Fermer">✕</button>
+        <div class="steps"><span class="on"></span><span></span><span></span><span></span></div>
+
+        <!-- 1. Bienvenue -->
+        <section class="screen active">
+            <h2>Bienvenue !</h2>
+            <p class="lead">Tu vas installer le nouveau launcher PatateLand. L'installation prend quelques secondes et ne demande aucun droit administrateur.</p>
+            <div class="facts">
+                <div class="fact"><b>9,5 Mo</b>à télécharger</div>
+                <div class="fact"><b>≈ 25 Mo</b>sur le disque</div>
+                <div class="fact"><b>Sans admin</b>installé pour toi seul</div>
+                <div class="fact"><b>Indépendant</b>de l'ancien launcher</div>
+            </div>
+            <div class="actions">
+                <button class="link" data-go="1">Personnaliser l'installation</button>
+                <button class="primary" data-go="2">Installer</button>
+            </div>
+        </section>
+
+        <!-- 2. Options -->
+        <section class="screen">
+            <h2>Options</h2>
+            <div class="field">
+                <label>Dossier d'installation</label>
+                <div class="path"><div>%LOCALAPPDATA%\PatateLand Rust</div><button>Modifier</button></div>
+            </div>
+            <div class="check on"><i></i>Raccourci sur le bureau</div>
+            <div class="check on"><i></i>Raccourci dans le menu Démarrer</div>
+            <div class="check"><i></i>Lancer PatateLand au démarrage de Windows</div>
+            <div class="field" style="margin-top:8px">
+                <label>Mode d'affichage du launcher</label>
+                <div class="modes">
+                    <button class="mode on"><b>Normal</b>Carte graphique, effets</button>
+                    <button class="mode"><b>Léger</b>Processeur, ≈ 120 Mo</button>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="link" data-go="0">Retour</button>
+                <button class="primary" data-go="2">Installer</button>
+            </div>
+        </section>
+
+        <!-- 3. Installation -->
+        <section class="screen">
+            <h2>Installation…</h2>
+            <div class="progress">
+                <div class="bar"><div class="fill" id="fill"></div></div>
+                <div class="pct"><span id="task">Préparation</span><span id="pct">0 %</span></div>
+            </div>
+            <ul class="tasks" id="tasks">
+                <li>Vérification du fichier d'installation</li>
+                <li>Copie du launcher</li>
+                <li>Création des raccourcis</li>
+                <li>Enregistrement de la désinstallation</li>
+            </ul>
+            <p class="tip">Astuce : en mode léger, le launcher utilise environ deux fois moins de mémoire.</p>
+        </section>
+
+        <!-- 4. Terminé -->
+        <section class="screen">
+            <div class="done-mark">✓</div>
+            <h2>PatateLand est prêt !</h2>
+            <p class="lead">Le launcher est installé. Tes comptes et tes mondes de l'ancien launcher ne sont pas touchés.</p>
+            <div class="check on"><i></i>Lancer PatateLand maintenant</div>
+            <div class="actions" style="margin-top:auto">
+                <span></span>
+                <button class="primary">Jouer</button>
+            </div>
+        </section>
+    </div>
+    <div class="note">Maquette statique : aucun fichier n'est installé.</div>
+</div>
+
+<script>
+const screens = [...document.querySelectorAll('.screen')];
+const steps = [...document.querySelectorAll('.steps span')];
+const tabs = [...document.querySelectorAll('.preview button')];
+let timer = null;
+function go(i) {
+    clearInterval(timer);
+    screens.forEach((s, n) => s.classList.toggle('active', n === i));
+    steps.forEach((s, n) => s.classList.toggle('on', n <= i));
+    tabs.forEach((t, n) => t.classList.toggle('on', n === i));
+    if (i === 2) simulate();
+}
+function simulate() {
+    const fill = document.getElementById('fill'), pct = document.getElementById('pct'), task = document.getElementById('task');
+    const items = [...document.querySelectorAll('#tasks li')];
+    let p = 0;
+    items.forEach((li) => (li.className = ''));
+    timer = setInterval(() => {
+        p = Math.min(100, p + 1.6);
+        fill.style.width = p + '%';
+        pct.textContent = Math.round(p) + ' %';
+        const k = Math.min(items.length - 1, Math.floor(p / 25));
+        items.forEach((li, n) => (li.className = n < k || p >= 100 ? 'done' : n === k ? 'doing' : ''));
+        task.textContent = items[k].textContent;
+        if (p >= 100) { clearInterval(timer); setTimeout(() => go(3), 600); }
+    }, 60);
+}
+document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => go(+b.dataset.go)));
+document.querySelectorAll('.check').forEach((c) => c.addEventListener('click', () => c.classList.toggle('on')));
+document.querySelectorAll('.mode').forEach((m) => m.addEventListener('click', () => {
+    document.querySelectorAll('.mode').forEach((x) => x.classList.toggle('on', x === m));
+}));
+</script>
+</body>
+</html>

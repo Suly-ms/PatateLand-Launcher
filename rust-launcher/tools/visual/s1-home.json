@@ -1,0 +1,13 @@
+{
+  "stub": true,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/old/harness.html", "wait": 2500 },
+    { "shot": "old-home" },
+    { "eval": "JSON.stringify(Object.fromEntries(['.status-server','.home-bottom','.new-tab','.news-block','.partner-banner-card','.sidebar','.review-banner','.titre-tab-new','.player-head'].map(s=>{const r=document.querySelector(s)?.getBoundingClientRect();return [s,r&&[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]]})))", "save": "old" },
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('review').classList.remove('hidden'); window.dispatchEvent(new Event('resize'));", "wait": 800 },
+    { "shot": "new-home" },
+    { "eval": "JSON.stringify(Object.fromEntries(['.status-pill','.news','.news-card','.partner-banner-card','#bar','#review','.section-title','#player-head','#banner','main'].map(s=>{const r=document.querySelector(s)?.getBoundingClientRect();return [s,r&&[Math.round(r.x),Math.round(r.y),Math.round(r.width),Math.round(r.height)]]})))", "save": "new" },
+    { "eval": "window.__STUB_LOG__.join(',')", "save": "calls" }
+  ]
+}

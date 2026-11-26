@@ -1,0 +1,9 @@
+{
+  "stub": "stub-instances.js",
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/new/index.html", "wait": 3000 },
+    { "eval": "document.getElementById('background').style.backgroundImage='url(img/bg/dark/4.jpg)'; document.getElementById('instance-btn').click();", "wait": 800 },
+    { "shot": "instances-new" },
+    { "eval": "const t=document.querySelector('.instances-tab').getBoundingClientRect(); JSON.stringify({x:Math.round(t.x),y:Math.round(t.y),w:Math.round(t.width),h:Math.round(t.height), rows:[...document.querySelectorAll('.instance-elements')].map(e=>e.textContent)})", "save": "new" }
+  ]
+}

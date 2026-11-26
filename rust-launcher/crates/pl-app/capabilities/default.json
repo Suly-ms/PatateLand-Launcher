@@ -1,0 +1,13 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions minimales de l'interface : écouter les événements du launcher et déplacer la fenêtre. Tout le reste passe par les commandes du launcher, vérifiées en Rust.",
+  "windows": ["main", "console-*", "tray-menu"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-start-dragging",
+    "core:window:allow-close",
+    "core:window:allow-minimize"
+  ]
+}

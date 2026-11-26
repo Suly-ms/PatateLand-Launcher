@@ -1,0 +1,8 @@
+{
+  "stub": true,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/old/h-instances.html", "wait": 2500 },
+    { "shot": "instances-old" },
+    { "eval": "document.querySelector('#Extra .instance-info-icon').dispatchEvent(new MouseEvent('mouseover',{bubbles:true})); const t=document.querySelector('.instances-tab'); JSON.stringify({tab: t.getBoundingClientRect(), transform: getComputedStyle(t).transform, opacity: getComputedStyle(t).opacity, anim: getComputedStyle(t).animationName, popupAnim: getComputedStyle(document.querySelector('.instance-popup')).animationName, popupOpacity: getComputedStyle(document.querySelector('.instance-popup')).opacity})", "save": "old" }
+  ]
+}

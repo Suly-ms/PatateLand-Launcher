@@ -1,0 +1,16 @@
+{
+  "stub": "stub-tray.js",
+  "width": 240,
+  "height": 380,
+  "steps": [
+    { "nav": "http://127.0.0.1:8799/old/h-tray.html", "wait": 1200 },
+    { "shot": "tray-old" },
+    { "nav": "http://127.0.0.1:8799/new/tray.html", "wait": 1200 },
+    { "eval": "document.getElementById('toggle-play').click()", "wait": 500 },
+    { "shot": "tray-new" },
+    { "eval": "String(window.__trayHeight)", "save": "height" },
+    { "nav": "http://127.0.0.1:8799/new/tray.html?light", "wait": 1200 },
+    { "eval": "document.getElementById('toggle-play').click()", "wait": 500 },
+    { "shot": "tray-new-light" }
+  ]
+}
