@@ -8,7 +8,7 @@ use serde_json::Value;
 
 use crate::net;
 
-pub const DEFAULT_SERVER: &str = "https://filelauncher.patateland.fr";
+pub const DEFAULT_SERVER: &str = "https://patateland.mschnider.fr";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LauncherConfig {
@@ -81,8 +81,8 @@ pub async fn fetch_config(client: &reqwest::Client, server: &str) -> Result<Laun
     net::get_json(client, &format!("{}/config", server.trim_end_matches('/'))).await
 }
 
-/// Liste des instances : `/files` (serveur PatateLand, ancien format
-/// Selvania) ou, à défaut, `/instances` (format Selvania récent).
+/// Liste des instances : `/files` (serveur PatateLand, voir web/) ou, à
+/// défaut, `/instances` (autre format de serveur de fichiers).
 pub async fn fetch_instances(client: &reqwest::Client, server: &str) -> Result<Vec<InstanceInfo>> {
     let base = server.trim_end_matches('/');
     let raw = match net::get_json::<Value>(client, &format!("{base}/files")).await {

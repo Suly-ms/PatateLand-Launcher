@@ -1,5 +1,5 @@
 // Faux serveur de fichiers PatateLand, pour tester le moteur sans le vrai
-// serveur. Mêmes routes et mêmes formats que filelauncher.patateland.fr :
+// serveur. Mêmes routes et mêmes formats que le vrai (web/) :
 //   GET /config                     configuration du launcher
 //   GET /files                      liste des instances
 //   GET /articles                   actualités

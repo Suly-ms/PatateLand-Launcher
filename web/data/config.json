@@ -1,0 +1,10 @@
+{
+    "maintenance": false,
+    "maintenance_message": "Le serveur est en maintenance.<br>Merci de réessayer plus tard.",
+    "maintenance_end": null,
+    "maintenance_whitelist": [],
+    "online": "https://patateland.wstr.fr",
+    "client_id": "",
+    "dataDirectory": "patateland",
+    "rss": ""
+}

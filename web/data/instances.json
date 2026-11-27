@@ -1,0 +1,95 @@
+{
+    "Opti": {
+        "description": "Instance optimisée pour de meilleures performances, idéale pour les configurations modestes.",
+        "loader": {
+            "minecraft_version": "1.20.1",
+            "loader_type": "forge",
+            "loader_version": "47.4.16"
+        },
+        "verify": true,
+        "ignored": [
+            "options.txt",
+            "optionsof.txt",
+            "servers.dat",
+            "saves",
+            "logs",
+            "crash-reports",
+            "screenshots",
+            "resourcepacks",
+            "shaderpacks",
+            "journeymap",
+            "local"
+        ],
+        "whitelistActive": false,
+        "whitelist": [],
+        "status": {
+            "nameServer": "PatateLand",
+            "ip": "play.patateland.fr",
+            "port": 25565
+        },
+        "jvm_args": [],
+        "game_args": []
+    },
+    "Extra": {
+        "description": "Instance avec des fonctionnalités et du contenu supplémentaire.",
+        "loader": {
+            "minecraft_version": "1.20.1",
+            "loader_type": "forge",
+            "loader_version": "47.4.16"
+        },
+        "verify": true,
+        "ignored": [
+            "options.txt",
+            "optionsof.txt",
+            "servers.dat",
+            "saves",
+            "logs",
+            "crash-reports",
+            "screenshots",
+            "resourcepacks",
+            "shaderpacks",
+            "journeymap",
+            "local"
+        ],
+        "whitelistActive": false,
+        "whitelist": [],
+        "status": {
+            "nameServer": "PatateLand",
+            "ip": "play.patateland.fr",
+            "port": 25565
+        },
+        "jvm_args": [],
+        "game_args": []
+    },
+    "Event": {
+        "description": "Instance dédiée aux événements spéciaux et temporaires.",
+        "loader": {
+            "minecraft_version": "1.20.1",
+            "loader_type": "forge",
+            "loader_version": "47.4.16"
+        },
+        "verify": true,
+        "ignored": [
+            "options.txt",
+            "optionsof.txt",
+            "servers.dat",
+            "saves",
+            "logs",
+            "crash-reports",
+            "screenshots",
+            "resourcepacks",
+            "shaderpacks",
+            "journeymap",
+            "local"
+        ],
+        "whitelistActive": false,
+        "whitelist": [],
+        "status": {
+            "nameServer": "PatateLand - Event",
+            "ip": "patateland-event.mine.fun",
+            "port": 25565
+        },
+        "jvm_args": [],
+        "game_args": []
+    }
+}

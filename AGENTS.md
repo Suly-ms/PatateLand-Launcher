@@ -9,7 +9,7 @@ commit. Garder cette langue.
 | Dossier | Rôle | Toucher ? |
 |---|---|---|
 | `launcher/` | **Le launcher**, Rust + Tauri 2. C'est là que se fait le travail. | Oui |
-| `web/` | Serveur de fichiers PHP (`/config`, `/articles`, instances). Routes dans `web/.htaccess`. | Si demandé |
+| `web/` | Serveur de fichiers (PHP + Apache, Docker), déployé sur `patateland.mschnider.fr` avec Coolify. Routes et déploiement : `web/README.md`. | Si demandé |
 | `.github/workflows/release.yml` | Compilation Windows/Mac/Linux → release GitHub **brouillon**. | Avec prudence |
 
 ### `launcher/` (workspace Cargo, version unique dans `launcher/Cargo.toml`)
@@ -59,7 +59,7 @@ Variables lues par l'application et par `pl-cli` (`--root`, `--data`, `--server`
 |---|---|
 | `PL_ROOT` | Dossier de jeu (instances, Java, bibliothèques). |
 | `PL_DATA` | Dossier du launcher (comptes, réglages, logs). |
-| `PL_SERVER` | Serveur de fichiers. Défaut : `https://filelauncher.patateland.fr`. |
+| `PL_SERVER` | Serveur de fichiers. Défaut : `https://patateland.mschnider.fr` (`DEFAULT_SERVER`, `pl-engine/src/remote.rs`). |
 | `PL_NO_UPDATE` | Désactive la recherche de mises à jour. |
 | `PL_AUTOPLAY=1` | Lance le jeu au démarrage (une fois). |
 

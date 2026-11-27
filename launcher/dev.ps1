@@ -9,13 +9,12 @@ Lance le nouveau launcher en mode développement, avec rechargement automatique.
 - Arrêt : Ctrl+C dans le terminal (ou fermer la fenêtre du launcher).
 
 .EXAMPLE
-powershell -ExecutionPolicy Bypass -File .\dev.ps1                    # serveur de démonstration Selvania
-powershell -ExecutionPolicy Bypass -File .\dev.ps1 -Server mock       # faux serveur local (Node.js)
+powershell -ExecutionPolicy Bypass -File .\dev.ps1                    # faux serveur local (Node.js)
 powershell -ExecutionPolicy Bypass -File .\dev.ps1 -Server patateland # vrai serveur PatateLand
 #>
 param(
-    [ValidateSet('selvania', 'mock', 'patateland')]
-    [string] $Server = 'selvania'
+    [ValidateSet('mock', 'patateland')]
+    [string] $Server = 'mock'
 )
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
@@ -29,9 +28,8 @@ $env:PATH = "$env:CARGO_HOME\bin;$root\.toolchain\binutils;$env:PATH"
 $env:PL_ROOT = "$root\run\game"
 $env:PL_DATA = "$root\run\data"
 $servers = @{
-    selvania   = 'http://luuxcraft.fr/api/user/bb8f5247-1d38-41bb-ab6d-3200471a06b2'
     mock       = 'http://127.0.0.1:8787'
-    patateland = 'https://filelauncher.patateland.fr'
+    patateland = 'https://patateland.mschnider.fr'
 }
 $env:PL_SERVER = $servers[$Server]
 

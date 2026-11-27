@@ -43,7 +43,7 @@ async fn live_answer_is_saved_then_used_when_server_is_down() {
     assert_eq!(snapshot.instances[0].name, "Extra");
     assert!(cache.exists(), "copie locale enregistrée");
 
-    // Le serveur tombe en panne (503 partout), comme filelauncher.patateland.fr.
+    // Le serveur tombe en panne (503 partout).
     server.reset().await;
     Mock::given(wiremock::matchers::any()).respond_with(ResponseTemplate::new(503)).mount(&server).await;
     let (snapshot, source) = remote::fetch_or_cached(&client(), &uri, &cache).await.unwrap();

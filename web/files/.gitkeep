@@ -1,0 +1,2 @@
+# Fichiers de jeu, un dossier par instance (nommé comme dans data/instances.json).
+# Monté en stockage persistant en production : ne rien versionner ici.

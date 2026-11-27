@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Nous rejoindre sur Discord, pour toutes questions ou demandes
-    url: http://discord.luuxis.fr
-    about: Veuillez ne pas ouvrir d'issue autre que pour signaler des bugs
+  - name: Discord PatateLand, pour toutes les questions et demandes
+    url: https://dsc.gg/lacrimo
+    about: Les issues servent uniquement à signaler des bugs du launcher.

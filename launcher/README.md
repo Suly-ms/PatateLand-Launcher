@@ -91,8 +91,8 @@ node tools/mock-file-server.mjs run/mock-server/files 8787
 ## Mode développement (Visual Studio Code)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\dev.ps1                 # serveur Selvania
-powershell -ExecutionPolicy Bypass -File .\dev.ps1 -Server mock    # faux serveur local
+powershell -ExecutionPolicy Bypass -File .\dev.ps1                     # faux serveur local
+powershell -ExecutionPolicy Bypass -File .\dev.ps1 -Server patateland  # vrai serveur PatateLand
 ```
 
 Rechargement automatique de l'interface, recompilation du Rust à chaque
@@ -109,11 +109,10 @@ node tools/mock-file-server.mjs run/mock-server/files 8787
 Voir [docs/06-socle-tauri.md](docs/06-socle-tauri.md) et
 [docs/07-microsoft-hors-connexion-installateur.md](docs/07-microsoft-hors-connexion-installateur.md).
 
-Autres serveurs de test :
+Vrai serveur PatateLand (voir [../web/README.md](../web/README.md)) :
 
 ```bash
-# Serveur de démonstration du Selvania Launcher (vrai serveur distant)
-PL_SERVER=http://luuxcraft.fr/api/user/bb8f5247-1d38-41bb-ab6d-3200471a06b2 ./run-app.sh
+PL_SERVER=https://patateland.mschnider.fr ./run-app.sh
 ```
 
 Le launcher garde une copie des informations du serveur : si celui-ci est

@@ -122,8 +122,8 @@ automatique :
 
 ```powershell
 cd C:\Users\afgam\Desktop\PatateLand-Launcher-Rust
-powershell -ExecutionPolicy Bypass -File .\dev.ps1                 # serveur de démonstration Selvania
-powershell -ExecutionPolicy Bypass -File .\dev.ps1 -Server mock    # faux serveur local (Node.js)
+powershell -ExecutionPolicy Bypass -File .\dev.ps1                     # faux serveur local (Node.js)
+powershell -ExecutionPolicy Bypass -File .\dev.ps1 -Server patateland  # vrai serveur PatateLand
 ```
 
 - Modifier `crates/pl-app/ui` (HTML, CSS, JS) : la fenêtre se recharge.

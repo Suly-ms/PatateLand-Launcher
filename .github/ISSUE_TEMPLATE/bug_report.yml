@@ -9,16 +9,12 @@ body:
       Un grand merci d'avance pour votre aide. Néanmoins, nous avons besoin d'un certain nombre d'informations, pour nous aider.
   - type: checkboxes
     attributes:
-      label: "Liste des vérifications à faire avant de valider l'ouverture du signalement de bug"
-      description: Assurez que vous avez complété ce qui suit, dans le cas contraire, votre rapport peut être refusé
+      label: "Vérifications avant d'envoyer le signalement"
+      description: Sans ces vérifications, le signalement risque d'être fermé.
       options:
-        - label: J'ai réussi à reproduire le bug sur le Selvania Launcher (sans mes modifications)
+        - label: J'utilise la dernière version du launcher PatateLand
           required: true
-        - label: Mon code respecte la licence Creative Commons Zero v1.0 Universal
-          required: true
-        - label: Mon code respecte les conditions d'utilisation du Selvania Launcher
-          required: true
-        - label: J'arrive à reproduire le bug sur la dernière version du Selvania Launcher
+        - label: J'ai vérifié qu'aucune issue ouverte ne signale déjà ce bug
           required: true
   - type: dropdown
     attributes:
@@ -38,8 +34,21 @@ body:
         required: true
   - type: input
     attributes:
-      label: Hash du commit sur lequel le bug est rencontré
-      placeholder: 84d7881b67ecf6088205eca6723bfb19bf2a5f0d
+      label: Version du launcher
+      description: Paramètres du launcher, ou nom du fichier d'installation
+      placeholder: "2.0.0"
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: Instance concernée
+      options:
+        - Opti
+        - Extra
+        - Event
+        - Aucune (le launcher lui-même)
+    validations:
+      required: true
   - type: textarea
     attributes:
       label: Comportement attendu
@@ -55,7 +64,7 @@ body:
       required: true
   - type: textarea
     attributes:
-      label: Instructions pour reproduire le but
+      label: Étapes pour reproduire le bug
       placeholder: |
         1. Ouvrir le launcher
         2. Aller dans le menu xyz
@@ -65,7 +74,10 @@ body:
       required: true
   - type: textarea
     attributes:
-      label: Notes additionnelles
-      placeholder: Détails supplémentaires concernant le bug, tout ce qui pourrait être utile
+      label: Journaux et notes
+      description: |
+        Journal du launcher : %APPDATA%\PatateLand-Rust\logs\launcher.log (Windows),
+        ~/.local/share/PatateLand-Rust/logs/launcher.log (Linux). Rapport de crash Minecraft si le jeu a planté.
+      placeholder: Glissez les fichiers ici, ou collez les lignes utiles
     validations:
       required: false
