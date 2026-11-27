@@ -5,9 +5,9 @@
 ## Principe
 
 Le dépôt `Suly-ms/PatateLand-Launcher` est un mono-repo : le launcher Rust
-est dans `launcher/`, le serveur de fichiers dans `web/` et l'ancien launcher
-Electron, qui n'est plus compilé, dans `legacy/electron/`. La branche
-`electron` garde l'ancien launcher tel qu'il était publié.
+est dans `launcher/`, le serveur de fichiers dans `web/`. L'ancien launcher
+Electron n'y est plus : la branche `electron` le garde tel qu'il était
+publié.
 
 Ce qui se passe quand une release est **publiée** :
 

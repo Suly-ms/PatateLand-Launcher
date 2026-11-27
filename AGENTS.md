@@ -10,7 +10,6 @@ commit. Garder cette langue.
 |---|---|---|
 | `launcher/` | **Le launcher**, Rust + Tauri 2. C'est là que se fait le travail. | Oui |
 | `web/` | Serveur de fichiers PHP (`/config`, `/articles`, instances). Routes dans `web/.htaccess`. | Si demandé |
-| `legacy/electron/` | Ancien launcher Electron 1.x : **référence seulement**, plus compilé ni publié. | Non, sauf demande explicite |
 | `.github/workflows/release.yml` | Compilation Windows/Mac/Linux → release GitHub **brouillon**. | Avec prudence |
 
 ### `launcher/` (workspace Cargo, version unique dans `launcher/Cargo.toml`)
@@ -21,6 +20,10 @@ commit. Garder cette langue.
 | `crates/pl-app` | Application Tauri. Commandes appelées par l'interface : `src/commands.rs` (principales), `extras.rs` (Java, démarrage auto, stockage, quarantaine, crash), `friends.rs`, `tray.rs`, `updater.rs`, `play.rs` (bouton JOUER), `window.rs` (fenêtres, menu de l'icône Linux). Interface : `ui/` en **HTML/CSS/JS sans bundler** (`ui/js/app.js`, `window.__TAURI__.core.invoke`). |
 | `crates/pl-cli` | Même moteur en ligne de commande (`info`, `install`, `launch`, `account`, `settings`, `packs`, `storage`, `quarantine`, `release`). Idéal pour tester le moteur sans interface. |
 | `crates/pl-setup` | Installateur Windows. **Ne compile que sous Windows.** |
+
+L'ancien launcher Electron 1.x n'est plus dans ce dépôt : il est sur la
+branche `electron`, pour consultation seulement (`git show origin/electron:src/…`,
+ou `git worktree add launcher/run/electron electron`).
 
 Docs de conception dans `launcher/docs/` (numérotées dans l'ordre du projet).
 Les plus utiles : `08-parite-ancien-launcher.md` (liste des fonctions),

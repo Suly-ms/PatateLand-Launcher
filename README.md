@@ -6,7 +6,6 @@ Mono-repo du launcher Minecraft PatateLand.
 |---|---|
 | [`launcher/`](launcher/) | **Le launcher**, en Rust (Tauri) : moteur `pl-engine`, application `pl-app`, outil en ligne de commande `pl-cli`, installateur `pl-setup`. |
 | [`web/`](web/) | Serveur de fichiers en PHP : liste des instances, configuration et actualités lues par le launcher. |
-| [`legacy/electron/`](legacy/electron/) | Ancien launcher Electron (versions 1.x). Il n'est plus compilé ni publié et sert seulement de référence. |
 
 ## Compiler le launcher
 
@@ -39,5 +38,6 @@ Voir [launcher/docs/11-publication.md](launcher/docs/11-publication.md).
 ## Branches
 
 - `master` : branche principale (mono-repo).
-- `electron` : l'ancien launcher Electron tel qu'il était publié, pour pouvoir
-  republier une version 1.x en cas de besoin.
+- `electron` : l'ancien launcher Electron (versions 1.x), retiré de ce
+  dépôt. Il reste disponible pour consultation, ou pour republier une
+  version 1.x en cas de besoin.
