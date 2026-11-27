@@ -4,6 +4,7 @@
  */
 import { config as configModule, database, logger, changePanel, appdata, setStatus, pkg, popup } from '../utils.js'
 import { injectServer } from '../utils/serversDat.js'
+import { launchCard } from '../utils/launchCard.js'
 // PROTOTYPE test_ (voir test_cosmetics-mod/) : injection du mod de
 // cosmétiques dans les instances Forge avant lancement, pour pouvoir
 // tester directement via "npm start" + clic sur JOUER, sans copier le jar
@@ -646,6 +647,7 @@ class Home {
 
         let launch = new Launch()
         this.activeLaunches.set(instanceName, launch); notifyTrayRunning();
+        const card = launchCard.start(instanceName)
 
         let configClient, instanceListAll, authenticator, options
         try {
@@ -663,6 +665,7 @@ class Home {
                 color: 'red',
                 options: true
             })
+            card.end('error', 'Le lancement a échoué.')
             this.activeLaunches.delete(instanceName); notifyTrayRunning();
             return
         }
@@ -783,6 +786,7 @@ class Home {
             }
 
             launch.Launch(opt);
+            card.verifying();
         } catch (err) {
             console.error('Erreur lors du lancement :', err)
             let popupError = new popup()
@@ -792,6 +796,7 @@ class Home {
                 color: 'red',
                 options: true
             })
+            card.end('error', 'Le lancement a échoué.')
             this.activeLaunches.delete(instanceName); notifyTrayRunning();
             return
         }
@@ -810,16 +815,20 @@ class Home {
 
         launch.on('extract', extract => {
             ipcRenderer.send('main-window-progress-load')
+            card.install('Extraction des fichiers…')
             console.log(`${instanceName}: ${extract}`);
         });
 
+        let downloadSpeed = 0;
         launch.on('progress', (progress, size) => {
             ipcRenderer.send('main-window-progress', { progress, size })
+            card.download(progress, size, downloadSpeed)
             ipcRenderer.send('log-send', instanceName, `Téléchargement : ${((progress / size) * 100).toFixed(0)}%`);
         });
 
         launch.on('check', (progress, size) => {
             ipcRenderer.send('main-window-progress', { progress, size })
+            card.check(progress, size)
         });
 
         launch.on('estimated', (time) => {
@@ -830,12 +839,14 @@ class Home {
         })
 
         launch.on('speed', (speed) => {
+            downloadSpeed = speed;
             console.log(`${instanceName}: ${(speed / 1067008).toFixed(2)} Mb/s`)
         })
 
         launch.on('patch', patch => {
             console.log(`${instanceName}: ${JSON.stringify(patch)}`);
             ipcRenderer.send('main-window-progress-load')
+            card.install(`Installation de ${options.loader?.loader_type || 'du loader'}…`)
         });
 
         let readyNotified = false;
@@ -871,6 +882,7 @@ class Home {
                 })
             }
             const line = typeof e === 'string' ? e : JSON.stringify(e);
+            card.gameOutput(line);
             ipcRenderer.send('log-send', instanceName, line);
             console.log(`${instanceName}: ${typeof e === 'string' ? e : JSON.stringify(e)}`);
         })
@@ -883,6 +895,8 @@ class Home {
             ipcRenderer.send('log-status', instanceName, 'closed');
             new logger(pkg.name, '#7289da');
             console.log(`${instanceName} - Close - exit code: ${code} (type: ${typeof code})`);
+            if (code !== 0) card.end('error', "Le jeu s'est arrêté de manière inattendue.");
+            else card.close();
             this.activeLaunches.delete(instanceName); notifyTrayRunning();
 
             if (code !== 0) {
@@ -918,6 +932,7 @@ class Home {
             };
             ipcRenderer.send('main-window-progress-reset')
             ipcRenderer.send('log-status', instanceName, 'error');
+            card.end('error', 'Le lancement a échoué.');
             ipcRenderer.send('log-send', instanceName, `ERREUR: ${JSON.stringify(err)}`);
             new logger(pkg.name, '#7289da');
             console.log(`${instanceName} - ${err?.message || err}`);

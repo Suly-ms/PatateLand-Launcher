@@ -31,6 +31,22 @@
     </div>
 
     <div class="sidebar">
+        <!-- Écran de lancement : étapes, progression et ce que fait le launcher
+             (repris du launcher Rust, voir assets/js/utils/launchCard.js). -->
+        <div id="launch-card" class="launch-card hidden" aria-live="polite">
+            <div class="launch-steps">
+                <div class="launch-step"><div class="launch-step-head"><span>Préparation</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                <div class="launch-step"><div class="launch-step-head"><span>Vérification</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                <div class="launch-step"><div class="launch-step-head"><span>Téléchargement</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+                <div class="launch-step"><div class="launch-step-head"><span>Lancement</span><b></b></div><div class="launch-step-bar"><span></span></div></div>
+            </div>
+            <div class="launch-status">
+                <span id="launch-icon" class="launch-spinner"></span>
+                <span id="launch-message">Préparation du lancement…</span>
+                <span id="launch-detail" class="launch-detail"></span>
+            </div>
+        </div>
+
         <div class="player-options">
             <div class="player-head"></div>
         </div>
