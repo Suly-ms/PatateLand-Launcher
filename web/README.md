@@ -68,8 +68,8 @@ Le contenu du modpack (`mods/`, `config/`, `defaultconfigs/`…), tel qu'il
 doit se retrouver dans le dossier de l'instance du joueur. Rien n'est
 versionné dans git : ce dossier est un stockage persistant.
 
-⚠️ Une instance déclarée sans dossier renvoie une **erreur 503**, et non une
-liste vide. Avec `verify: true`, une liste vide ferait supprimer les mods de
+⚠️ Une instance déclarée dont le dossier est absent **ou vide** renvoie une
+**erreur 503**, et non une liste vide. Avec `verify: true`, une liste vide ferait supprimer les mods de
 tous les joueurs.
 
 ## Déployer avec Coolify

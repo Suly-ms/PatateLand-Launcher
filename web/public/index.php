@@ -144,7 +144,10 @@ if (preg_match('#^/manifest/([^/]+)\.json$#', $route, $m)) {
     // Dossier absent (stockage non monté…) : erreur, et surtout pas une liste
     // vide, qui ferait supprimer les mods des joueurs (verify: true).
     if (!is_dir($root)) fail(503, "fichiers de l'instance $name introuvables sur le serveur");
-    send(200, manifest($name, $root, $cacheDir, publicUrl()));
+    $files = manifest($name, $root, $cacheDir, publicUrl());
+    // Dossier vide (modpack pas encore envoyé…) : même raison.
+    if (!$files) fail(503, "aucun fichier pour l'instance $name sur le serveur");
+    send(200, $files);
 }
 
 fail(404, 'route inconnue');
