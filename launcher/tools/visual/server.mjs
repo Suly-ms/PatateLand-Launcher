@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOTS = {
     // Ancien launcher : lu seulement (jamais modifié). Dossier voisin par défaut.
-    old: path.resolve(process.env.PL_OLD_LAUNCHER ?? path.join(HERE, '../../../PatateLand-Launcher/src')),
+    old: path.resolve(process.env.PL_OLD_LAUNCHER ?? path.join(HERE, '../../../legacy/electron/src')),
     new: path.resolve(HERE, '../../crates/pl-app/ui'),
     setup: path.resolve(HERE, '../../crates/pl-setup/ui'),
     h: HERE,

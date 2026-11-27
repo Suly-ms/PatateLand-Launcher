@@ -1,7 +1,8 @@
 # Compilation automatique du launcher PatateLand (Windows, Mac, Linux).
 #
-# Déclenchée à chaque envoi (push) sur la branche « nouveau-launcher », ou à
-# la main (onglet Actions > Run workflow).
+# Déclenchée à chaque envoi (push) sur « master » ou « all-features » qui
+# touche le launcher (dossier launcher/), ou à la main (onglet Actions > Run
+# workflow).
 #
 # Résultat : une release en BROUILLON. Un brouillon est invisible pour les
 # joueurs et pour les launchers (ancien comme nouveau) : rien n'est diffusé
@@ -9,13 +10,16 @@
 #
 # Secret nécessaire (Settings > Secrets and variables > Actions) :
 #   UPDATE_SIGNING_KEY : clé privée de signature des mises à jour.
-# Voir docs/11-publication.md.
+# Voir launcher/docs/11-publication.md.
 
 name: Compilation du launcher
 
 on:
   push:
-    branches: [nouveau-launcher]
+    branches: [master, all-features]
+    paths:
+      - 'launcher/**'
+      - '.github/workflows/release.yml'
   workflow_dispatch:
 
 permissions:
@@ -27,6 +31,11 @@ concurrency:
 
 env:
   CARGO_TERM_COLOR: always
+
+# Le launcher Rust est dans le dossier launcher/ du mono-repo.
+defaults:
+  run:
+    working-directory: launcher
 
 jobs:
   windows:
@@ -43,7 +52,7 @@ jobs:
           targets: ${{ matrix.arch == 'arm64' && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: ". -> target-msvc"
+          workspaces: "launcher -> target-msvc"
           key: windows-${{ matrix.arch }}
       - uses: actions/setup-node@v4
         with:
@@ -58,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-${{ matrix.arch }}
-          path: dist/PatateLand-win-${{ matrix.arch }}-setup.exe
+          path: launcher/dist/PatateLand-win-${{ matrix.arch }}-setup.exe
           if-no-files-found: error
 
   macos:
@@ -71,7 +80,7 @@ jobs:
           targets: aarch64-apple-darwin,x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: ". -> target-msvc"
+          workspaces: "launcher -> target-msvc"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -79,7 +88,7 @@ jobs:
       - name: Tests
         run: cargo test --release -p pl-engine
       - name: Application
-        working-directory: crates/pl-app
+        working-directory: launcher/crates/pl-app
         run: tauri build --target universal-apple-darwin --bundles dmg
       - name: Nom final
         run: |
@@ -88,7 +97,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: dist/PatateLand-mac-universal.dmg
+          path: launcher/dist/PatateLand-mac-universal.dmg
           if-no-files-found: error
 
   linux:
@@ -104,7 +113,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: ". -> target-msvc"
+          workspaces: "launcher -> target-msvc"
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -112,7 +121,7 @@ jobs:
       - name: Tests
         run: cargo test --release -p pl-engine
       - name: Application
-        working-directory: crates/pl-app
+        working-directory: launcher/crates/pl-app
         run: tauri build --bundles appimage
       - name: Nom final
         run: |
@@ -121,7 +130,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: dist/PatateLand-linux-x64.AppImage
+          path: launcher/dist/PatateLand-linux-x64.AppImage
           if-no-files-found: error
 
   release:
@@ -135,7 +144,7 @@ jobs:
           node-version: 22
       - uses: actions/download-artifact@v4
         with:
-          path: dist
+          path: launcher/dist
           merge-multiple: true
       - name: Manifeste signé et latest.yml
         env:
@@ -148,7 +157,7 @@ jobs:
           VERSION=$(node tools/release/version.mjs)
           if gh release view "$VERSION" --json isDraft -q .isDraft > state.txt 2>/dev/null; then
             if [ "$(cat state.txt)" != "true" ]; then
-              echo "La version $VERSION est déjà publiée : augmente la version dans le Cargo.toml (racine)." >&2
+              echo "La version $VERSION est déjà publiée : augmente la version dans launcher/Cargo.toml." >&2
               exit 1
             fi
             gh release upload "$VERSION" dist/* --clobber

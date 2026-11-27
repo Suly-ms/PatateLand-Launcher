@@ -1,14 +1,15 @@
-# Generated
-node_modules
-app
-test
-dist
-node-v*
-data
 .DS_Store
-src/assets/js/panels/webhook.config.json
-src/webhook.config.json
+node_modules/
+
+# Ancien launcher Electron (legacy/electron)
+/legacy/electron/app/
+/legacy/electron/test/
+/legacy/electron/dist/
+/legacy/electron/node-v*
+/legacy/electron/data/
+/legacy/electron/src/assets/js/panels/webhook.config.json
+/legacy/electron/src/webhook.config.json
 
 # Cosmétiques (prototype, non versionné pour le moment)
-test_cosmetics-mod/
-src/assets/js/test_cosmeticsInjector.js
+/legacy/electron/test_cosmetics-mod/
+/legacy/electron/src/assets/js/test_cosmeticsInjector.js

@@ -4,9 +4,10 @@
 
 ## Principe
 
-Le nouveau launcher est publié sur le même dépôt GitHub que l'ancien :
-`Suly-ms/PatateLand-Launcher`. Il est placé dans une branche à part,
-`nouveau-launcher`. La branche `master` (ancien launcher) n'est pas touchée.
+Le dépôt `Suly-ms/PatateLand-Launcher` est un mono-repo : le launcher Rust
+est dans `launcher/`, le serveur de fichiers dans `web/` et l'ancien launcher
+Electron, qui n'est plus compilé, dans `legacy/electron/`. La branche
+`electron` garde l'ancien launcher tel qu'il était publié.
 
 Ce qui se passe quand une release est **publiée** :
 
@@ -48,29 +49,20 @@ version de l'ancien launcher en cas de besoin.
 
 ## Étape 3 : envoyer le nouveau launcher (GitHub Desktop)
 
-1. Ouvre le dépôt `PatateLand-Launcher-Rust`.
-2. Vérifie la liste des fichiers. Ne doivent **pas** apparaître :
-   `.toolchain`, `target`, `target-msvc`, `run`, `dist`. Ils sont exclus par
-   `.gitignore`.
-3. Premier commit sur `master`, message par exemple « Nouveau launcher
-   PatateLand 2.0.0 ».
-4. *Branch* > *Rename…* : nom `nouveau-launcher`.
-5. Relier ce dépôt à celui de l'ancien launcher : Claude lance la commande,
-   avec ton accord.
-   ```
-   git remote add origin https://github.com/Suly-ms/PatateLand-Launcher.git
-   ```
-6. Clique sur *Publish branch*. ⚠️ Pas *Publish repository*, qui créerait un
-   autre dépôt.
-7. Sur github.com, onglet *Actions* : la compilation « Compilation du
+1. Vérifie la liste des fichiers. Ne doivent **pas** apparaître :
+   `launcher/.toolchain`, `launcher/target`, `launcher/target-msvc`,
+   `launcher/run`, `launcher/dist`. Ils sont exclus par `launcher/.gitignore`.
+2. *Push* sur `all-features` (ou sur `master` une fois la branche fusionnée).
+3. Sur github.com, onglet *Actions* : la compilation « Compilation du
    launcher » tourne pendant 20 à 30 min (Windows x64 et ARM64, Mac, Linux,
-   tests).
-8. Onglet *Releases* : un **brouillon** « PatateLand 2.0.0 » apparaît, avec :
+   tests). Elle ne se lance que si un fichier de `launcher/` (ou le fichier
+   `.github/workflows/release.yml`) a changé.
+4. Onglet *Releases* : un **brouillon** « PatateLand 2.0.0 » apparaît, avec :
    - les 4 installateurs ;
    - `patateland-update.json` et `patateland-update.json.sig` ;
    - `latest.yml`.
 
-À chaque nouvel envoi sur `nouveau-launcher`, le brouillon est mis à jour.
+À chaque nouvel envoi, le brouillon est mis à jour.
 Une version déjà publiée n'est jamais modifiée : la compilation s'arrête et
 demande d'augmenter le numéro de version.
 
@@ -100,8 +92,8 @@ demande d'augmenter le numéro de version.
 
 **Mises à jour suivantes**
 1. Augmenter la version à **un seul endroit** : la ligne `version = "…"`
-   du `Cargo.toml` à la racine (par exemple 2.0.1).
-2. Commit et *Push* sur `nouveau-launcher`.
+   de `launcher/Cargo.toml` (par exemple 2.0.1).
+2. Commit et *Push* sur `master`.
 3. Vérifier le brouillon, puis *Publish release*.
 
 ## En cas de problème après la bascule
@@ -114,8 +106,7 @@ demande d'augmenter le numéro de version.
 
 ## Notes de version (NOUVEAUTES.txt)
 
-Avant chaque publication, écris les nouveautés dans `NOUVEAUTES.txt`, à la
-racine du projet, une ligne par nouveauté. Elles apparaissent :
+Avant chaque publication, écris les nouveautés dans `launcher/NOUVEAUTES.txt`, une ligne par nouveauté. Elles apparaissent :
 - dans la fenêtre « Mise à jour disponible ! » des joueurs (elles font partie
   du manifeste signé) ;
 - sur la page de la release GitHub.

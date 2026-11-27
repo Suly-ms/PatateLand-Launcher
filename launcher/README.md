@@ -1,8 +1,10 @@
-# PatateLand Launcher (Rust) — expérimental
+# PatateLand Launcher (Rust)
 
-Réécriture expérimentale du launcher PatateLand en Rust. Projet **totalement
-indépendant** de `PatateLand-Launcher` : aucun fichier, compte, instance ou
-réglage de l'ancien launcher n'est lu en écriture ni modifié.
+Le launcher PatateLand, écrit en Rust (Tauri). Il remplace l'ancien launcher
+Electron (`../legacy/electron/`) : aucun fichier, compte, instance ou réglage
+de l'ancien launcher n'est lu en écriture ni modifié.
+
+Toutes les commandes ci-dessous se lancent depuis ce dossier (`launcher/`).
 
 Documents :
 - [docs/01-audit-et-architecture.md](docs/01-audit-et-architecture.md)

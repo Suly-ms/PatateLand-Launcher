@@ -2,7 +2,7 @@
  * Écran de lancement : quatre étapes (Préparation, Vérification,
  * Téléchargement, Lancement) avec leur barre, le pourcentage de l'étape en
  * cours et ce que fait le launcher. Repris du nouveau launcher Rust
- * (rust-launcher/crates/pl-app/ui/js/app.js).
+ * (launcher/crates/pl-app/ui/js/app.js à la racine du dépôt).
  *
  * Plusieurs instances peuvent être lancées en même temps : la carte suit le
  * dernier lancement, les événements des lancements précédents sont ignorés.
