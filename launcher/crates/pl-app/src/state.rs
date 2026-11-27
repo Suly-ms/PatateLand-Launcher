@@ -143,6 +143,18 @@ pub fn allowed(info: &InstanceInfo, player: Option<&str>) -> bool {
     !info.whitelist_active || player.is_some_and(|p| info.whitelist.iter().any(|w| w.eq_ignore_ascii_case(p)))
 }
 
+/// Instances jouables par le compte sélectionné, l'Event en dernier : menu de
+/// l'icône. Celles réservées à d'autres joueurs n'y apparaissent pas, comme
+/// sur l'accueil.
+pub async fn playable_instances(state: &AppState) -> Vec<String> {
+    let player = state.accounts.lock().await.selected().map(|a| a.name.clone());
+    let remote = state.remote.read().await;
+    let mut names: Vec<String> =
+        remote.instances.iter().filter(|i| allowed(i, player.as_deref())).map(|i| i.name.clone()).collect();
+    names.sort_by_key(|n| n.eq_ignore_ascii_case("event"));
+    names
+}
+
 pub fn instance_views(state: &AppState, instances: &[InstanceInfo], player: Option<&str>) -> Vec<InstanceView> {
     let mut views: Vec<InstanceView> = instances
         .iter()

@@ -166,12 +166,7 @@ pub fn show_main_later(app: &AppHandle) {
 #[cfg(target_os = "linux")]
 async fn tray_menu(app: &AppHandle) -> tauri::Result<Menu<tauri::Wry>> {
     let state = app.state::<AppState>();
-    let instances: Vec<String> = {
-        let remote = state.remote.read().await;
-        let mut names: Vec<String> = remote.instances.iter().map(|i| i.name.clone()).collect();
-        names.sort_by_key(|n| n.eq_ignore_ascii_case("event"));
-        names
-    };
+    let instances = crate::state::playable_instances(&state).await;
     let running = state.running.lock().unwrap().clone();
 
     let play = Submenu::with_id(app, "play", "Jouer", !instances.is_empty())?;

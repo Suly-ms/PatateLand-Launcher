@@ -49,6 +49,10 @@ impl Memory {
     }
 }
 
+/// Résolution maximale du jeu (8K), comme les bornes du champ dans l'interface.
+pub const MAX_WIDTH: u32 = 7680;
+pub const MAX_HEIGHT: u32 = 4320;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -133,8 +137,15 @@ impl Settings {
     /// les valeurs par défaut.
     pub fn load(path: &Path) -> Result<Self> {
         match fs::read(path) {
-            Ok(raw) => match serde_json::from_slice(&raw) {
-                Ok(settings) => Ok(settings),
+            Ok(raw) => match serde_json::from_slice::<Self>(&raw) {
+                Ok(mut settings) => {
+                    // Résolution enregistrée avant la limite haute : ramenée
+                    // dans les bornes, sinon plus aucun réglage ne passerait
+                    // la validation.
+                    settings.width = settings.width.min(MAX_WIDTH);
+                    settings.height = settings.height.min(MAX_HEIGHT);
+                    Ok(settings)
+                }
                 Err(e) => {
                     let aside = path.with_extension(format!("illisible-{}.json", crate::auth::microsoft::now()));
                     fs::rename(path, &aside)?;
@@ -190,6 +201,9 @@ impl Settings {
         if self.width < 320 || self.height < 240 {
             bail!("résolution trop petite");
         }
+        if self.width > MAX_WIDTH || self.height > MAX_HEIGHT {
+            bail!("résolution trop grande ({MAX_WIDTH} × {MAX_HEIGHT} maximum)");
+        }
         Ok(())
     }
 }
@@ -232,6 +246,28 @@ mod tests {
         assert_eq!(Settings::load(&path).unwrap(), Settings::default());
         let kept = fs::read_dir(&dir).unwrap().flatten().any(|e| e.file_name().to_string_lossy().contains("illisible"));
         assert!(kept, "l'ancien fichier doit être conservé");
+    }
+
+    #[test]
+    fn resolution_bounds() {
+        let ok = Settings { width: 7680, height: 4320, ..Default::default() };
+        assert!(ok.validate(16.0).is_ok());
+        let tall = Settings { height: 720_800, ..Default::default() };
+        assert!(tall.validate(16.0).is_err());
+        let wide = Settings { width: 7681, ..Default::default() };
+        assert!(wide.validate(16.0).is_err());
+    }
+
+    #[test]
+    fn oversized_resolution_is_clamped_on_load() {
+        let dir = std::env::temp_dir().join(format!("pl-settings-res-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        fs::write(&path, r#"{ "width": 1281, "height": 720800 }"#).unwrap();
+        let s = Settings::load(&path).unwrap();
+        assert_eq!((s.width, s.height), (1281, MAX_HEIGHT));
+        assert!(s.validate(16.0).is_ok());
     }
 
     #[test]

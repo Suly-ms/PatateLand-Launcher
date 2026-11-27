@@ -894,7 +894,10 @@ function onGameEvent(event) {
                 if (event.crash.queued) lines.push("Il est prêt à être transmis à l'équipe dès que le service du site existera.");
                 const actions = [{ label: 'Fermer', primary: false }];
                 if (event.crash.report) {
-                    actions.push({ label: 'Ouvrir les rapports', run: () => call('open_instance_folder', { folder: 'crash-reports' }) });
+                    // Le rapport de cette partie : l'instance qui a planté n'est
+                    // pas forcément celle sélectionnée (menu de l'icône,
+                    // plusieurs parties en même temps).
+                    actions.push({ label: 'Ouvrir le rapport', run: () => call('crash_report_open', { path: event.crash.report }) });
                 }
                 dialog('Crash de Minecraft', lines, actions);
             }
@@ -926,6 +929,12 @@ function onProgress(p) {
 
 function onGameFinished({ instance, error }) {
     state.running.delete(instance);
+    // Une autre partie continue (menu de l'icône) : l'écran reste « En jeu ».
+    if (state.running.size) {
+        $('play-title').textContent = `En jeu · ${[...state.running].join(', ')}`;
+        if (error) dialog('Erreur', [error]);
+        return;
+    }
     setBusy(false);
     if (error) {
         endLaunch('error', 'Le lancement a échoué.');

@@ -327,9 +327,13 @@ pub async fn remove_account(state: State<'_, AppState>, id: String) -> CmdResult
 }
 
 #[tauri::command]
-pub async fn instances(state: State<'_, AppState>) -> CmdResult<Vec<InstanceView>> {
+pub async fn instances(app: AppHandle, state: State<'_, AppState>) -> CmdResult<Vec<InstanceView>> {
     let player = state.accounts.lock().await.selected().map(|a| a.name.clone());
-    Ok(instance_views(&state, &state.remote.read().await.instances, player.as_deref()))
+    let views = instance_views(&state, &state.remote.read().await.instances, player.as_deref());
+    // Appelée après chaque changement de compte : le menu de l'icône suit
+    // (instances réservées à certains joueurs).
+    window::refresh_tray(&app).await;
+    Ok(views)
 }
 
 #[tauri::command]

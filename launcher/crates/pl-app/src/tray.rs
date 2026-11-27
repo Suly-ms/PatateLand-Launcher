@@ -149,8 +149,7 @@ pub struct TrayView {
 /// Contenu du menu : instances (l'Event en dernier, comme partout) et thème.
 #[tauri::command]
 pub async fn tray_state(app: AppHandle, state: State<'_, AppState>) -> Result<TrayView, String> {
-    let mut names: Vec<String> = state.remote.read().await.instances.iter().map(|i| i.name.clone()).collect();
-    names.sort_by_key(|n| n.eq_ignore_ascii_case("event"));
+    let names = crate::state::playable_instances(&state).await;
     let running = state.running.lock().unwrap().clone();
     Ok(TrayView {
         instances: names.into_iter().map(|name| TrayInstance { running: running.contains(&name), name }).collect(),
