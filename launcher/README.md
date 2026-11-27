@@ -13,6 +13,13 @@ Documents :
 ## Compiler
 
 La toolchain Rust est installée **dans ce dossier** (`.toolchain/`).
+Sous Linux, les dépendances système s'installent sans sudo avec
+`bash tools/linux-deps.sh`, puis `source .toolchain/sysroot-env.sh`.
+`pl-setup` (installateur) ne compile que sous Windows : ailleurs,
+`cargo test --release --workspace --exclude pl-setup`.
+
+Tests de bout en bout de la vraie application (Linux) : voir
+[tools/e2e/README.md](tools/e2e/README.md).
 
 ```bash
 source env.sh

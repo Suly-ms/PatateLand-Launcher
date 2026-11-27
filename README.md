@@ -12,12 +12,21 @@ Mono-repo du launcher Minecraft PatateLand.
 
 ```bash
 cd launcher
-source env.sh          # toolchain Rust locale, si elle est installée dans launcher/.toolchain
+source env.sh                      # toolchain Rust locale (launcher/.toolchain)
+bash tools/linux-deps.sh           # Linux : dépendances système, sans sudo
+source .toolchain/sysroot-env.sh   # Linux
 cargo build --release
-cargo test --release
+cargo test --release --workspace --exclude pl-setup   # pl-setup = installateur Windows
+bash tools/e2e/run.sh              # Linux : tests de bout en bout de la vraie appli
 ```
 
-Détails : [launcher/README.md](launcher/README.md).
+Détails : [launcher/README.md](launcher/README.md), tests de bout en bout :
+[launcher/tools/e2e/README.md](launcher/tools/e2e/README.md).
+
+## Agents IA
+
+Conventions, architecture, règles de sécurité et pièges connus :
+[AGENTS.md](AGENTS.md) (lu automatiquement par Claude Code via `CLAUDE.md`).
 
 ## Publication
 

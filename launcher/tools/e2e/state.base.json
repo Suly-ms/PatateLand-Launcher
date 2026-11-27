@@ -1,0 +1,15 @@
+{
+  "config": { "maintenance": false, "maintenance_message": "", "maintenance_end": null, "maintenance_whitelist": [],
+              "online": false, "client_id": "", "dataDirectory": "patateland", "rss": "" },
+  "instances": [
+    { "name": "Test", "description": "Instance de test (Forge 1.20.1)." },
+    { "name": "Opti", "dir": "Test" },
+    { "name": "Secret", "dir": "Test", "whitelist": ["QuelquUn"] }
+  ],
+  "articles": [
+    { "title": "Article un", "content": "Premier article.\nDeuxième ligne.", "author": "Équipe PatateLand", "publish_date": "2026-11-20T18:00:00Z" },
+    { "title": "Article piégé", "content": "<p>Texte en <b>gras</b> et <a href=\"https://patateland.fr\">lien</a>.</p><script>window.__pwned=1</script><img src=\"x\" onerror=\"window.__pwned=2\"><p><a id=\"jslink\" href=\"javascript:window.__pwned=3\">piège</a></p>", "author": "Test", "publish_date": "2026-11-19T12:00:00Z" },
+    { "title": "Article trois", "content": "Troisième.", "author": "Test", "publish_date": "2026-11-18T12:00:00Z" }
+  ],
+  "players": 7
+}
